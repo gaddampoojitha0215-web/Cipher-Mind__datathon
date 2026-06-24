@@ -118,6 +118,8 @@ const THEMES: Theme[] = [
   }
 ];
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 function App() {
   const [activeTab, setActiveTab] = useState<"dashboard" | "chat" | "network" | "cases">("dashboard");
   const [language, setLanguage] = useState<"en" | "kn">("en");
@@ -170,7 +172,7 @@ function App() {
 
   // Load cases from mock API or local fallback on init
   useEffect(() => {
-    fetch("http://localhost:8000/api/v1/cases/all")
+    fetch(`${API_BASE_URL}/api/v1/cases/all`)
       .then(res => res.json())
       .then(data => setCases(data))
       .catch(() => {
@@ -257,7 +259,7 @@ function App() {
     setLoadingResponse(true);
 
     try {
-      const res = await fetch("http://localhost:8000/api/v1/chat/query", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/chat/query`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -310,7 +312,7 @@ function App() {
   // Export PDF
   const downloadPdf = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/v1/chat/export-pdf", {
+      const res = await fetch(`${API_BASE_URL}/api/v1/chat/export-pdf`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ session_id: chatSessionId })
