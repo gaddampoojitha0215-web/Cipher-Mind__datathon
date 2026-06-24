@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { 
-  Shield, MessageSquare, Share2, 
+  MessageSquare, Share2, 
   Phone, User, Car, Briefcase, Download, 
   Mic, MicOff, Volume2, Volume1, VolumeX, Search, ArrowRight, TrendingUp, AlertTriangle, HelpCircle, Sun, Moon,
   Copy, Check
