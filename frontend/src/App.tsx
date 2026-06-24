@@ -363,7 +363,7 @@ function App() {
       <header className={`border-b ${theme.border} bg-transparent px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50 ${theme.textMain}`}>
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-xl bg-gradient-to-br ${theme.id === "dark" ? "from-cyan-500/10 to-blue-500/20 border border-cyan-500/30" : "from-indigo-100 to-blue-100 border border-indigo-200/60"}`}>
-            <Shield className={`w-5 h-5 ${theme.id === "dark" ? "text-cyan-400" : "text-indigo-600"}`} />
+            <img src="/logo.png" className="w-5 h-5 object-cover rounded-md" alt="CrimeMind Logo" />
           </div>
           <div>
             <h1 className="text-sm font-bold tracking-tight font-sans">
@@ -976,7 +976,7 @@ function App() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center text-center py-20 text-slate-500">
-                  <Shield className="w-12 h-12 mb-3.5 text-slate-500/40 animate-pulse" />
+                  <img src="/logo.png" className="w-12 h-12 mb-3.5 object-contain opacity-50 animate-pulse grayscale" alt="CrimeMind Logo" />
                   <p className="text-xs font-semibold">Select a case file from the registry to inspect records.</p>
                 </div>
               )}
