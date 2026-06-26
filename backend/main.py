@@ -92,6 +92,9 @@ class ChatQuery(BaseModel):
     session_id: str
     language: str = "en"
 
+class ExportPdfRequest(BaseModel):
+    session_id: str
+
 class ChatHistoryStore:
     def __init__(self):
         self.history: Dict[str, List[Dict[str, Any]]] = {}
@@ -133,6 +136,24 @@ def chat_query(payload: ChatQuery):
                 f"ಚಿನ್ನಾಭರಣಗಳನ್ನು ಕಳವು ಮಾಡಲಾಗಿದೆ. "
                 f"ವಿವರಗಳು: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
             )
+        elif payload.language == "hi":
+            response_msg = (
+                f"हाल ही के {len(matching_cases)} चोरी के मामले मिले हैं। "
+                f"सोने के गहने चोरी हुए हैं। "
+                f"विवरण: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
+            )
+        elif payload.language == "te":
+            response_msg = (
+                f"ఇటీవలి {len(matching_cases)} దొంగతనం కేసులు కనుగొనబడ్డాయి. "
+                f"బంగారు ఆభరణాలు చోరీకి గురయ్యాయి. "
+                f"వివరాలు: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
+            )
+        elif payload.language == "ta":
+            response_msg = (
+                f"சமீபத்திய {len(matching_cases)} திருட்டு வழக்குகள் கண்டுபிடிக்கப்பட்டுள்ளன. "
+                f"தங்க நகைகள் திருடப்பட்டுள்ளன. "
+                f"விவரங்கள்: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
+            )
     elif "phone" in msg or "ಮೊಬೈಲ್" in msg or any(x.isdigit() for x in msg.split()):
         # Find matching phone connection
         digits = [x for x in msg.split() if x.isdigit()]
@@ -154,6 +175,12 @@ def chat_query(payload: ChatQuery):
 
         if payload.language == "kn":
             response_msg = f"ಫೋನ್ {target_phone} ಆರೋಪಿಗಳೊಂದಿಗೆ ಲಿಂಕ್ ಹೊಂದಿದೆ: {', '.join(connected_accused) if connected_accused else 'ಯಾರೂ ಇಲ್ಲ'}."
+        elif payload.language == "hi":
+            response_msg = f"फ़ोन {target_phone} संदिग्ध(ों) से जुड़ा है: {', '.join(connected_accused) if connected_accused else 'कोई नहीं'}."
+        elif payload.language == "te":
+            response_msg = f"ఫోన్ {target_phone} అనుమానితులతో లింక్ చేయబడింది: {', '.join(connected_accused) if connected_accused else 'ఎవరూ లేరు'}."
+        elif payload.language == "ta":
+            response_msg = f"போன் {target_phone} சந்தேக நபர்களுடன் இணைக்கப்பட்டுள்ளது: {', '.join(connected_accused) if connected_accused else 'யாரும் இல்லை'}."
     else:
         response_msg = (
             "Welcome to KSP CrimeMind AI. I can assist you with case summaries, "
@@ -161,6 +188,12 @@ def chat_query(payload: ChatQuery):
         )
         if payload.language == "kn":
             response_msg = "CrimeMind AI ಗೆ ಸುಸ್ವಾಗತ. ಪ್ರಕರಣದ ಸಾರಾಂಶಗಳು, ಅಥವಾ ಅಪರಾಧ ಜಾಲದ ದೃಶ್ಯೀಕರಣದಲ್ಲಿ ನಾನು ನಿಮಗೆ ಸಹಾಯ ಮಾಡಬಲ್ಲೆ."
+        elif payload.language == "hi":
+            response_msg = "CrimeMind AI में आपका स्वागत है। मैं मामले के सारांश, और नेटवर्क विज़ुअलाइज़ेशन में आपकी सहायता कर सकता हूँ।"
+        elif payload.language == "te":
+            response_msg = "CrimeMind AI కు స్వాగతం. కేసు సారాంశాలు, లేదా నెట్‌వర్క్ విజువలైజేషన్‌లో నేను మీకు సహాయం చేయగలను."
+        elif payload.language == "ta":
+            response_msg = "CrimeMind AI க்கு வரவேற்கிறோம். வழக்கு சுருக்கங்கள் அல்லது நெட்வொர்க் காட்சிப்படுத்தலில் நான் உங்களுக்கு உதவ முடியும்."
 
     # Build local subgraph for visualization (limit to 15 nodes)
     subgraph_nodes = set()
@@ -214,8 +247,8 @@ def get_cases():
     return CASES_DB[:15]
 
 @app.post("/api/v1/chat/export-pdf")
-def export_pdf(payload: Dict[str, str]):
-    session_id = payload.get("session_id", "default")
+def export_pdf(payload: ExportPdfRequest):
+    session_id = payload.session_id
     history = chat_histories.history.get(session_id, [
         {"role": "user", "text": "Show recent vehicle thefts in Bengaluru."},
         {"role": "assistant", "text": "Found 3 Royal Enfield theft cases in Indiranagar. Stolen vehicles: KA-05-MJ-1001, KA-05-MJ-1002."}

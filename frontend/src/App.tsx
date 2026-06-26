@@ -3,7 +3,7 @@ import {
   MessageSquare, Share2, 
   Phone, User, Car, Briefcase, Download, 
   Mic, MicOff, Volume2, Volume1, VolumeX, Search, ArrowRight, TrendingUp, AlertTriangle, HelpCircle, Sun, Moon,
-  Copy, Check
+  Copy, Check, Globe, ChevronDown, Paperclip
 } from "lucide-react";
 import { 
   ResponsiveContainer, XAxis, YAxis, 
@@ -75,19 +75,19 @@ const THEMES: Theme[] = [
   {
     id: "dark",
     name: "Dark Mode",
-    bodyBg: "bg-[#060608] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0d0d15] via-[#060608] to-[#010102]",
+    bodyBg: "bg-[#09090b] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#18181b] via-[#09090b] to-[#09090b]",
     cardBg: "glass-panel-dark",
-    border: "border-slate-800/80",
-    textMain: "text-slate-100",
-    textMuted: "text-slate-400",
-    accentBg: "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 hover:shadow-[0_0_20px_rgba(6,182,212,0.45)] transition-all duration-300",
-    accentText: "text-white",
-    chatUser: "bg-gradient-to-br from-blue-600/15 to-indigo-600/20 border border-blue-500/30 text-slate-100",
-    chatAssistant: "bg-[#0a0a0f]/90 border border-slate-800/90 text-slate-100",
-    chartGrid: "#181824",
-    chartStroke: "#475569",
-    chartBar: "#3b82f6",
-    chartLine: "#06b6d4",
+    border: "border-zinc-800/80",
+    textMain: "text-zinc-100",
+    textMuted: "text-zinc-400",
+    accentBg: "bg-gradient-to-r from-zinc-100 to-zinc-200 hover:from-white hover:to-zinc-100 text-zinc-950 shadow-sm transition-all duration-300",
+    accentText: "text-zinc-950",
+    chatUser: "bg-zinc-800/80 border border-zinc-700/60 text-zinc-100",
+    chatAssistant: "bg-[#0c0c0e] border border-zinc-800/90 text-zinc-100",
+    chartGrid: "#27272a",
+    chartStroke: "#71717a",
+    chartBar: "#3f3f46",
+    chartLine: "#fafafa",
     nodeIncident: "#ef4444",
     nodeAccused: "#f59e0b",
     nodePhone: "#06b6d4",
@@ -97,19 +97,19 @@ const THEMES: Theme[] = [
   {
     id: "light",
     name: "Light Mode",
-    bodyBg: "bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0]",
+    bodyBg: "bg-gradient-to-br from-[#fafafa] via-[#f4f4f5] to-[#e4e4e7]",
     cardBg: "glass-panel-light",
-    border: "border-slate-200/80",
-    textMain: "text-slate-900",
-    textMuted: "text-slate-500",
-    accentBg: "bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-500 hover:to-blue-600 hover:shadow-[0_4px_12px_rgba(79,70,229,0.2)] transition-all duration-300",
-    accentText: "text-white",
-    chatUser: "bg-indigo-50 border border-indigo-100/80 text-indigo-950",
-    chatAssistant: "bg-white/90 border border-slate-200/90 text-slate-900",
-    chartGrid: "#e2e8f0",
-    chartStroke: "#94a3b8",
-    chartBar: "#4f46e5",
-    chartLine: "#2563eb",
+    border: "border-zinc-200/80",
+    textMain: "text-zinc-900",
+    textMuted: "text-zinc-500",
+    accentBg: "bg-gradient-to-r from-zinc-900 to-zinc-950 hover:from-zinc-800 hover:to-zinc-900 text-zinc-50 shadow-sm transition-all duration-300",
+    accentText: "text-zinc-50",
+    chatUser: "bg-zinc-100 border border-zinc-200/80 text-zinc-900",
+    chatAssistant: "bg-white/90 border border-zinc-200/90 text-zinc-900",
+    chartGrid: "#e4e4e7",
+    chartStroke: "#a1a1aa",
+    chartBar: "#71717a",
+    chartLine: "#18181b",
     nodeIncident: "#dc2626",
     nodeAccused: "#d97706",
     nodePhone: "#0891b2",
@@ -121,8 +121,15 @@ const THEMES: Theme[] = [
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 function App() {
+  const languagesList = [
+    { code: "en" as const, label: "English", native: "EN" },
+    { code: "kn" as const, label: "Kannada", native: "ಕನ್ನಡ" },
+    { code: "hi" as const, label: "Hindi", native: "हिन्दी" },
+    { code: "te" as const, label: "Telugu", native: "తెలుగు" },
+    { code: "ta" as const, label: "Tamil", native: "தமிழ்" }
+  ];
   const [activeTab, setActiveTab] = useState<"dashboard" | "chat" | "network" | "cases">("dashboard");
-  const [language, setLanguage] = useState<"en" | "kn">("en");
+  const [language, setLanguage] = useState<"en" | "kn" | "hi" | "te" | "ta">("en");
   const [searchQuery, setSearchQuery] = useState("");
   const [cases, setCases] = useState<Case[]>([]);
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
@@ -144,6 +151,7 @@ function App() {
   const [loadingResponse, setLoadingResponse] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [speechVolume, setSpeechVolume] = useState(0.8);
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
 
   // Copy state for chat messages
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -211,9 +219,13 @@ function App() {
   // Web Speech API: Text-to-Speech
   const speakText = (text: string) => {
     if (speechVolume === 0) return;
-    const cleanText = text.replace(/[^\w\s\u0C80-\u0CFF]/gi, ''); // Retain Kannada & English
+    const cleanText = text.replace(/[^\w\s\u0C80-\u0CFF\u0900-\u097F\u0C00-\u0C7F\u0B80-\u0BFF]/gi, ''); // Retain Multi-lingual text
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = language === "kn" ? "kn-IN" : "en-US";
+    utterance.lang = 
+      language === "kn" ? "kn-IN" : 
+      language === "hi" ? "hi-IN" : 
+      language === "te" ? "te-IN" : 
+      language === "ta" ? "ta-IN" : "en-US";
     utterance.volume = speechVolume; // Set speech volume level (0.0 to 1.0)
     window.speechSynthesis.speak(utterance);
   };
@@ -226,7 +238,11 @@ function App() {
       return;
     }
     const recognition = new SpeechRecognition();
-    recognition.lang = language === "kn" ? "kn-IN" : "en-US";
+    recognition.lang = 
+      language === "kn" ? "kn-IN" : 
+      language === "hi" ? "hi-IN" : 
+      language === "te" ? "te-IN" : 
+      language === "ta" ? "ta-IN" : "en-US";
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
 
@@ -381,7 +397,7 @@ function App() {
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-full cursor-pointer relative ${
                 activeTab === tab 
-                  ? `${theme.accentText} bg-gradient-to-r ${theme.id === "dark" ? "from-cyan-500 to-blue-600" : "from-indigo-600 to-blue-700"} shadow-sm` 
+                  ? `${theme.accentText} ${theme.accentBg}` 
                   : `${theme.textMuted} hover:${theme.textMain}`
               }`}
             >
@@ -392,21 +408,45 @@ function App() {
 
         {/* Actions & Theme Picker */}
         <div className="flex items-center gap-6">
-          {/* Language Selector */}
-          <div className="flex items-center gap-2 text-xs">
-            <button 
-              onClick={() => setLanguage("en")} 
-              className={`hover:${theme.textMain} transition-all cursor-pointer ${language === "en" ? "font-bold text-slate-300 dark:text-white" : theme.textMuted}`}
+          {/* Custom Language Selector Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${theme.border} bg-slate-500/5 dark:bg-white/5 hover:bg-slate-500/10 dark:hover:bg-white/10 transition-all text-xs font-medium cursor-pointer ${theme.textMain}`}
+              title="Select Language"
             >
-              EN
+              <Globe className="w-3.5 h-3.5 text-slate-400" />
+              <span>{languagesList.find(l => l.code === language)?.native || "EN"}</span>
+              <ChevronDown className="w-3 h-3 text-slate-400 font-bold" />
             </button>
-            <span className={theme.textMuted}>/</span>
-            <button 
-              onClick={() => setLanguage("kn")} 
-              className={`hover:${theme.textMain} transition-all cursor-pointer ${language === "kn" ? "font-bold text-slate-300 dark:text-white" : theme.textMuted}`}
-            >
-              ಕನ್ನಡ
-            </button>
+
+            {isLangDropdownOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10" 
+                  onClick={() => setIsLangDropdownOpen(false)}
+                />
+                <div className={`absolute right-0 mt-2 w-36 rounded-xl border ${theme.border} ${theme.id === 'dark' ? 'bg-[#0f0f15]/95' : 'bg-white/95'} backdrop-blur-md shadow-xl py-1.5 z-20`}>
+                  {languagesList.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => {
+                        setLanguage(lang.code);
+                        setIsLangDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-xs transition-colors flex items-center justify-between cursor-pointer ${
+                        language === lang.code
+                          ? (theme.id === "dark" ? "bg-zinc-800 text-zinc-100 font-semibold" : "bg-zinc-100 text-zinc-900 font-semibold")
+                          : (theme.id === "dark" ? "text-zinc-400 hover:bg-zinc-850 hover:text-zinc-200" : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900")
+                      }`}
+                    >
+                      <span>{lang.label}</span>
+                      <span className="text-[10px] text-zinc-500 font-normal">{lang.native}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Theme Toggle Switch */}
@@ -564,7 +604,7 @@ function App() {
                   <span className="text-xs font-mono uppercase tracking-wider">Session Console</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="relative flex items-center gap-1.5 group/vol bg-slate-500/5 dark:bg-white/5 px-2.5 py-1 rounded-xl border border-slate-200/50 dark:border-slate-800/40">
+                  <div className="relative flex items-center gap-2 bg-slate-500/5 dark:bg-white/5 px-3 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/40">
                     <button 
                       onClick={() => setSpeechVolume(prev => prev === 0 ? 0.8 : 0)}
                       className={`p-1 rounded-lg hover:bg-slate-500/10 transition-all cursor-pointer ${speechVolume > 0 ? theme.textMain : 'text-zinc-500'}`}
@@ -575,11 +615,11 @@ function App() {
                       ) : speechVolume < 0.4 ? (
                         <Volume1 className="w-4 h-4" />
                       ) : (
-                        <Volume2 className="w-4 h-4 text-cyan-400 dark:text-cyan-400" />
+                        <Volume2 className={`w-4 h-4 ${theme.id === 'dark' ? 'text-zinc-100' : 'text-zinc-900'}`} />
                       )}
                     </button>
-                    {/* Volume Slider - expands on hover/interaction */}
-                    <div className="w-0 overflow-hidden group-hover/vol:w-16 transition-all duration-300 flex items-center">
+                    {/* Volume Slider - permanently visible next to icon */}
+                    <div className="w-16 flex items-center">
                       <input 
                         type="range" 
                         min="0" 
@@ -587,7 +627,7 @@ function App() {
                         step="0.1" 
                         value={speechVolume} 
                         onChange={(e) => setSpeechVolume(parseFloat(e.target.value))}
-                        className="w-full accent-cyan-500 h-1 rounded-lg cursor-pointer bg-slate-300 dark:bg-slate-700"
+                        className={`w-full ${theme.id === 'dark' ? 'accent-zinc-100' : 'accent-zinc-900'} h-1 rounded-lg cursor-pointer bg-slate-300 dark:bg-slate-700`}
                         title={`Volume: ${Math.round(speechVolume * 100)}%`}
                       />
                     </div>
@@ -663,12 +703,37 @@ function App() {
 
               {/* Chat Input */}
               <form onSubmit={submitChat} className={`p-4 border-t ${theme.border} flex gap-3 bg-slate-500/5`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const input = document.createElement("input");
+                    input.type = "file";
+                    input.onchange = (e: any) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        alert(`File selected: ${file.name} (Mock upload successful)`);
+                      }
+                    };
+                    input.click();
+                  }}
+                  className={`p-3 rounded-xl border ${theme.border} text-slate-400 hover:text-slate-200 hover:bg-slate-500/10 transition-all cursor-pointer`}
+                  title="Attach file"
+                >
+                  <Paperclip className="w-4 h-4" />
+                </button>
+                
                 <input 
                   type="text" 
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  placeholder={language === "kn" ? "ಬೆಂಗಳೂರಿನಲ್ಲಿ ಇತ್ತೀಚಿನ ಕಳ್ಳತನ ಪ್ರಕರಣಗಳನ್ನು ತೋರಿಸಿ..." : "Show burglary cases in Bengaluru..."}
-                  className={`flex-1 bg-transparent border ${theme.border} rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 ${theme.textMain} placeholder-slate-500`}
+                  placeholder={
+                    language === "kn" ? "ಬೆಂಗಳೂರಿನಲ್ಲಿ ಇತ್ತೀಚಿನ ಕಳ್ಳತನ ಪ್ರಕರಣಗಳನ್ನು ತೋರಿಸಿ..." : 
+                    language === "hi" ? "बेंगलुरु में चोरी के मामले दिखाएं..." :
+                    language === "te" ? "బెంగళూరులో దొంగతనం కేసులు చూపించు..." :
+                    language === "ta" ? "பெங்களூரில் திருட்டு வழக்குகளைக் காட்டு..." :
+                    "Show burglary cases in Bengaluru..."
+                  }
+                  className={`flex-1 bg-transparent border ${theme.border} rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-zinc-500 ${theme.textMain} placeholder-slate-500`}
                 />
                 
                 <button 
@@ -682,7 +747,7 @@ function App() {
                 <button 
                   type="submit"
                   disabled={loadingResponse || !chatInput.trim()}
-                  className={`bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-3 rounded-xl uppercase font-bold tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center gap-1.5 cursor-pointer shadow-sm`}
+                  className={`${theme.accentBg} ${theme.accentText} px-5 py-3 rounded-xl uppercase font-bold tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center gap-1.5 cursor-pointer shadow-sm`}
                 >
                   Send
                 </button>
