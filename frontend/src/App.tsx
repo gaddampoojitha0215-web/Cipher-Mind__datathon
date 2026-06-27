@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   MessageSquare, Share2, 
   Phone, User, Car, Briefcase, Download, 
@@ -177,6 +177,244 @@ function App() {
     { source: "Accused-101", target: "Vehicle-KA05MJ1001", relationship: "DRIVES" }
   ]);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
+  const [graphSearchQuery, setGraphSearchQuery] = useState("");
+  const [showGraphSuggestions, setShowGraphSuggestions] = useState(false);
+  const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
+  const velocitiesRef = useRef<Record<string, { x: number; y: number; vx: number; vy: number }>>({});
+
+  useEffect(() => {
+    const width = 700;
+    const height = 420;
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    const initialPositions: Record<string, { x: number; y: number; vx: number; vy: number }> = {};
+    graphNodes.forEach((node, idx) => {
+      if (velocitiesRef.current[node.id]) {
+        initialPositions[node.id] = velocitiesRef.current[node.id];
+      } else {
+        const angle = (idx / graphNodes.length) * 2 * Math.PI;
+        const radius = 100 + Math.random() * 50;
+        initialPositions[node.id] = {
+          x: centerX + Math.cos(angle) * radius,
+          y: centerY + Math.sin(angle) * radius,
+          vx: 0,
+          vy: 0
+        };
+      }
+    });
+
+    velocitiesRef.current = initialPositions;
+
+    let animationFrameId: number;
+
+    const tick = () => {
+      const kRepulsion = 2500; 
+      const kAttraction = 0.06;
+      const desiredLength = 80;
+      const kGravity = 0.015;
+      const friction = 0.85;
+
+      const nodes = graphNodes;
+      const links = graphLinks;
+      const velocities = velocitiesRef.current;
+
+      const fx: Record<string, number> = {};
+      const fy: Record<string, number> = {};
+      nodes.forEach(n => {
+        fx[n.id] = 0;
+        fy[n.id] = 0;
+      });
+
+      // 1. Repulsion between all node pairs
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const u = nodes[i].id;
+          const v = nodes[j].id;
+          const posU = velocities[u];
+          const posV = velocities[v];
+          if (!posU || !posV) continue;
+
+          let dx = posU.x - posV.x;
+          let dy = posU.y - posV.y;
+          if (dx === 0 && dy === 0) {
+            dx = Math.random() - 0.5;
+            dy = Math.random() - 0.5;
+          }
+          const distSq = dx * dx + dy * dy;
+          const dist = Math.sqrt(distSq);
+          
+          const force = kRepulsion / (distSq + 1);
+          const forceX = (dx / (dist + 0.1)) * force;
+          const forceY = (dy / (dist + 0.1)) * force;
+
+          fx[u] += forceX;
+          fy[u] += forceY;
+          fx[v] -= forceX;
+          fy[v] -= forceY;
+        }
+      }
+
+      // 2. Attraction along links
+      links.forEach(link => {
+        const u = link.source;
+        const v = link.target;
+        const posU = velocities[u];
+        const posV = velocities[v];
+        if (!posU || !posV) return;
+
+        const dx = posV.x - posU.x;
+        const dy = posV.y - posU.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
+        const force = kAttraction * (dist - desiredLength);
+        const forceX = (dx / dist) * force;
+        const forceY = (dy / dist) * force;
+
+        fx[u] += forceX;
+        fy[u] += forceY;
+        fx[v] -= forceX;
+        fy[v] -= forceY;
+      });
+
+      // 3. Gravity and update positions
+      nodes.forEach(n => {
+        const id = n.id;
+        const pos = velocities[id];
+        if (!pos) return;
+
+        if (id !== draggedNodeId) {
+          const dx = centerX - pos.x;
+          const dy = centerY - pos.y;
+          fx[id] += dx * kGravity;
+          fy[id] += dy * kGravity;
+
+          pos.vx = (pos.vx + fx[id]) * friction;
+          pos.vy = (pos.vy + fy[id]) * friction;
+          pos.x += pos.vx;
+          pos.y += pos.vy;
+
+          pos.x = Math.max(40, Math.min(width - 40, pos.x));
+          pos.y = Math.max(40, Math.min(height - 40, pos.y));
+        }
+
+        // Directly update the DOM for the node
+        const nodeEl = document.getElementById(`node-${id}`);
+        if (nodeEl) {
+          nodeEl.setAttribute("transform", `translate(${pos.x}, ${pos.y})`);
+        }
+      });
+
+      // 4. Directly update the DOM for the links
+      links.forEach(link => {
+        const posU = velocities[link.source];
+        const posV = velocities[link.target];
+        if (!posU || !posV) return;
+
+        const lineEl = document.getElementById(`link-${link.source}-${link.target}`);
+        if (lineEl) {
+          lineEl.setAttribute("x1", posU.x.toString());
+          lineEl.setAttribute("y1", posU.y.toString());
+          lineEl.setAttribute("x2", posV.x.toString());
+          lineEl.setAttribute("y2", posV.y.toString());
+        }
+
+        const textEl = document.getElementById(`link-text-${link.source}-${link.target}`);
+        if (textEl) {
+          textEl.setAttribute("x", ((posU.x + posV.x) / 2).toString());
+          textEl.setAttribute("y", (((posU.y + posV.y) / 2) - 5).toString());
+        }
+      });
+
+      animationFrameId = requestAnimationFrame(tick);
+    };
+
+    animationFrameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [graphNodes, graphLinks, draggedNodeId]);
+
+  const handleMouseDown = (e: React.MouseEvent, nodeId: string) => {
+    e.preventDefault();
+    setDraggedNodeId(nodeId);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (!draggedNodeId) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 700;
+    const y = ((e.clientY - rect.top) / rect.height) * 420;
+    
+    if (velocitiesRef.current[draggedNodeId]) {
+      velocitiesRef.current[draggedNodeId].x = x;
+      velocitiesRef.current[draggedNodeId].y = y;
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<SVGSVGElement>) => {
+    if (!draggedNodeId) return;
+    const touch = e.touches[0];
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((touch.clientX - rect.left) / rect.width) * 700;
+    const y = ((touch.clientY - rect.top) / rect.height) * 420;
+    
+    if (velocitiesRef.current[draggedNodeId]) {
+      velocitiesRef.current[draggedNodeId].x = x;
+      velocitiesRef.current[draggedNodeId].y = y;
+    }
+  };
+
+  const handleMouseUp = () => {
+    setDraggedNodeId(null);
+  };
+
+  const loadCaseGraph = (caseObj: Case) => {
+    const nodes: GraphNode[] = [
+      { id: caseObj.fir_number, label: `${caseObj.fir_number} (${caseObj.crime_head})`, type: "incident" }
+    ];
+    const links: GraphLink[] = [];
+
+    caseObj.accused.forEach(acc => {
+      if (!nodes.some(n => n.id === acc)) {
+        nodes.push({ id: acc, label: `${acc} (Accused)`, type: "accused" });
+      }
+      links.push({ source: acc, target: caseObj.fir_number, relationship: "COMMITTED" });
+      
+      caseObj.accused.forEach(acc2 => {
+        if (acc !== acc2 && !links.some(l => (l.source === acc && l.target === acc2) || (l.source === acc2 && l.target === acc))) {
+          links.push({ source: acc, target: acc2, relationship: "ASSOCIATED_WITH" });
+        }
+      });
+    });
+
+    caseObj.phone_numbers.forEach(ph => {
+      if (!nodes.some(n => n.id === ph)) {
+        nodes.push({ id: ph, label: ph, type: "phone" });
+      }
+      caseObj.accused.forEach(acc => {
+        links.push({ source: acc, target: ph, relationship: "USED_PHONE" });
+      });
+    });
+
+    caseObj.vehicles.forEach(veh => {
+      if (!nodes.some(n => n.id === veh)) {
+        nodes.push({ id: veh, label: veh, type: "vehicle" });
+      }
+      caseObj.accused.forEach(acc => {
+        links.push({ source: acc, target: veh, relationship: "DRIVES" });
+      });
+    });
+
+    caseObj.bank_accounts.forEach(bank => {
+      if (!nodes.some(n => n.id === bank)) {
+        nodes.push({ id: bank, label: bank, type: "bank_account" });
+      }
+      caseObj.accused.forEach(acc => {
+        links.push({ source: acc, target: bank, relationship: "OWNS_ACCOUNT" });
+      });
+    });
+
+    setGraphNodes(nodes);
+    setGraphLinks(links);
+  };
 
   // Load cases from mock API or local fallback on init
   useEffect(() => {
@@ -265,13 +503,15 @@ function App() {
   };
 
   // Submit chat queries
-  const submitChat = async (e?: React.FormEvent) => {
+  const submitChat = async (e?: React.FormEvent, customMsg?: string) => {
     if (e) e.preventDefault();
-    if (!chatInput.trim()) return;
+    const userMsg = customMsg !== undefined ? customMsg : chatInput;
+    if (!userMsg.trim()) return;
 
-    const userMsg = chatInput;
     setMessages(prev => [...prev, { role: "user", text: userMsg }]);
-    setChatInput("");
+    if (customMsg === undefined) {
+      setChatInput("");
+    }
     setLoadingResponse(true);
 
     try {
@@ -368,6 +608,57 @@ function App() {
     { name: "Vehicle Theft", value: 35, color: theme.id === "dark" ? "#a1a1aa" : "#52525b" },
     { name: "Cyber Fraud", value: 25, color: theme.id === "dark" ? "#52525b" : "#a1a1aa" }
   ];
+
+  const activeFilter = graphSearchQuery.trim().toLowerCase();
+  const matchesQuery = (nodeId: string, nodeLabel: string, nodeType: string) => {
+    if (!activeFilter) return true;
+    return nodeId.toLowerCase().includes(activeFilter) || 
+           nodeLabel.toLowerCase().includes(activeFilter) || 
+           nodeType.toLowerCase().includes(activeFilter);
+  };
+
+  const getHighlightStatus = (nodeId: string, nodeLabel: string, nodeType: string) => {
+    if (!activeFilter) return "normal";
+    if (matchesQuery(nodeId, nodeLabel, nodeType)) return "highlighted";
+    
+    const isConnectedToMatch = graphLinks.some(link => {
+      if (link.source === nodeId) {
+        const targetNode = graphNodes.find(n => n.id === link.target);
+        return targetNode && matchesQuery(targetNode.id, targetNode.label, targetNode.type);
+      }
+      if (link.target === nodeId) {
+        const sourceNode = graphNodes.find(n => n.id === link.source);
+        return sourceNode && matchesQuery(sourceNode.id, sourceNode.label, sourceNode.type);
+      }
+      return false;
+    });
+    
+    return isConnectedToMatch ? "connected" : "faded";
+  };
+
+  const getLinkHighlightStatus = (link: GraphLink) => {
+    if (!activeFilter) return "normal";
+    
+    const srcNode = graphNodes.find(n => n.id === link.source);
+    const tgtNode = graphNodes.find(n => n.id === link.target);
+    
+    const srcMatches = srcNode && matchesQuery(srcNode.id, srcNode.label, srcNode.type);
+    const tgtMatches = tgtNode && matchesQuery(tgtNode.id, tgtNode.label, tgtNode.type);
+    
+    if (srcMatches || tgtMatches) return "highlighted";
+    return "faded";
+  };
+
+  const matchingSuggestions = graphSearchQuery.trim().length >= 2 
+    ? cases.filter(c => 
+        c.fir_number.toLowerCase().includes(graphSearchQuery.toLowerCase()) ||
+        c.crime_head.toLowerCase().includes(graphSearchQuery.toLowerCase()) ||
+        c.accused.some(a => a.toLowerCase().includes(graphSearchQuery.toLowerCase())) ||
+        c.phone_numbers.some(p => p.toLowerCase().includes(graphSearchQuery.toLowerCase())) ||
+        c.vehicles.some(v => v.toLowerCase().includes(graphSearchQuery.toLowerCase())) ||
+        c.bank_accounts.some(b => b.toLowerCase().includes(graphSearchQuery.toLowerCase()))
+      )
+    : [];
 
   const toggleTheme = () => {
     setTheme(prev => prev.id === "dark" ? THEMES[1] : THEMES[0]);
@@ -795,13 +1086,81 @@ function App() {
         {activeTab === "network" && (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[72vh]">
             <div className={`lg:col-span-3 border ${theme.border} ${theme.cardBg} rounded-2xl overflow-hidden flex flex-col relative shadow-lg ${theme.textMain}`}>
-              <div className={`p-4 bg-transparent border-b ${theme.border} flex items-center justify-between`}>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">Criminal Relationship Graph</h3>
-                <span className="text-[10px] text-slate-500 font-mono">Hover nodes for metadata</span>
+              <div className={`p-4 bg-transparent border-b ${theme.border} flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-30`}>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">Criminal Relationship Graph</h3>
+                  <span className="text-[10px] text-slate-500 font-mono">Hover nodes for metadata</span>
+                </div>
+                
+                {/* Graph Search Box with Autocomplete */}
+                <div className="relative w-full sm:w-72">
+                  <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5" />
+                  <input 
+                    type="text" 
+                    placeholder="Search graph / cases / suspects..." 
+                    value={graphSearchQuery}
+                    onChange={(e) => {
+                      setGraphSearchQuery(e.target.value);
+                      setShowGraphSuggestions(true);
+                    }}
+                    onFocus={() => setShowGraphSuggestions(true)}
+                    className={`w-full bg-slate-500/5 dark:bg-white/5 border ${theme.border} rounded-xl pl-8 pr-8 py-1.5 text-xs focus:outline-none focus:border-blue-500 ${theme.textMain} placeholder-slate-500`}
+                  />
+                  {graphSearchQuery ? (
+                    <button 
+                      onClick={() => {
+                        setGraphSearchQuery("");
+                        setShowGraphSuggestions(false);
+                      }}
+                      className="absolute right-3 top-2 text-xs text-slate-400 hover:text-slate-200 font-bold cursor-pointer"
+                    >
+                      ×
+                    </button>
+                  ) : null}
+
+                  {/* Dropdown Suggestions */}
+                  {showGraphSuggestions && matchingSuggestions.length > 0 && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShowGraphSuggestions(false)} />
+                      <div className={`absolute left-0 right-0 mt-2 rounded-xl border ${theme.border} ${theme.id === 'dark' ? 'bg-[#0f0f15]/95' : 'bg-white/95'} backdrop-blur-md shadow-2xl py-2 z-20 max-h-60 overflow-y-auto`}>
+                        <div className="px-3 py-1 text-[9px] text-slate-500 font-bold uppercase tracking-wider border-b border-slate-500/10 mb-1">
+                          Database Matches (Click to load graph)
+                        </div>
+                        {matchingSuggestions.map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => {
+                              loadCaseGraph(c);
+                              setGraphSearchQuery(c.fir_number);
+                              setShowGraphSuggestions(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-xs transition-colors hover:bg-slate-500/10 flex flex-col gap-0.5 cursor-pointer ${theme.textMain}`}
+                          >
+                            <div className="flex justify-between items-center">
+                              <span className="font-mono font-bold text-blue-400">{c.fir_number}</span>
+                              <span className="text-[9px] text-slate-400 font-semibold">{c.crime_head}</span>
+                            </div>
+                            <div className={`text-[10px] ${theme.textMuted} truncate`}>
+                              Suspects: {c.accused.join(", ")}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
               
               <div className="flex-1 relative bg-transparent flex items-center justify-center">
-                <svg className="w-full h-full cursor-crosshair">
+                <svg 
+                  viewBox="0 0 700 420"
+                  className="w-full h-full cursor-grab active:cursor-grabbing select-none"
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  onTouchMove={handleTouchMove}
+                  onTouchEnd={handleMouseUp}
+                >
                   {graphLinks.map((link, idx) => {
                     const srcNode = graphNodes.find(n => n.id === link.source);
                     const tgtNode = graphNodes.find(n => n.id === link.target);
@@ -809,21 +1168,33 @@ function App() {
                     
                     const srcIndex = graphNodes.indexOf(srcNode);
                     const tgtIndex = graphNodes.indexOf(tgtNode);
-                    const x1 = 150 + (srcIndex * 90) % 500;
-                    const y1 = 100 + (srcIndex * 110) % 300;
-                    const x2 = 150 + (tgtIndex * 90) % 500;
-                    const y2 = 100 + (tgtIndex * 110) % 300;
+                    const angleSrc = (srcIndex / graphNodes.length) * 2 * Math.PI;
+                    const angleTgt = (tgtIndex / graphNodes.length) * 2 * Math.PI;
+                    const x1 = 350 + Math.cos(angleSrc) * 120;
+                    const y1 = 210 + Math.sin(angleSrc) * 120;
+                    const x2 = 350 + Math.cos(angleTgt) * 120;
+                    const y2 = 210 + Math.sin(angleTgt) * 120;
+
+                    const linkStatus = getLinkHighlightStatus(link);
+                    const isFaded = linkStatus === "faded";
+                    const isHighlighted = linkStatus === "highlighted";
 
                     return (
-                      <g key={idx}>
+                      <g key={idx} className="transition-all duration-300" style={{ opacity: isFaded ? 0.1 : 1.0 }}>
                         <line 
+                          id={`link-${link.source}-${link.target}`}
                           x1={x1} y1={y1} x2={x2} y2={y2} 
-                          stroke={theme.id === "dark" ? "#1e293b" : "#cbd5e1"} strokeWidth="1.5"
+                          stroke={isHighlighted ? (theme.id === "dark" ? "#06b6d4" : "#4f46e5") : (theme.id === "dark" ? "#1e293b" : "#cbd5e1")} 
+                          strokeWidth={isHighlighted ? "2.5" : "1.5"}
                           className="transition-all"
                         />
                         <text 
+                          id={`link-text-${link.source}-${link.target}`}
                           x={(x1 + x2)/2} y={(y1 + y2)/2 - 5}
-                          fill="#64748b" fontSize="8" textAnchor="middle" className="font-mono select-none"
+                          fill={isHighlighted ? (theme.id === "dark" ? "#06b6d4" : "#4f46e5") : "#64748b"} 
+                          fontSize="8" 
+                          textAnchor="middle" 
+                          className="font-mono select-none"
                         >
                           {link.relationship}
                         </text>
@@ -832,8 +1203,9 @@ function App() {
                   })}
 
                   {graphNodes.map((node, idx) => {
-                    const x = 150 + (idx * 90) % 500;
-                    const y = 100 + (idx * 110) % 300;
+                    const angle = (idx / graphNodes.length) * 2 * Math.PI;
+                    const x = 350 + Math.cos(angle) * 120;
+                    const y = 210 + Math.sin(angle) * 120;
                     
                     let nodeColor = theme.nodeIncident;
                     if (node.type === "accused") nodeColor = theme.nodeAccused; 
@@ -841,35 +1213,47 @@ function App() {
                     if (node.type === "vehicle") nodeColor = theme.nodeVehicle; 
                     if (node.type === "bank_account") nodeColor = theme.nodeBankAccount; 
 
+                    const status = getHighlightStatus(node.id, node.label, node.type);
+                    const isFaded = status === "faded";
+                    const isHighlighted = status === "highlighted";
+
                     return (
                       <g 
+                        id={`node-${node.id}`}
                         key={idx} 
                         transform={`translate(${x}, ${y})`}
                         onMouseEnter={() => setHoveredNode(node)}
                         onMouseLeave={() => setHoveredNode(null)}
-                        className="cursor-pointer group"
+                        onMouseDown={(e) => handleMouseDown(e, node.id)}
+                        onTouchStart={() => setDraggedNodeId(node.id)}
+                        className={`cursor-pointer group transition-all duration-300`}
+                        style={{ 
+                          opacity: isFaded ? 0.15 : 1.0,
+                          pointerEvents: isFaded ? "none" : "auto" 
+                        }}
                       >
                         {/* Outer glow ring */}
                         <circle 
-                          r={hoveredNode?.id === node.id ? "16" : "13"} 
+                          r={hoveredNode?.id === node.id || isHighlighted ? "18" : "13"} 
                           fill={nodeColor}
-                          opacity="0.25"
-                          className="transition-all duration-300"
+                          opacity={isHighlighted ? "0.4" : "0.25"}
+                          className={`transition-all duration-300 ${isHighlighted ? "animate-pulse" : ""}`}
                         />
                         {/* Main circle */}
                         <circle 
-                          r={hoveredNode?.id === node.id ? "10" : "8"} 
+                          r={hoveredNode?.id === node.id ? "11" : (isHighlighted ? "10" : "8")} 
                           fill={nodeColor} 
-                          stroke={theme.id === "dark" ? "#07070a" : "#ffffff"}
-                          strokeWidth="1.5"
+                          stroke={isHighlighted ? (theme.id === "dark" ? "#ffffff" : "#000000") : (theme.id === "dark" ? "#07070a" : "#ffffff")}
+                          strokeWidth={isHighlighted ? "2" : "1.5"}
                           className="transition-all duration-300 shadow-md"
                         />
                         <text 
                           y="24" 
-                          fill={theme.id === "dark" ? "#ffffff" : "#0f172a"} 
-                          fontSize="9" 
+                          fill={isHighlighted ? (theme.id === "dark" ? "#06b6d4" : "#4f46e5") : (theme.id === "dark" ? "#ffffff" : "#0f172a")} 
+                          fontSize={isHighlighted ? "10" : "9"} 
+                          fontWeight={isHighlighted ? "700" : "500"}
                           textAnchor="middle" 
-                          className="font-sans font-medium select-none"
+                          className="font-sans select-none"
                         >
                           {node.label}
                         </text>
@@ -980,7 +1364,16 @@ function App() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className={`p-3 bg-slate-500/5 rounded-xl border ${theme.border} hover:bg-slate-500/10 transition-colors duration-200 space-y-1`}>
+                    <div 
+                      onClick={() => {
+                        if (selectedCase.accused && selectedCase.accused.length > 0) {
+                          setActiveTab("network");
+                          loadCaseGraph(selectedCase);
+                          setGraphSearchQuery(selectedCase.accused[0]);
+                        }
+                      }}
+                      className={`p-3 bg-slate-500/5 rounded-xl border ${theme.border} hover:bg-slate-500/10 transition-colors duration-200 space-y-1 cursor-pointer select-none`}
+                    >
                       <div className="text-[10px] text-slate-400 font-bold uppercase">Accused Suspects</div>
                       <div className="flex items-center gap-2">
                         <User className="w-3.5 h-3.5 text-blue-500" />
@@ -988,7 +1381,16 @@ function App() {
                       </div>
                     </div>
                     
-                    <div className={`p-3 bg-slate-500/5 rounded-xl border ${theme.border} hover:bg-slate-500/10 transition-colors duration-200 space-y-1`}>
+                    <div 
+                      onClick={() => {
+                        if (selectedCase.phone_numbers && selectedCase.phone_numbers.length > 0) {
+                          setActiveTab("network");
+                          loadCaseGraph(selectedCase);
+                          setGraphSearchQuery(selectedCase.phone_numbers[0]);
+                        }
+                      }}
+                      className={`p-3 bg-slate-500/5 rounded-xl border ${theme.border} hover:bg-slate-500/10 transition-colors duration-200 space-y-1 cursor-pointer select-none`}
+                    >
                       <div className="text-[10px] text-slate-400 font-bold uppercase">Linked Phone Nodes</div>
                       <div className="flex items-center gap-2">
                         <Phone className="w-3.5 h-3.5 text-cyan-500" />
@@ -996,7 +1398,16 @@ function App() {
                       </div>
                     </div>
 
-                    <div className={`p-3 bg-slate-500/5 rounded-xl border ${theme.border} hover:bg-slate-500/10 transition-colors duration-200 space-y-1`}>
+                    <div 
+                      onClick={() => {
+                        if (selectedCase.vehicles && selectedCase.vehicles.length > 0) {
+                          setActiveTab("network");
+                          loadCaseGraph(selectedCase);
+                          setGraphSearchQuery(selectedCase.vehicles[0]);
+                        }
+                      }}
+                      className={`p-3 bg-slate-500/5 rounded-xl border ${theme.border} hover:bg-slate-500/10 transition-colors duration-200 space-y-1 cursor-pointer select-none`}
+                    >
                       <div className="text-[10px] text-slate-400 font-bold uppercase">Vehicles Involved</div>
                       <div className="flex items-center gap-2">
                         <Car className="w-3.5 h-3.5 text-emerald-500" />
@@ -1004,7 +1415,16 @@ function App() {
                       </div>
                     </div>
 
-                    <div className={`p-3 bg-slate-500/5 rounded-xl border ${theme.border} hover:bg-slate-500/10 transition-colors duration-200 space-y-1`}>
+                    <div 
+                      onClick={() => {
+                        if (selectedCase.bank_accounts && selectedCase.bank_accounts.length > 0) {
+                          setActiveTab("network");
+                          loadCaseGraph(selectedCase);
+                          setGraphSearchQuery(selectedCase.bank_accounts[0]);
+                        }
+                      }}
+                      className={`p-3 bg-slate-500/5 rounded-xl border ${theme.border} hover:bg-slate-500/10 transition-colors duration-200 space-y-1 cursor-pointer select-none`}
+                    >
                       <div className="text-[10px] text-slate-400 font-bold uppercase">Bank Accounts</div>
                       <div className="flex items-center gap-2">
                         <Briefcase className="w-3.5 h-3.5 text-purple-500" />
@@ -1015,7 +1435,10 @@ function App() {
 
                   <div className="border-t border-slate-500/10 pt-4 flex gap-3">
                     <button 
-                      onClick={() => { setActiveTab("chat"); setChatInput(`Show me details and leads for ${selectedCase.fir_number}`); }}
+                      onClick={() => { 
+                        setActiveTab("chat"); 
+                        submitChat(undefined, `Show me details and leads for ${selectedCase.fir_number}`); 
+                      }}
                       className={`bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-center flex items-center justify-center gap-2 cursor-pointer shadow-sm`}
                     >
                       <MessageSquare className="w-3.5 h-3.5" /> AI Inquiry
@@ -1023,15 +1446,8 @@ function App() {
                     <button 
                       onClick={() => { 
                         setActiveTab("network");
-                        setGraphNodes([
-                          { id: selectedCase.fir_number, label: selectedCase.fir_number, type: "incident" },
-                          { id: selectedCase.accused[0], label: `${selectedCase.accused[0]} (Accused)`, type: "accused" },
-                          { id: selectedCase.phone_numbers[0] || "Phone-9900", label: selectedCase.phone_numbers[0] || "9876543200", type: "phone" }
-                        ]);
-                        setGraphLinks([
-                          { source: selectedCase.accused[0], target: selectedCase.fir_number, relationship: "COMMITTED" },
-                          { source: selectedCase.accused[0], target: selectedCase.phone_numbers[0] || "Phone-9900", relationship: "USED_PHONE" }
-                        ]);
+                        loadCaseGraph(selectedCase);
+                        setGraphSearchQuery(selectedCase.fir_number);
                       }}
                       className={`border ${theme.border} bg-transparent hover:bg-slate-500/10 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${theme.textMain}`}
                     >

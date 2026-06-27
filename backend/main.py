@@ -1,6 +1,8 @@
 import os
 import uuid
 import datetime
+import requests
+import json
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +12,12 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from fastapi.responses import FileResponse
+from dotenv import load_dotenv
+
+load_dotenv()
+
+NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
+NVIDIA_MODEL = os.getenv("NVIDIA_MODEL", "meta/llama-3.1-70b-instruct")
 
 app = FastAPI(title="CrimeMind AI API", version="1.0.0")
 
@@ -112,7 +120,7 @@ def login(payload: LoginRequest):
 def chat_query(payload: ChatQuery):
     msg = payload.message.strip().lower()
     
-    # Simple semantic router/parsers
+    # Defaults
     response_msg = ""
     graph_nodes = []
     graph_edges = []
@@ -120,80 +128,161 @@ def chat_query(payload: ChatQuery):
     evidence = []
     sources = []
 
-    # Detect keywords
-    if "burglary" in msg or "ಕಳ್ಳತನ" in msg:
-        matching_cases = [c for c in CASES_DB if c["crime_head"] == "Burglary"][:3]
-        sources = [c["fir_number"] for c in matching_cases]
-        evidence = ["Matched Modus Operandi: Residential lock bypass & entry through window."]
-        response_msg = (
-            f"Found {len(matching_cases)} recent Burglary cases. "
-            f"Prime targets were residential buildings in Bengaluru with stolen gold. "
-            f"Details: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
-        )
-        if payload.language == "kn":
-            response_msg = (
-                f"ಇತ್ತೀಚಿನ {len(matching_cases)} ಕಳ್ಳತನ ಪ್ರಕರಣಗಳು ಪತ್ತೆಯಾಗಿವೆ. "
-                f"ಚಿನ್ನಾಭರಣಗಳನ್ನು ಕಳವು ಮಾಡಲಾಗಿದೆ. "
-                f"ವಿವರಗಳು: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
+    # If NVIDIA API Key is present, query NVIDIA NIM
+    if NVIDIA_API_KEY:
+        try:
+            # Construct a prompt describing the context
+            system_prompt = (
+                "You are CrimeMind AI, an advanced crime analysis virtual assistant for the Karnataka State Police. "
+                "You are talking to Inspector Gowda.\n\n"
+                "Here is the database of cases (in JSON format):\n"
+                f"{json.dumps(CASES_DB, indent=2)}\n\n"
+                "Your task is to answer the user's query professionally, drawing connections, identifying matching Modus Operandi (MO), "
+                "and finding links between suspects, phone numbers, vehicles, and bank accounts.\n"
+                f"The user's query is: '{payload.message}'\n"
+                f"The response language must be: '{payload.language}' (en=English, kn=Kannada, hi=Hindi, te=Telugu, ta=Tamil).\n\n"
+                "You MUST respond ONLY with a valid JSON object matching this structure (do not include markdown block syntax or extra text):\n"
+                "{\n"
+                '  "message": "your detailed response written in the requested language",\n'
+                '  "sources": ["list of case FIR numbers that are relevant, e.g. [\'FIR-10235/2026\']"],\n'
+                '  "confidence_score": 0.95,\n'
+                '  "evidence_trail": ["short sentence explaining piece of evidence", "another piece of evidence"]\n'
+                "}"
             )
-        elif payload.language == "hi":
-            response_msg = (
-                f"हाल ही के {len(matching_cases)} चोरी के मामले मिले हैं। "
-                f"सोने के गहने चोरी हुए हैं। "
-                f"विवरण: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
-            )
-        elif payload.language == "te":
-            response_msg = (
-                f"ఇటీవలి {len(matching_cases)} దొంగతనం కేసులు కనుగొనబడ్డాయి. "
-                f"బంగారు ఆభరణాలు చోరీకి గురయ్యాయి. "
-                f"వివరాలు: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
-            )
-        elif payload.language == "ta":
-            response_msg = (
-                f"சமீபத்திய {len(matching_cases)} திருட்டு வழக்குகள் கண்டுபிடிக்கப்பட்டுள்ளன. "
-                f"தங்க நகைகள் திருடப்பட்டுள்ளன. "
-                f"விவரங்கள்: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
-            )
-    elif "phone" in msg or "ಮೊಬೈಲ್" in msg or any(x.isdigit() for x in msg.split()):
-        # Find matching phone connection
-        digits = [x for x in msg.split() if x.isdigit()]
-        target_phone = digits[0] if digits else "9876543211"
-        # Find path in graph
-        connected_accused = []
-        if target_phone in G:
-            for nbr in G.neighbors(target_phone):
-                if G.nodes[nbr].get("type") == "accused":
-                    connected_accused.append(nbr)
-        
-        sources = [case["fir_number"] for case in CASES_DB if any(target_phone in c["phone_numbers"] for c in CASES_DB)][:3]
-        evidence = [f"Interlinked node mapping for phone number: {target_phone}."]
-        
-        if connected_accused:
-            response_msg = f"Phone {target_phone} is linked to suspect(s): {', '.join(connected_accused)}."
-        else:
-            response_msg = f"Phone number {target_phone} was queried, but no matching active suspects were found directly linked. Showing generic association layout."
 
-        if payload.language == "kn":
-            response_msg = f"ಫೋನ್ {target_phone} ಆರೋಪಿಗಳೊಂದಿಗೆ ಲಿಂಕ್ ಹೊಂದಿದೆ: {', '.join(connected_accused) if connected_accused else 'ಯಾರೂ ಇಲ್ಲ'}."
-        elif payload.language == "hi":
-            response_msg = f"फ़ोन {target_phone} संदिग्ध(ों) से जुड़ा है: {', '.join(connected_accused) if connected_accused else 'कोई नहीं'}."
-        elif payload.language == "te":
-            response_msg = f"ఫోన్ {target_phone} అనుమానితులతో లింక్ చేయబడింది: {', '.join(connected_accused) if connected_accused else 'ఎవరూ లేరు'}."
-        elif payload.language == "ta":
-            response_msg = f"போன் {target_phone} சந்தேக நபர்களுடன் இணைக்கப்பட்டுள்ளது: {', '.join(connected_accused) if connected_accused else 'யாரும் இல்லை'}."
-    else:
-        response_msg = (
-            "Welcome to KSP CrimeMind AI. I can assist you with case summaries, "
-            "modus operandi matching, or relationship network visualization."
-        )
-        if payload.language == "kn":
-            response_msg = "CrimeMind AI ಗೆ ಸುಸ್ವಾಗತ. ಪ್ರಕರಣದ ಸಾರಾಂಶಗಳು, ಅಥವಾ ಅಪರಾಧ ಜಾಲದ ದೃಶ್ಯೀಕರಣದಲ್ಲಿ ನಾನು ನಿಮಗೆ ಸಹಾಯ ಮಾಡಬಲ್ಲೆ."
-        elif payload.language == "hi":
-            response_msg = "CrimeMind AI में आपका स्वागत है। मैं मामले के सारांश, और नेटवर्क विज़ुअलाइज़ेशन में आपकी सहायता कर सकता हूँ।"
-        elif payload.language == "te":
-            response_msg = "CrimeMind AI కు స్వాగతం. కేసు సారాంశాలు, లేదా నెట్‌వర్క్ విజువలైజేషన్‌లో నేను మీకు సహాయం చేయగలను."
-        elif payload.language == "ta":
-            response_msg = "CrimeMind AI க்கு வரவேற்கிறோம். வழக்கு சுருக்கங்கள் அல்லது நெட்வொர்க் காட்சிப்படுத்தலில் நான் உங்களுக்கு உதவ முடியும்."
+            headers = {
+                "Authorization": f"Bearer {NVIDIA_API_KEY}",
+                "Content-Type": "application/json",
+            }
+            api_payload = {
+                "model": NVIDIA_MODEL,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": payload.message}
+                ],
+                "temperature": 0.2,
+                "max_tokens": 1024,
+            }
+
+            # Retry mechanism for robustness
+            resp = None
+            last_error = None
+            for attempt in range(3):
+                try:
+                    resp = requests.post(
+                        "https://integrate.api.nvidia.com/v1/chat/completions",
+                        headers=headers,
+                        json=api_payload,
+                        timeout=30.0
+                    )
+                    if resp.status_code >= 500:
+                        raise requests.exceptions.RequestException(f"Server error {resp.status_code}")
+                    break
+                except (requests.exceptions.Timeout, requests.exceptions.RequestException) as e:
+                    last_error = e
+                    if attempt < 2:
+                        import time
+                        time.sleep(1.0 * (attempt + 1))
+                    else:
+                        raise e
+
+            if resp and resp.status_code == 200:
+                result_json = resp.json()
+                content = result_json["choices"][0]["message"]["content"].strip()
+                # Clean up any potential markdown wraps
+                if content.startswith("```json"):
+                    content = content[7:]
+                if content.endswith("```"):
+                    content = content[:-3]
+                content = content.strip()
+                
+                parsed_res = json.loads(content)
+                response_msg = parsed_res.get("message", "")
+                sources = parsed_res.get("sources", [])
+                confidence = parsed_res.get("confidence_score", 0.90)
+                evidence = parsed_res.get("evidence_trail", [])
+            else:
+                status_code = resp.status_code if resp else "unknown"
+                evidence = [f"NVIDIA API Error: Status {status_code}. Graceful fallback applied."]
+        except Exception as e:
+            evidence = [f"Failed to call NVIDIA API: {str(e)}. Graceful fallback applied."]
+
+    # Fallback/Rule-based processing if response_msg is empty
+    if not response_msg:
+        # Detect keywords
+        if "burglary" in msg or "ಕಳ್ಳತನ" in msg:
+            matching_cases = [c for c in CASES_DB if c["crime_head"] == "Burglary"][:3]
+            sources = [c["fir_number"] for c in matching_cases]
+            evidence = ["Matched Modus Operandi: Residential lock bypass & entry through window."]
+            response_msg = (
+                f"Found {len(matching_cases)} recent Burglary cases. "
+                f"Prime targets were residential buildings in Bengaluru with stolen gold. "
+                f"Details: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
+            )
+            if payload.language == "kn":
+                response_msg = (
+                    f"ಇತ್ತೀಚಿನ {len(matching_cases)} ಕಳ್ಳತನ ಪ್ರಕರಣಗಳು ಪತ್ತೆಯಾಗಿವೆ. "
+                    f"ಚಿನ್ನಾಭರಣಗಳನ್ನು ಕಳವು ಮಾಡಲಾಗಿದೆ. "
+                    f"ವಿವರಗಳು: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
+                )
+            elif payload.language == "hi":
+                response_msg = (
+                    f"हाल ही के {len(matching_cases)} चोरी के मामले मिले हैं। "
+                    f"सोने के गहने चोरी हुए हैं। "
+                    f"विवरण: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
+                )
+            elif payload.language == "te":
+                response_msg = (
+                    f"ఇటీవలి {len(matching_cases)} దొంగతనం కేసులు కనుగొనబడ్డాయి. "
+                    f"బంగారు ఆభరణాలు చోరీకి గురయ్యాయి. "
+                    f"వివరాలు: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
+                )
+            elif payload.language == "ta":
+                response_msg = (
+                    f"சமீபத்திய {len(matching_cases)} திருட்டு வழக்குகள் கண்டுபிடிக்கப்பட்டுள்ளன. "
+                    f"தங்க நகைகள் திருடப்பட்டுள்ளன. "
+                    f"விவரங்கள்: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
+                )
+        elif "phone" in msg or "ಮೊಬೈಲ್" in msg or any(x.isdigit() for x in msg.split()):
+            # Find matching phone connection
+            digits = [x for x in msg.split() if x.isdigit()]
+            target_phone = digits[0] if digits else "9876543211"
+            # Find path in graph
+            connected_accused = []
+            if target_phone in G:
+                for nbr in G.neighbors(target_phone):
+                    if G.nodes[nbr].get("type") == "accused":
+                        connected_accused.append(nbr)
+            
+            sources = [case["fir_number"] for case in CASES_DB if any(target_phone in c["phone_numbers"] for c in CASES_DB)][:3]
+            evidence = [f"Interlinked node mapping for phone number: {target_phone}."]
+            
+            if connected_accused:
+                response_msg = f"Phone {target_phone} is linked to suspect(s): {', '.join(connected_accused)}."
+            else:
+                response_msg = f"Phone number {target_phone} was queried, but no matching active suspects were found directly linked. Showing generic association layout."
+
+            if payload.language == "kn":
+                response_msg = f"ಫೋನ್ {target_phone} ಆರೋಪಿಗಳೊಂದಿಗೆ ಲಿಂಕ್ ಹೊಂದಿದೆ: {', '.join(connected_accused) if connected_accused else 'ಯಾರೂ ಇಲ್ಲ'}."
+            elif payload.language == "hi":
+                response_msg = f"फ़ोन {target_phone} संदिग्ध(ों) से जुड़ा है: {', '.join(connected_accused) if connected_accused else 'कोई नहीं'}."
+            elif payload.language == "te":
+                response_msg = f"ఫోన్ {target_phone} అనుమానితులతో లింక్ చేయబడింది: {', '.join(connected_accused) if connected_accused else 'ఎవరూ లేరు'}."
+            elif payload.language == "ta":
+                response_msg = f"போன் {target_phone} சந்தேக நபர்களுடன் இணைக்கப்பட்டுள்ளது: {', '.join(connected_accused) if connected_accused else 'யாரும் இல்லை'}."
+        else:
+            response_msg = (
+                "Welcome to KSP CrimeMind AI. I can assist you with case summaries, "
+                "modus operandi matching, or relationship network visualization."
+            )
+            if payload.language == "kn":
+                response_msg = "CrimeMind AI ಗೆ ಸುಸ್ವಾಗತ. ಪ್ರಕರಣದ ಸಾರಾಂಶಗಳು, ಅಥವಾ ಅಪರಾಧ ಜಾಲದ ದೃಶ್ಯೀಕರಣದಲ್ಲಿ ನಾನು ನಿಮಗೆ ಸಹಾಯ ಮಾಡಬಲ್ಲೆ."
+            elif payload.language == "hi":
+                response_msg = "CrimeMind AI में आपका स्वागत है। मैं मामले के सारांश, और नेटवर्क विज़ुअलाइज़ेशन में आपकी सहायता कर सकता हूँ।"
+            elif payload.language == "te":
+                response_msg = "CrimeMind AI కు స్వాగతం. కేసు సారాంశాలు, ಅಥವಾ ನೆಟ್‌ವರ್ಕ್ ವಿజువలైజేషన్‌లో నేను మీకు సహాయం చేయగలను."
+            elif payload.language == "ta":
+                response_msg = "CrimeMind AI க்கு வரவேற்கிறோம். வழக்கு சுருக்கங்கள் அல்லது நெட்வொர்க் காட்சிப்படுத்தலில் ನಾನು உங்களுக்கு உதவ முடியும்."
 
     # Build local subgraph for visualization (limit to 15 nodes)
     subgraph_nodes = set()
@@ -239,7 +328,6 @@ def chat_query(payload: ChatQuery):
         chat_histories.history[payload.session_id] = []
     chat_histories.history[payload.session_id].append({"role": "user", "text": payload.message})
     chat_histories.history[payload.session_id].append({"role": "assistant", "text": response_msg})
-
     return result
 
 @app.get("/api/v1/cases/all")
