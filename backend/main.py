@@ -1,9 +1,11 @@
 import os
+import io
 import uuid
 import datetime
 import requests
 import json
 from typing import List, Optional, Dict, Any
+from xml.sax.saxutils import escape
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -11,7 +13,7 @@ import networkx as nx
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from dotenv import load_dotenv
 import pandas as pd
 
@@ -472,8 +474,13 @@ class ChatQuery(BaseModel):
     session_id: str
     language: str = "en"
 
+class ChatTurn(BaseModel):
+    role: str
+    text: str
+
 class ExportPdfRequest(BaseModel):
     session_id: str
+    history: Optional[List[ChatTurn]] = None
 
 class ChatHistoryStore:
     def __init__(self):
@@ -1504,13 +1511,16 @@ def get_cases():
 @app.post("/api/v1/chat/export-pdf")
 def export_pdf(payload: ExportPdfRequest):
     session_id = payload.session_id
-    history = chat_histories.history.get(session_id, [
-        {"role": "user", "text": "Show recent vehicle thefts in Bengaluru."},
-        {"role": "assistant", "text": "Found 3 Royal Enfield theft cases in Indiranagar. Stolen vehicles: KA-05-MJ-1001, KA-05-MJ-1002."}
-    ])
+    if payload.history:
+        history = [{"role": t.role, "text": t.text} for t in payload.history]
+    else:
+        history = chat_histories.history.get(session_id, [
+            {"role": "user", "text": "Show recent vehicle thefts in Bengaluru."},
+            {"role": "assistant", "text": "Found 3 Royal Enfield theft cases in Indiranagar. Stolen vehicles: KA-05-MJ-1001, KA-05-MJ-1002."}
+        ])
 
-    filename = f"chat_history_{session_id}.pdf"
-    doc = SimpleDocTemplate(filename, pagesize=letter)
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
     styles = getSampleStyleSheet()
     story = []
 
@@ -1520,12 +1530,18 @@ def export_pdf(payload: ExportPdfRequest):
 
     for chat in history:
         role = "Investigator" if chat["role"] == "user" else "CrimeMind AI"
-        text = chat["text"]
+        # Escape user text: reportlab Paragraph parses XML markup and crashes on raw <, >, &
+        text = escape(chat["text"])
         story.append(Paragraph(f"<b>{role}:</b> {text}", styles["BodyText"]))
         story.append(Spacer(1, 10))
 
     doc.build(story)
-    return FileResponse(filename, media_type="application/pdf", filename=filename)
+    safe_id = "".join(ch for ch in session_id if ch.isalnum() or ch == "-")[:12]
+    return Response(
+        content=buffer.getvalue(),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="chat_history_{safe_id}.pdf"'}
+    )
 
 if __name__ == "__main__":
     import uvicorn

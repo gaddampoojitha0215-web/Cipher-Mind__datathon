@@ -232,7 +232,9 @@ function rebuildGraphFromLoadedCases(
   return { nodes: Array.from(nodesMap.values()), links };
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+// In production the API is served from the same origin (Vercel serverless
+// functions under /api); during local dev it runs separately on port 8000.
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:8000" : "");
 
 function App() {
   const languagesList = [
@@ -1150,7 +1152,10 @@ function App() {
   // Load cases from mock API or local fallback on init
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/v1/cases/all`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`API error ${res.status}`);
+        return res.json();
+      })
       .then(data => setCases(data))
       .catch(() => {
         // Fallback mock cases
@@ -1416,6 +1421,7 @@ function App() {
           language: language
         })
       });
+      if (!res.ok) throw new Error(`API error ${res.status}`);
       const data = await res.json();
 
       const assistantMsg: Message = {
@@ -1438,6 +1444,8 @@ function App() {
           }
         }
       }
+      speakText(data.message);
+      setLoadingResponse(false);
     } catch (err) {
       // Local fallback simulator for offline/standalone execution
       setTimeout(() => {
@@ -1462,13 +1470,38 @@ function App() {
             setActiveSuspect(found[0].accused[0]);
           }
         }
+        speakText(text);
+        setLoadingResponse(false);
       }, 800);
-    } finally {
-      setLoadingResponse(false);
     }
   };
 
 
+  // Export PDF
+  const downloadPdf = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/chat/export-pdf`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: chatSessionId,
+          // Serverless backends don't keep session memory, so send the transcript
+          history: messages.map(m => ({ role: m.role, text: m.text }))
+        })
+      });
+      if (!res.ok) throw new Error(`API error ${res.status}`);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `CrimeMind_Session_${chatSessionId.slice(0,6)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch {
+      alert("Could not connect to backend. Backend needs to be running to generate PDFs.");
+    }
+  };
 
   // Helper to generate UUID
   function uuidv4() {
