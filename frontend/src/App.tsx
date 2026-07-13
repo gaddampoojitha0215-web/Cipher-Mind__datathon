@@ -1444,7 +1444,7 @@ function App() {
           }
         }
       }
-      speakText(data.message);
+      // speakText(data.message); // voice output disabled
       setLoadingResponse(false);
     } catch (err) {
       // Local fallback simulator for offline/standalone execution
@@ -1470,7 +1470,7 @@ function App() {
             setActiveSuspect(found[0].accused[0]);
           }
         }
-        speakText(text);
+        // speakText(text); // voice output disabled
         setLoadingResponse(false);
       }, 800);
     }
