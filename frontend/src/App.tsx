@@ -5,12 +5,13 @@ import {
   Phone, User, Car, Briefcase,
   Search, TrendingUp, AlertTriangle, HelpCircle, Sun, Moon,
   Copy, Check, Globe, ChevronDown, Paperclip, ZoomIn, ZoomOut, Maximize2, Trash2, ArrowUpRight,
-  Edit
+  Edit, MapPin
 } from "lucide-react";
 import {
   ResponsiveContainer, XAxis, YAxis,
   Tooltip, Cell, CartesianGrid, BarChart, Bar
 } from "recharts";
+import CrimeMap from "./CrimeMap";
 
 // Interfaces
 interface Case {
@@ -251,7 +252,7 @@ function App() {
     return Math.min(1.0, score);
   };
 
-  const [activeTab, setActiveTab] = useState<"dashboard" | "chat" | "network" | "cases">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "chat" | "network" | "cases" | "map">("dashboard");
   const [language, setLanguage] = useState<"en" | "kn" | "hi" | "te" | "ta">("en");
   const [searchQuery, setSearchQuery] = useState("");
   const [cases, setCases] = useState<Case[]>([]);
@@ -511,6 +512,35 @@ function App() {
   // Theme state
   const [theme, setTheme] = useState<Theme>(THEMES[0]);
 
+  // Auth state
+  const [token, setToken] = useState<string | null>(localStorage.getItem("crime_token"));
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+      if (!res.ok) throw new Error("Invalid credentials");
+      const data = await res.json();
+      setToken(data.token);
+      localStorage.setItem("crime_token", data.token);
+    } catch (err: any) {
+      setLoginError(err.message);
+    }
+  };
+
+  const handleLogout = () => {
+    setToken(null);
+    localStorage.removeItem("crime_token");
+  };
+
   interface ChatSession {
     id: string;
     name: string;
@@ -628,6 +658,61 @@ function App() {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const zoomBehaviorRef = useRef<any>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const mapControlRef = useRef<any>(null);
+
+  // Chat queries location parser for AI Assistant & Map synchronization
+  const syncChatWithMap = (msgText: string, respText: string, sourcesList: string[]) => {
+    const q = msgText.toLowerCase();
+    
+    // 1. Check for specific FIR numbers
+    const firRegex = /fir[- ]?(\d+)/i;
+    const firMatch = q.match(firRegex);
+    if (firMatch) {
+      const num = firMatch[1];
+      const matchCase = cases.find(c => c.fir_number.toLowerCase().includes(num));
+      if (matchCase) {
+        setSelectedCase(matchCase);
+        setGraphCases([matchCase]);
+        setActiveTab("map");
+        setTimeout(() => {
+          if (mapControlRef.current) {
+            mapControlRef.current.focusCase(matchCase.fir_number);
+          }
+        }, 200);
+        return;
+      }
+    }
+
+    // 2. Check for districts/cities
+    const districts = [
+      "Bengaluru", "Mysuru", "Belagavi", "Hubballi", "Dharwad", "Mangaluru",
+      "Udupi", "Ballari", "Kalaburagi", "Bidar", "Kolar", "Tumakuru", "Hassan",
+      "Shivamogga", "Davangere", "Chitradurga", "Chikkamagaluru", "Bagalkote",
+      "Vijayapura", "Yadgir", "Raichur", "Koppal", "Gadag", "Haveri",
+      "Chikkaballapur", "Ramanagara", "Mandya", "Kodagu", "Chamarajanagar"
+    ];
+    
+    let queryNormalized = q.replace("bangalore", "bengaluru")
+                           .replace("mysore", "mysuru")
+                           .replace("belgaum", "belagavi")
+                           .replace("hubli", "hubballi")
+                           .replace("mangalore", "mangaluru")
+                           .replace("gulbarga", "kalaburagi")
+                           .replace("bijapur", "vijayapura");
+
+    const foundDistrict = districts.find(d => queryNormalized.includes(d.toLowerCase()));
+    
+    if (foundDistrict) {
+      setSelectedCityFilter(foundDistrict);
+      setActiveTab("map");
+      setTimeout(() => {
+        if (mapControlRef.current) {
+          mapControlRef.current.focusDistrict(foundDistrict);
+        }
+      }, 200);
+      return;
+    }
+  };
 
   // Auto scroll to bottom of chat area when messages, loadingResponse, or activeTab changes
   useEffect(() => {
@@ -813,6 +898,16 @@ function App() {
       .scaleExtent([0.1, 4])
       .on("zoom", (event) => { container.attr("transform", event.transform); });
     svg.call(zoom as any);
+
+    // Initial transform to shift center right and down, and scale out slightly
+    const scale = 0.8;
+    const cx = width / 2 + 100; // shift center right by 100px to clear left panels
+    const cy = height / 2 + 50;  // shift center down by 50px to clear floating header
+    const tx = cx - (width / 2) * scale;
+    const ty = cy - (height / 2) * scale;
+    const initialTransform = d3.zoomIdentity.translate(tx, ty).scale(scale);
+    svg.call(zoom.transform as any, initialTransform);
+
     zoomBehaviorRef.current = zoom;
 
     // ---- Arrowhead ----
@@ -843,10 +938,10 @@ function App() {
 
     simulation.force("radial", d3.forceRadial((d: any) => {
       if (d.type === "incident") return 0;
-      if (d.type === "accused") return 110;
-      if (["phone", "vehicle", "bank_account"].includes(d.type)) return 205;
-      if (["location", "victim", "witness"].includes(d.type)) return 300;
-      return 380;
+      if (d.type === "accused") return 90;
+      if (["phone", "vehicle", "bank_account"].includes(d.type)) return 170;
+      if (["location", "victim", "witness"].includes(d.type)) return 240;
+      return 310;
     }, width / 2, height / 2).strength(1.2));
 
     // ---- Links (using line elements with x1/y1/x2/y2) ----
@@ -1151,7 +1246,7 @@ function App() {
 
   // Load cases from mock API or local fallback on init
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/v1/cases/all`)
+    fetch(`${API_BASE_URL}/api/v1/cases/all`, { headers: { "Authorization": `Bearer ${token}` } })
       .then(res => {
         if (!res.ok) throw new Error(`API error ${res.status}`);
         return res.json();
@@ -1186,7 +1281,7 @@ function App() {
         setCases(mock);
       });
 
-    fetch(`${API_BASE_URL}/api/v1/analytics/stats`)
+    fetch(`${API_BASE_URL}/api/v1/analytics/stats`, { headers: { "Authorization": `Bearer ${token}` } })
       .then(res => res.json())
       .then(data => {
         if (data.classifications) setClassifications(data.classifications);
@@ -1215,7 +1310,7 @@ function App() {
           { name: "Jaipur", value: 180 }
         ]);
       });
-  }, []);
+  }, [token]);
 
   // Synchronize theme state with the root html class for Tailwind dark selector
   useEffect(() => {
@@ -1331,7 +1426,7 @@ function App() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/chat/query`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({
           message: finalMsg,
           session_id: chatSessionId,
@@ -1414,7 +1509,7 @@ function App() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/chat/query`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({
           message: finalMsg,
           session_id: chatSessionId,
@@ -1446,6 +1541,7 @@ function App() {
       }
       // speakText(data.message); // voice output disabled
       setLoadingResponse(false);
+      syncChatWithMap(userMsg, data.message, data.sources || []);
     } catch (err) {
       // Local fallback simulator for offline/standalone execution
       setTimeout(() => {
@@ -1472,6 +1568,7 @@ function App() {
         }
         // speakText(text); // voice output disabled
         setLoadingResponse(false);
+        syncChatWithMap(userMsg, text, ["FIR-10234", "FIR-10237"]);
       }, 800);
     }
   };
@@ -1482,7 +1579,7 @@ function App() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/chat/export-pdf`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({
           session_id: chatSessionId,
           // Serverless backends don't keep session memory, so send the transcript
@@ -1564,9 +1661,30 @@ function App() {
     });
   };
 
-  const toggleTheme = () => {
-    setTheme(prev => prev.id === "dark" ? THEMES[1] : THEMES[0]);
-  };
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <div className="bg-slate-800 p-8 rounded-xl w-full max-w-md shadow-2xl border border-slate-700">
+          <div className="flex flex-col items-center mb-6">
+            <h1 className="text-2xl font-bold text-white text-center">CrimeMind AI</h1>
+            <p className="text-slate-400 text-sm text-center mt-1">Authorized Personnel Only (KSP)</p>
+          </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-slate-300 text-sm mb-1 font-medium">Officer Email</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-2.5 outline-none focus:border-purple-500" required placeholder="inspector@ksp.gov.in" />
+            </div>
+            <div>
+              <label className="block text-slate-300 text-sm mb-1 font-medium">Access Code</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-2.5 outline-none focus:border-purple-500" required placeholder="••••••••" />
+            </div>
+            {loginError && <div className="text-red-400 text-sm text-center font-medium bg-red-900/20 p-2 rounded">{loginError}</div>}
+            <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-lg transition-colors shadow-lg">Authorize Protocol</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen ${theme.bodyBg} ${theme.textMain} transition-colors duration-300 flex flex-col font-sans selection:${theme.id === "dark" ? "bg-purple-500 text-white" : "bg-purple-600 text-white"}`}>
@@ -1588,7 +1706,7 @@ function App() {
 
         {/* Minimal Underlined Navigation Tabs */}
         <nav className="flex gap-1.5 bg-slate-500/10 dark:bg-white/5 p-1 rounded-full border border-slate-200/50 dark:border-slate-800/40">
-          {(["dashboard", "chat", "network", "cases"] as const).map((tab) => (
+          {(["dashboard", "chat", "network", "cases", "map"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -1597,7 +1715,7 @@ function App() {
                 : `${theme.textMuted} hover:${theme.textMain}`
                 }`}
             >
-              {tab === "chat" ? "AI Assistant" : tab === "network" ? "Link Analysis" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab === "chat" ? "AI Assistant" : tab === "network" ? "Link Analysis" : tab === "map" ? "Crime Intelligence Map" : tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
         </nav>
@@ -1644,14 +1762,23 @@ function App() {
             )}
           </div>
 
-          {/* Theme Toggle Switch */}
-          <button
-            onClick={toggleTheme}
-            className={`p-2 rounded-full border ${theme.border} hover:bg-slate-500/10 transition-all cursor-pointer flex items-center justify-center`}
-            title="Switch Theme"
-          >
-            {theme.id === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
-          </button>
+          {/* Theme and Logout Controls */}
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setTheme(theme.id === "dark" ? THEMES[1] : THEMES[0])}
+              className={`p-2 rounded-full border ${theme.border} hover:bg-slate-500/10 transition-all cursor-pointer flex items-center justify-center`}
+              title="Switch Theme"
+            >
+              {theme.id === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-500" />}
+            </button>
+            <button 
+              onClick={handleLogout}
+              className={`px-3 py-1.5 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors border border-red-500/20 flex items-center justify-center text-xs font-semibold cursor-pointer`}
+              title="Secure Logout"
+            >
+              Logout
+            </button>
+          </div>
 
           {/* Inspector Badge Details */}
           <div className={`text-right border-l ${theme.border} pl-5`}>
@@ -1664,7 +1791,7 @@ function App() {
       </header>
 
       {/* Main Area */}
-      <main className={activeTab === "network" ? "flex-1 w-full h-full relative overflow-hidden" : "flex-1 overflow-auto p-6 max-w-7xl mx-auto w-full"}>
+      <main className={activeTab === "network" || activeTab === "map" ? "flex-1 w-full h-full relative overflow-hidden" : "flex-1 overflow-auto p-6 max-w-7xl mx-auto w-full"}>
         {/* TAB 1: DASHBOARD */}
         {activeTab === "dashboard" && (
           <div className="space-y-6 scanlines relative">
@@ -1870,7 +1997,19 @@ function App() {
                           contentStyle={{ backgroundColor: theme.id === "dark" ? "#0a0a0f" : "#ffffff", borderColor: theme.id === "dark" ? "#1e293b" : "#e2e8f0", borderRadius: "12px" }}
                           formatter={(value: any, _name: any) => [value, selectedCityFilter !== "All" ? "Cases" : "Total Cases"]}
                         />
-                        <Bar dataKey="value" fill={theme.id === "dark" ? "#34d399" : "#10b981"} radius={[4, 4, 0, 0]}>
+                        <Bar
+                          dataKey="value"
+                          fill={theme.id === "dark" ? "#34d399" : "#10b981"}
+                          radius={[4, 4, 0, 0]}
+                          onClick={(data: any) => {
+                            if (data && data.name) {
+                              const name = data.name.replace(" District", "").replace(" City", "").trim();
+                              setSelectedCityFilter(name);
+                              setActiveTab("map");
+                            }
+                          }}
+                          className="cursor-pointer"
+                        >
                           {activeCityDistribution.map((_entry: any, index: number) => (
                             <Cell key={`cell-${index}`} fill={colors[(index + 2) % colors.length]} />
                           ))}
@@ -2222,7 +2361,7 @@ function App() {
             />
 
             {/* Google Maps Style Floating Search Bar */}
-            <div className={`absolute top-24 left-6 z-30 w-80 sm:w-96 shadow-2xl rounded-2xl overflow-hidden backdrop-blur-md ${theme.cardBg} ${theme.textMain} p-2`}>
+            <div className={`absolute top-28 left-6 z-40 w-80 sm:w-96 shadow-2xl rounded-2xl backdrop-blur-md ${theme.cardBg} ${theme.textMain} p-2`}>
               <div className="relative flex items-center">
                 <Search className="w-4 h-4 text-zinc-500 absolute left-3" />
                 <input
@@ -2276,8 +2415,8 @@ function App() {
 
               {/* Autocomplete Suggestions */}
               {showGraphSuggestions && matchingSuggestions.length > 0 && (
-                <div className={`mt-2 border-t ${theme.border} pt-2 max-h-60 overflow-y-auto`}>
-                  <div className="px-3 pb-1 text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Click or press Enter to load into graph</div>
+                <div className={`absolute top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto z-50 rounded-2xl border ${theme.cardBg} ${theme.border} p-2 shadow-2xl`}>
+                  <div className="px-3 pb-1 pt-1 text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Click or press Enter to load into graph</div>
                   {matchingSuggestions.slice(0, 15).map(c => (
                     <div
                       key={c.id}
@@ -2298,14 +2437,14 @@ function App() {
                 </div>
               )}
               {showGraphSuggestions && graphSearchQuery.trim().length >= 2 && matchingSuggestions.length === 0 && (
-                <div className={`mt-2 border-t ${theme.border} pt-2 px-3 py-2 text-[10px] text-zinc-500`}>
+                <div className={`absolute top-full left-0 right-0 mt-1 z-50 rounded-2xl border ${theme.cardBg} ${theme.border} px-3 py-2 text-[10px] text-zinc-500 shadow-2xl`}>
                   No matching cases found
                 </div>
               )}
             </div>
 
             {/* Filter Chips (Google Maps style category chips right below the search bar) */}
-            <div className="absolute top-40 left-6 z-30 flex flex-wrap gap-1.5 max-w-lg sm:max-w-xl">
+            <div className="absolute top-44 left-6 z-30 flex flex-wrap gap-1.5 max-w-lg sm:max-w-xl">
               {[
                 { label: "Phones",    key: "phone" },
                 { label: "Vehicles",  key: "vehicle" },
@@ -2337,7 +2476,7 @@ function App() {
             </div>
 
             {/* Floating Action Toolbar on the left */}
-            <div className={`absolute top-52 left-6 z-30 flex flex-col gap-2 p-1.5 rounded-2xl shadow-2xl backdrop-blur-md ${theme.cardBg}`}>
+            <div className={`absolute top-56 left-6 z-30 flex flex-col gap-2 p-1.5 rounded-2xl shadow-2xl backdrop-blur-md ${theme.cardBg}`}>
               <button
                 onClick={handleZoomIn}
                 className={`w-10 h-10 rounded-full flex items-center justify-center ${theme.id === 'dark' ? 'text-zinc-400 hover:text-zinc-200' : 'text-zinc-500 hover:text-zinc-800'} hover:bg-slate-500/10 transition-colors cursor-pointer`}
@@ -2370,7 +2509,7 @@ function App() {
 
             {/* Right Sliding Node Inspector Panel */}
             {selectedNode && (
-              <div className={`absolute top-24 right-6 bottom-24 w-80 sm:w-[360px] ${theme.cardBg} rounded-2xl shadow-2xl z-40 overflow-y-auto p-5 space-y-5`}>
+              <div className={`absolute top-28 right-6 bottom-28 w-80 sm:w-[360px] ${theme.cardBg} rounded-2xl shadow-2xl z-40 overflow-y-auto p-5 space-y-5`}>
                 <div className={`flex items-center justify-between border-b ${theme.id === 'dark' ? 'border-purple-500/20' : 'border-purple-200'} pb-3`}>
                   <h3 className={`text-xs font-bold uppercase tracking-wider ${theme.id === 'dark' ? 'text-zinc-400' : 'text-zinc-500'} font-sans`}>Node Inspector</h3>
                   <button
@@ -2536,16 +2675,37 @@ function App() {
                 </div>
 
                 {/* Navigate to case details */}
-                 <button
-                  type="button"
-                  onClick={() => {
-                    const c = graphCases[0];
-                    if (c) { setSelectedCase(c); setActiveTab("cases"); }
-                  }}
-                  className={`w-full py-2.5 rounded-xl border ${theme.id === 'dark' ? 'border-purple-500/25 hover:bg-purple-500/10 text-zinc-200' : 'border-purple-300 hover:bg-purple-500/5 text-purple-950'} text-[10px] font-bold uppercase transition-all text-center flex items-center justify-center gap-1.5`}
-                >
-                  Open Full Case Sheet <ArrowUpRight className="w-3 h-3" />
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const c = graphCases[0];
+                      if (c) { setSelectedCase(c); setActiveTab("cases"); }
+                    }}
+                    className={`flex-1 py-2.5 rounded-xl border ${theme.id === 'dark' ? 'border-purple-500/25 hover:bg-purple-500/10 text-zinc-200' : 'border-purple-300 hover:bg-purple-500/5 text-purple-950'} text-[10px] font-bold uppercase transition-all text-center flex items-center justify-center gap-1.5`}
+                  >
+                    Open Sheet <ArrowUpRight className="w-3 h-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab("map");
+                      setTimeout(() => {
+                        if (mapControlRef.current) {
+                          if (selectedNode.type === "incident") {
+                            mapControlRef.current.focusCase(selectedNode.id);
+                          } else {
+                            const districtName = selectedCityFilter !== "All" ? selectedCityFilter : "Bengaluru";
+                            mapControlRef.current.focusDistrict(districtName);
+                          }
+                        }
+                      }, 200);
+                    }}
+                    className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold uppercase transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+                  >
+                    Locate Map <MapPin className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             )}
 
@@ -2794,7 +2954,7 @@ function App() {
                         try {
                           const res = await fetch(`${API_BASE_URL}/api/v1/chat/export-pdf`, {
                             method: "POST",
-                            headers: { "Content-Type": "application/json" },
+                            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
                             body: JSON.stringify({ session_id: chatSessionId })
                           });
                           const blob = await res.blob();
@@ -2812,6 +2972,20 @@ function App() {
                     >
                       Export PDF
                     </button>
+                    <button
+                      onClick={() => {
+                        setActiveTab("map");
+                        setTimeout(() => {
+                          if (mapControlRef.current) {
+                            mapControlRef.current.focusCase(selectedCase.fir_number);
+                          }
+                        }, 200);
+                      }}
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer shadow-lg"
+                      title="Locate Case Scene on Intelligence Map"
+                    >
+                      <MapPin className="w-4 h-4" /> View on Map
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -2822,6 +2996,25 @@ function App() {
               )}
             </div>
           </div>
+        )}
+
+        {/* TAB 5: CRIME INTELLIGENCE MAP */}
+        {activeTab === "map" && (
+          <CrimeMap
+            theme={theme}
+            cases={cases}
+            selectedCityFilter={selectedCityFilter}
+            setSelectedCityFilter={setSelectedCityFilter}
+            selectedCase={selectedCase}
+            setSelectedCase={setSelectedCase}
+            selectedNode={selectedNode}
+            setSelectedNode={setSelectedNode}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            setGraphCases={setGraphCases}
+            setActiveSuspect={setActiveSuspect}
+            mapControlRef={mapControlRef}
+          />
         )}
       </main>
 

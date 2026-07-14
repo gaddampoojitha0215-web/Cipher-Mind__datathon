@@ -8,8 +8,11 @@ from typing import List, Optional, Dict, Any
 from xml.sax.saxutils import escape
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 import networkx as nx
+import jwt
+from passlib.context import CryptContext
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
@@ -27,11 +30,39 @@ app = FastAPI(title="CrimeMind AI API", version="1.0.0")
 # Enable CORS for the React Dev server
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key-for-dev-only")
+ALGORITHM = "HS256"
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+security = HTTPBearer()
+
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+def create_access_token(data: dict) -> str:
+    to_encode = data.copy()
+    expire = datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None or email not in OFFICERS_DB:
+            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+        return OFFICERS_DB[email]
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid authentication credentials")
 
 # Mock databases
 OFFICERS_DB = {
@@ -40,7 +71,7 @@ OFFICERS_DB = {
         "name": "admin",
         "badge": "KSP-8932",
         "role": "investigator",
-        "password_hash": "admin123"
+        "password_hash": get_password_hash("admin123")
     }
 }
 
@@ -491,9 +522,11 @@ chat_histories = ChatHistoryStore()
 @app.post("/api/v1/auth/login")
 def login(payload: LoginRequest):
     user = OFFICERS_DB.get(payload.email)
-    if not user or user["password_hash"] != payload.password:
+    if not user or not verify_password(payload.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    return {"token": "mock-jwt-token-123", "user": {"name": user["name"], "role": user["role"], "badge": user["badge"]}}
+    
+    access_token = create_access_token(data={"sub": payload.email})
+    return {"token": access_token, "user": {"name": user["name"], "role": user["role"], "badge": user["badge"]}}
 
 def retrieve_relevant_cases(query_text: str, cases_db: List[Dict[str, Any]], limit: int = 12) -> List[Dict[str, Any]]:
     # Normalise query
@@ -989,7 +1022,7 @@ def get_duration_response(msg_lower: str, lang: str) -> Optional[dict]:
 
 
 @app.post("/api/v1/chat/query")
-def chat_query(payload: ChatQuery):
+def chat_query(payload: ChatQuery, current_user: dict = Depends(get_current_user)):
     msg = payload.message.strip().lower()
     
     # Clean the message from any prepended context tags to check for raw greetings
@@ -1353,7 +1386,7 @@ def chat_query(payload: ChatQuery):
     return result
 
 @app.get("/api/v1/analytics/stats")
-def get_analytics_stats():
+def get_analytics_stats(current_user: dict = Depends(get_current_user)):
     # 1. Compute classifications (detailed breakdown of crime categories)
     classifications = []
     try:
