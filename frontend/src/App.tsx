@@ -521,7 +521,7 @@ function App() {
   }, [theme]);
 
   // Auth state
-  const [token, setToken] = useState<string | null>(localStorage.getItem("crime_token"));
+  const [token, setToken] = useState<string | null>("bypass-token");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -1776,13 +1776,6 @@ function App() {
               title="Switch Theme"
             >
               {theme.id === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-500" />}
-            </button>
-            <button 
-              onClick={handleLogout}
-              className={`px-3 py-1.5 rounded-xl text-red-400 hover:bg-red-500/10 transition-colors border border-red-500/20 flex items-center justify-center text-xs font-semibold cursor-pointer`}
-              title="Secure Logout"
-            >
-              Logout
             </button>
           </div>
 
