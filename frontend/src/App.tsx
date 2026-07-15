@@ -1687,11 +1687,9 @@ function App() {
   }
 
   return (
-    <div className={`min-h-screen ${theme.bodyBg} ${theme.textMain} transition-colors duration-300 flex flex-col font-sans selection:${theme.id === "dark" ? "bg-purple-500 text-white" : "bg-purple-600 text-white"}`}>
+    <div className={`h-screen overflow-hidden ${theme.bodyBg} ${theme.textMain} transition-colors duration-300 flex flex-col font-sans selection:${theme.id === "dark" ? "bg-purple-500 text-white" : "bg-purple-600 text-white"}`}>
       {/* Header */}
-      <header className={activeTab === "network"
-        ? `fixed top-4 left-1/2 -translate-x-1/2 w-[90%] max-w-6xl rounded-full border ${theme.border} ${theme.id === 'dark' ? 'bg-black/90 text-zinc-100 shadow-2xl' : 'bg-white/95 text-zinc-800 shadow-lg'} backdrop-blur-md px-6 py-2 flex items-center justify-between z-50 transition-all`
-        : `border-b ${theme.border} bg-transparent px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50 ${theme.textMain}`}>
+      <header className={`border-b ${theme.border} bg-transparent px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50 ${theme.textMain}`}>
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-xl bg-gradient-to-br ${theme.id === "dark" ? "from-purple-500/10 to-fuchsia-500/20 border border-purple-500/30" : "from-purple-100 to-fuchsia-100 border border-purple-200/60"}`}>
             <img src="/logo.png" className="w-5 h-5 object-cover rounded-md" alt="CrimeMind Logo" />
@@ -1790,8 +1788,7 @@ function App() {
         </div>
       </header>
 
-      {/* Main Area */}
-      <main className={activeTab === "network" || activeTab === "map" ? "flex-1 w-full h-full relative overflow-hidden" : "flex-1 overflow-auto p-6 max-w-7xl mx-auto w-full"}>
+      <main className={`flex-1 min-h-0 w-full relative ${activeTab === "network" || activeTab === "map" ? "overflow-hidden" : "overflow-auto p-6 max-w-7xl mx-auto w-full"}`}>
         {/* TAB 1: DASHBOARD */}
         {activeTab === "dashboard" && (
           <div className="space-y-6 scanlines relative">

@@ -97,6 +97,7 @@ export default function CrimeMap({
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [highlightedMarker, setHighlightedMarker] = useState<string | null>(null);
+  const [isLayersOpen, setIsLayersOpen] = useState(false);
 
   // Layer Toggles
   const [layers, setLayers] = useState({
@@ -431,10 +432,10 @@ export default function CrimeMap({
         </defs>
 
         {/* Dynamic Map Layer Modes */}
-        {mapMode === "standard" && <rect width="100%" height="100%" fill="url(#standard-grid)" className="opacity-70" />}
+        {mapMode === "standard" && <rect width="100%" height="100%" fill="#eae8e4" />}
         {mapMode === "satellite" && (
           <>
-            <rect width="100%" height="100%" fill="#060913" />
+            <rect width="100%" height="100%" fill="#0c0d14" />
             <rect width="100%" height="100%" fill="url(#satellite-grid)" />
             {/* Satellite Scanning Rings */}
             <circle cx="250" cy="400" r="300" fill="none" stroke="rgba(0,242,254,0.015)" strokeWidth="1" strokeDasharray="5,15" className="animate-spin" style={{ animationDuration: "120s" }} />
@@ -442,11 +443,12 @@ export default function CrimeMap({
         )}
         {mapMode === "terrain" && (
           <>
-            <rect width="100%" height="100%" fill="#0d0a05" />
+            <rect width="100%" height="100%" fill="#e8e4db" />
             <rect width="100%" height="100%" fill="url(#terrain-contours)" />
           </>
         )}
-        {mapMode === "dark" && <rect width="100%" height="100%" fill="#07070a" />}
+        {mapMode === "dark" && <rect width="100%" height="100%" fill="#242f3e" />}
+        {mapMode === "heatmap" && <rect width="100%" height="100%" fill="#09090d" />}
 
         {/* Global Transform wrapper for Pan & Zoom */}
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.k})`}>
@@ -463,20 +465,50 @@ export default function CrimeMap({
                 let stroke = "rgba(168, 85, 247, 0.12)";
                 let strokeWidth = 1.0;
                 
-                if (mapMode === "satellite") {
-                  stroke = "rgba(6, 182, 212, 0.15)";
+                if (mapMode === "standard") {
+                  fill = "#f8f7f4";
+                  stroke = "#d0cdc7";
+                } else if (mapMode === "satellite") {
+                  fill = "rgba(15, 23, 42, 0.5)";
+                  stroke = "rgba(6, 182, 212, 0.2)";
                 } else if (mapMode === "terrain") {
-                  stroke = "rgba(245, 158, 11, 0.12)";
+                  fill = "#f1ede4";
+                  stroke = "#d5cfc4";
+                } else if (mapMode === "dark") {
+                  fill = "#2b3c51";
+                  stroke = "#1f2d3d";
+                } else if (mapMode === "heatmap") {
+                  fill = "#0f172a";
+                  stroke = "rgba(255, 255, 255, 0.05)";
                 }
                 
                 if (isHovered) {
-                  fill = theme.id === "dark" ? "rgba(168, 85, 247, 0.06)" : "rgba(168, 85, 247, 0.04)";
-                  stroke = "rgba(168, 85, 247, 0.4)";
+                  if (mapMode === "standard") {
+                    fill = "#e8eaed";
+                    stroke = "#bdc1c6";
+                  } else if (mapMode === "terrain") {
+                    fill = "#e5dfd3";
+                    stroke = "#bca896";
+                  } else if (mapMode === "dark") {
+                    fill = "#35485f";
+                    stroke = "#4b6c93";
+                  } else {
+                    fill = theme.id === "dark" ? "rgba(168, 85, 247, 0.06)" : "rgba(168, 85, 247, 0.04)";
+                    stroke = "rgba(168, 85, 247, 0.4)";
+                  }
                   strokeWidth = 1.5;
                 }
                 if (isSelected) {
-                  fill = "rgba(168, 85, 247, 0.12)";
-                  stroke = "rgba(168, 85, 247, 0.85)";
+                  if (mapMode === "standard") {
+                    fill = "rgba(26, 115, 232, 0.08)";
+                    stroke = "#1a73e8";
+                  } else if (mapMode === "dark") {
+                    fill = "rgba(168, 85, 247, 0.12)";
+                    stroke = "#a855f7";
+                  } else {
+                    fill = "rgba(168, 85, 247, 0.12)";
+                    stroke = "rgba(168, 85, 247, 0.85)";
+                  }
                   strokeWidth = 2.0;
                 }
 
@@ -525,12 +557,29 @@ export default function CrimeMap({
                 return `${x},${y}`;
               }).join(" ");
               
+              let baseStroke = "#4b5563";
+              let accentStroke = "#a855f7";
+              
+              if (mapMode === "standard") {
+                baseStroke = "#ffd066";
+                accentStroke = "#ffb81c";
+              } else if (mapMode === "satellite") {
+                baseStroke = "rgba(6, 182, 212, 0.4)";
+                accentStroke = "#22d3ee";
+              } else if (mapMode === "terrain") {
+                baseStroke = "#d5cfc4";
+                accentStroke = "#8e7a68";
+              } else if (mapMode === "dark") {
+                baseStroke = "#38414e";
+                accentStroke = "#ff9c00";
+              }
+              
               return (
                 <g key={idx}>
                   <polyline
                     points={pointsStr}
                     fill="none"
-                    stroke={mapMode === "satellite" ? "#06b6d4" : mapMode === "terrain" ? "#d97706" : "#4b5563"}
+                    stroke={baseStroke}
                     strokeWidth="1.8"
                     strokeOpacity="0.4"
                     className="pointer-events-none"
@@ -538,7 +587,7 @@ export default function CrimeMap({
                   <polyline
                     points={pointsStr}
                     fill="none"
-                    stroke={mapMode === "satellite" ? "#22d3ee" : mapMode === "terrain" ? "#fbbf24" : "#a855f7"}
+                    stroke={accentStroke}
                     strokeWidth="0.8"
                     strokeOpacity="0.8"
                     strokeDasharray="4,8"
@@ -597,13 +646,23 @@ export default function CrimeMap({
           )}
 
           {/* 6. CCTV Camera Icons (revealed at higher zoom levels) */}
-          {layers.cctv && transform.k > 1.2 && (
+          {layers.cctv && transform.k > 1.8 && (
             <g className="cctv-camera-group">
-              {CCTV_CAMERAS.map((cam) => {
+              {CCTV_CAMERAS.filter((cam) => {
+                const width = svgRef.current ? svgRef.current.clientWidth : 800;
+                const height = svgRef.current ? svgRef.current.clientHeight : 800;
+                const left = -transform.x / transform.k;
+                const right = (width - transform.x) / transform.k;
+                const top = -transform.y / transform.k;
+                const bottom = (height - transform.y) / transform.k;
+                
+                const { x, y } = latLonToSvg(cam.lat, cam.lon);
+                return x >= left - 20 && x <= right + 20 && y >= top - 20 && y <= bottom + 20;
+              }).map((cam) => {
                 const { x, y } = latLonToSvg(cam.lat, cam.lon);
                 return (
-                  <g key={cam.id} className="cursor-pointer" style={{ transform: `translate(${x}px, ${y}px)` }}>
-                    <circle cx="0" cy="0" r="3.5" fill={cam.status === "active" ? "#10b981" : "#ef4444"} stroke="#000" strokeWidth="0.5" />
+                  <g key={cam.id} className="cursor-pointer" transform={`translate(${x}, ${y})`}>
+                    <circle cx="0" cy="0" r={3.5 / transform.k} fill={cam.status === "active" ? "#10b981" : "#ef4444"} stroke="#000" strokeWidth={0.5 / transform.k} />
                     <title>{cam.name} ({cam.status.toUpperCase()})</title>
                   </g>
                 );
@@ -612,9 +671,36 @@ export default function CrimeMap({
           )}
 
           {/* 7. Detailed Locations (Airports, Railway, Bus Stations, Landmarks) */}
-          {transform.k > 1.5 && (
+          {transform.k > 1.0 && (
             <g className="detailed-features-group pointer-events-none">
-              {MAP_LOCATION_FEATURES.map((feat) => {
+              {MAP_LOCATION_FEATURES.filter((feat) => {
+                // Viewport culling check (bounding box in SVG space)
+                const width = svgRef.current ? svgRef.current.clientWidth : 800;
+                const height = svgRef.current ? svgRef.current.clientHeight : 800;
+                const left = -transform.x / transform.k;
+                const right = (width - transform.x) / transform.k;
+                const top = -transform.y / transform.k;
+                const bottom = (height - transform.y) / transform.k;
+                
+                const { x, y } = latLonToSvg(feat.lat, feat.lon);
+                const isInside = x >= left - 50 && x <= right + 50 && y >= top - 50 && y <= bottom + 50;
+                if (!isInside) return false;
+
+                // Zoom level filter: show different feature types progressively
+                if (feat.type === "city" || feat.type === "airport") {
+                  return transform.k > 1.0;
+                }
+                if (feat.type === "railway" || feat.type === "bus_station") {
+                  return transform.k > 2.2;
+                }
+                if (feat.type === "town" || feat.type === "police_station") {
+                  return transform.k > 3.2;
+                }
+                if (feat.type === "landmark" || feat.type === "village") {
+                  return transform.k > 4.5;
+                }
+                return false;
+              }).map((feat) => {
                 const { x, y } = latLonToSvg(feat.lat, feat.lon);
                 
                 // Set character icons or indicators
@@ -625,12 +711,15 @@ export default function CrimeMap({
                 if (feat.type === "police_station") icon = "👮";
                 if (feat.type === "landmark") icon = "🏛️";
 
+                const isDarkMap = ["dark", "satellite", "heatmap"].includes(mapMode);
+                const textFill = isDarkMap ? "rgba(255,255,255,0.7)" : "rgba(31,41,55,0.85)";
+
                 return (
                   <g key={feat.id} transform={`translate(${x}, ${y})`}>
-                    <text y="-8" textAnchor="middle" fontSize="6px" fill="rgba(255,255,255,0.7)" fontWeight="semibold" className="font-sans">
+                    <text y={-10 / transform.k} textAnchor="middle" fontSize={`${7 / transform.k}px`} fill={textFill} fontWeight="semibold" className="font-sans">
                       {feat.name}
                     </text>
-                    <text textAnchor="middle" fontSize="8px">
+                    <text textAnchor="middle" fontSize={`${10 / transform.k}px`}>
                       {icon}
                     </text>
                   </g>
@@ -642,7 +731,16 @@ export default function CrimeMap({
           {/* 8. Case / FIR Markers */}
           {layers.firMarkers && (
             <g className="fir-markers-group">
-              {mappedCases.filter(isCaseVisible).map((c) => {
+              {mappedCases.filter(isCaseVisible).filter((c) => {
+                const width = svgRef.current ? svgRef.current.clientWidth : 800;
+                const height = svgRef.current ? svgRef.current.clientHeight : 800;
+                const left = -transform.x / transform.k;
+                const right = (width - transform.x) / transform.k;
+                const top = -transform.y / transform.k;
+                const bottom = (height - transform.y) / transform.k;
+                
+                return c.x >= left - 20 && c.x <= right + 20 && c.y >= top - 20 && c.y <= bottom + 20;
+              }).map((c) => {
                 const isSelected = selectedCase?.id === c.id;
                 const isHighlighted = highlightedMarker === c.id;
                 
@@ -670,10 +768,10 @@ export default function CrimeMap({
                       <circle
                         cx="0"
                         cy="0"
-                        r="14"
+                        r={14 / transform.k}
                         fill="none"
                         stroke={markerColor}
-                        strokeWidth="1.5"
+                        strokeWidth={1.5 / transform.k}
                         className="animate-ping opacity-60"
                       />
                     )}
@@ -682,10 +780,10 @@ export default function CrimeMap({
                     <circle
                       cx="0"
                       cy="0"
-                      r={isSelected || isHighlighted ? "6" : "4.5"}
+                      r={(isSelected || isHighlighted ? 6 : 4.5) / transform.k}
                       fill={markerColor}
                       stroke="#fff"
-                      strokeWidth={isSelected || isHighlighted ? "2.0" : "1.2"}
+                      strokeWidth={(isSelected || isHighlighted ? 2.0 : 1.2) / transform.k}
                       style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}
                     />
                   </g>
@@ -722,8 +820,8 @@ export default function CrimeMap({
                     
                     {/* Police Station marker flag */}
                     <g transform={`translate(${hqCoords.x}, ${hqCoords.y})`}>
-                      <circle cx="0" cy="0" r="3" fill="#ef4444" />
-                      <text x="6" y="2" fill="#ef4444" fontSize="7px" fontWeight="bold" className="font-mono">Precinct HQ</text>
+                      <circle cx="0" cy="0" r={3 / transform.k} fill="#ef4444" />
+                      <text x={6 / transform.k} y={2 / transform.k} fill="#ef4444" fontSize={`${7 / transform.k}px`} fontWeight="bold" className="font-mono">Precinct HQ</text>
                     </g>
                   </>
                 );
@@ -740,28 +838,32 @@ export default function CrimeMap({
               const isMajor = ["bengaluru-urban", "mysuru", "belagavi", "dharwad", "dakshina-kannada"].includes(p.district.id);
               if (transform.k < 0.7 && !isMajor) return null;
 
+              const isDarkMap = ["dark", "satellite", "heatmap"].includes(mapMode);
+              const textFill = isDarkMap ? "#f3f4f6" : "#2d3748";
+              const strokeColor = isDarkMap ? "#000000" : "#ffffff";
+
               return (
                 <g key={`lbl-${p.district.id}`} transform={`translate(${p.x}, ${p.y})`}>
-                  {/* Subtle black shadow backer for text readability */}
+                  {/* Subtle shadow backer for text readability */}
                   <text
-                    y="-12"
+                    y={-12 / transform.k}
                     textAnchor="middle"
-                    fontSize="7px"
+                    fontSize={`${8 / transform.k}px`}
                     fontWeight="bold"
-                    fill="#000"
-                    stroke="#000"
-                    strokeWidth="2.5"
+                    fill={strokeColor}
+                    stroke={strokeColor}
+                    strokeWidth={2.5 / transform.k}
                     strokeLinejoin="round"
                     className="font-sans tracking-wide uppercase opacity-90"
                   >
                     {p.district.name}
                   </text>
                   <text
-                    y="-12"
+                    y={-12 / transform.k}
                     textAnchor="middle"
-                    fontSize="7px"
+                    fontSize={`${8 / transform.k}px`}
                     fontWeight="bold"
-                    fill={theme.id === "dark" ? "#e4e4e7" : "#18181b"}
+                    fill={textFill}
                     className="font-sans tracking-wide uppercase"
                   >
                     {p.district.name}
@@ -769,9 +871,9 @@ export default function CrimeMap({
                   
                   {/* Display active crime count bubble */}
                   {dStat.total > 0 && (
-                    <g transform="translate(0, 10)">
-                      <circle cx="0" cy="0" r="5" fill="rgba(168, 85, 247, 0.85)" stroke="#000" strokeWidth="0.5" />
-                      <text textAnchor="middle" y="2" fontSize="5.5px" fill="#fff" fontWeight="bold" className="font-mono">
+                    <g transform={`translate(0, ${10 / transform.k})`}>
+                      <circle cx="0" cy="0" r={5 / transform.k} fill="rgba(168, 85, 247, 0.85)" stroke={isDarkMap ? "#000" : "#fff"} strokeWidth={0.5 / transform.k} />
+                      <text textAnchor="middle" y={2 / transform.k} fontSize={`${5.5 / transform.k}px`} fill="#fff" fontWeight="bold" className="font-mono">
                         {dStat.total}
                       </text>
                     </g>
@@ -787,7 +889,7 @@ export default function CrimeMap({
       {/* Floating Google Maps Style UI Controls */}
       
       {/* 1. TOP LEFT SEARCH BAR */}
-      <div className="absolute top-28 left-6 z-50 w-80 sm:w-96 shadow-2xl rounded-2xl backdrop-blur-md bg-black/90 border border-purple-500/20 text-zinc-100 p-2">
+      <div className={`absolute top-4 left-4 z-50 w-80 sm:w-96 shadow-2xl rounded-2xl backdrop-blur-md border ${theme.id === 'dark' ? 'bg-zinc-950/95 border-zinc-800 text-zinc-100' : 'bg-white/95 border-zinc-200 text-zinc-800'} p-2`}>
         <div className="relative flex items-center">
           <Search className="w-4 h-4 text-zinc-500 absolute left-3" />
           <input
@@ -799,7 +901,7 @@ export default function CrimeMap({
               setShowSearchSuggestions(true);
             }}
             onFocus={() => setShowSearchSuggestions(true)}
-            className="w-full bg-transparent pl-9 pr-8 py-2 text-xs focus:outline-none placeholder-zinc-500 font-sans text-zinc-100"
+            className="w-full bg-transparent pl-9 pr-8 py-2 text-xs focus:outline-none placeholder-zinc-500 font-sans text-inherit"
           />
           {searchQuery && (
             <button
@@ -816,7 +918,7 @@ export default function CrimeMap({
 
         {/* Suggestions list */}
         {showSearchSuggestions && matchingSuggestions.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto z-50 rounded-2xl border border-purple-500/20 bg-black/95 p-2 shadow-2xl">
+          <div className={`absolute top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto z-50 rounded-2xl border p-2 shadow-2xl ${theme.id === 'dark' ? 'bg-zinc-950/95 border-zinc-800 text-zinc-100' : 'bg-white/95 border-zinc-200 text-zinc-800'}`}>
             <div className="px-3 pb-1 pt-1 text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Select location to zoom</div>
             {matchingSuggestions.map((item, idx) => (
               <div
@@ -824,7 +926,7 @@ export default function CrimeMap({
                 className="px-3 py-2 hover:bg-purple-500/10 rounded-lg cursor-pointer flex justify-between items-center text-xs transition-colors"
                 onClick={() => handleSearchSelect(item)}
               >
-                <span className="font-medium text-zinc-200">{item.name}</span>
+                <span className={`font-medium ${theme.id === 'dark' ? 'text-zinc-200' : 'text-zinc-800'}`}>{item.name}</span>
                 <span className="text-[9px] text-purple-400 uppercase font-mono">{item.type}</span>
               </div>
             ))}
@@ -833,7 +935,7 @@ export default function CrimeMap({
       </div>
 
       {/* 2. TOP RIGHT MAP MODE SWITCHER */}
-      <div className="absolute top-28 right-6 z-40 flex items-center gap-2 p-1.5 rounded-2xl shadow-2xl backdrop-blur-md bg-black/90 border border-purple-500/20 text-zinc-300">
+      <div className={`absolute top-4 right-4 z-40 flex items-center gap-1.5 p-1.5 rounded-2xl shadow-2xl backdrop-blur-md border ${theme.id === 'dark' ? 'bg-zinc-950/95 border-zinc-800 text-zinc-300' : 'bg-white/95 border-zinc-200 text-zinc-700'}`}>
         {(["dark", "standard", "satellite", "terrain", "heatmap"] as const).map((mode) => (
           <button
             key={mode}
@@ -849,8 +951,8 @@ export default function CrimeMap({
         ))}
       </div>
 
-      {/* 3. LEFT VIEWPORT UTILITIES */}
-      <div className="absolute top-56 left-6 z-40 flex flex-col gap-2 p-1.5 rounded-2xl shadow-2xl backdrop-blur-md bg-black/90 border border-purple-500/20 text-zinc-400">
+      {/* 3. RIGHT VIEWPORT UTILITIES (BOTTOM RIGHT) */}
+      <div className={`absolute bottom-4 right-4 z-40 flex flex-col gap-2 p-1.5 rounded-2xl shadow-2xl backdrop-blur-md border ${theme.id === 'dark' ? 'bg-zinc-950/95 border-zinc-800 text-zinc-400' : 'bg-white/95 border-zinc-200 text-zinc-500'}`}>
         <button
           onClick={() => setTransform({ ...transform, k: Math.min(5, transform.k * 1.25) })}
           className="w-10 h-10 rounded-full flex items-center justify-center hover:text-zinc-200 hover:bg-slate-500/10 transition-colors cursor-pointer"
@@ -874,40 +976,64 @@ export default function CrimeMap({
         </button>
       </div>
 
-      {/* 4. LAYERS SELECTION FLOATER (LEFT BOTTOM) */}
-      <div className="absolute bottom-6 left-6 z-40 p-4 rounded-2xl shadow-2xl backdrop-blur-md bg-black/95 border border-purple-500/20 text-zinc-300 w-60">
-        <div className="flex items-center gap-2 border-b border-purple-500/10 pb-2 mb-3">
-          <Layers className="w-3.5 h-3.5 text-purple-400" />
-          <h4 className="text-xs font-bold uppercase tracking-wider font-sans">Visualization Layers</h4>
-        </div>
-        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-          {Object.entries(layers).map(([key, val]) => {
-            // Friendly label formatting
-            const label = key
-              .replace(/([A-Z])/g, " $1")
-              .replace(/^./, str => str.toUpperCase());
-              
-            return (
-              <button
-                key={key}
-                onClick={() => setLayers(prev => ({ ...prev, [key]: !val }))}
-                className="w-full flex items-center justify-between py-1 px-2 rounded-lg hover:bg-white/5 transition-all text-left text-[10px] font-sans font-medium cursor-pointer"
+      {/* 4. LAYERS SELECTION FLOATER (LEFT BOTTOM - COLLAPSIBLE) */}
+      <div className="absolute bottom-4 left-4 z-40 flex flex-col items-start gap-2">
+        {isLayersOpen && (
+          <div className={`p-4 rounded-2xl shadow-2xl backdrop-blur-md border w-60 mb-2 ${theme.id === 'dark' ? 'bg-zinc-950/95 border-zinc-800 text-zinc-300' : 'bg-white/95 border-zinc-200 text-zinc-700'}`}>
+            <div className="flex items-center justify-between border-b border-zinc-850/10 dark:border-zinc-800 pb-2 mb-3">
+              <div className="flex items-center gap-2">
+                <Layers className="w-3.5 h-3.5 text-purple-400" />
+                <h4 className="text-xs font-bold uppercase tracking-wider font-sans">Map Layers</h4>
+              </div>
+              <button 
+                onClick={() => setIsLayersOpen(false)}
+                className="text-xs font-bold hover:text-zinc-900 dark:hover:text-white"
               >
-                <span className={val ? "text-zinc-200" : "text-zinc-500"}>{label}</span>
-                {val ? (
-                  <Eye className="w-3 h-3 text-purple-400" />
-                ) : (
-                  <EyeOff className="w-3 h-3 text-zinc-600" />
-                )}
+                ✕
               </button>
-            );
-          })}
-        </div>
+            </div>
+            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              {Object.entries(layers).map(([key, val]) => {
+                const label = key
+                  .replace(/([A-Z])/g, " $1")
+                  .replace(/^./, str => str.toUpperCase());
+                  
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setLayers(prev => ({ ...prev, [key]: !val }))}
+                    className="w-full flex items-center justify-between py-1 px-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-all text-left text-[10px] font-sans font-medium cursor-pointer"
+                  >
+                    <span className={val ? "text-zinc-900 dark:text-zinc-200" : "text-zinc-500"}>{label}</span>
+                    {val ? (
+                      <Eye className="w-3 h-3 text-purple-400" />
+                    ) : (
+                      <EyeOff className="w-3 h-3 text-zinc-400 dark:text-zinc-600" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        <button
+          onClick={() => setIsLayersOpen(!isLayersOpen)}
+          className={`w-10 h-10 rounded-full flex items-center justify-center shadow-2xl backdrop-blur-md border transition-all cursor-pointer ${
+            isLayersOpen 
+              ? "bg-purple-600 border-purple-400 text-white" 
+              : theme.id === 'dark'
+                ? "bg-zinc-950/95 border-zinc-800 text-zinc-300 hover:text-zinc-100"
+                : "bg-white/95 border-zinc-200 text-zinc-700 hover:text-zinc-900"
+          }`}
+          title="Toggle Map Layers"
+        >
+          <Layers className="w-4 h-4" />
+        </button>
       </div>
 
       {/* 5. DISTRICT DETAILS CARD OVERLAY (RIGHT INTERACTIVE BAR) */}
       {selectedDistrict && (
-        <div className="absolute top-44 right-6 bottom-28 w-80 sm:w-96 backdrop-blur-md bg-black/95 border border-purple-500/20 rounded-2xl shadow-2xl z-45 overflow-y-auto p-5 space-y-4 text-zinc-300">
+        <div className={`absolute top-20 right-4 bottom-4 w-80 sm:w-96 backdrop-blur-md border rounded-2xl shadow-2xl z-45 overflow-y-auto p-5 space-y-4 ${theme.id === 'dark' ? 'bg-zinc-950/95 border-zinc-800 text-zinc-300' : 'bg-white/95 border-zinc-200 text-zinc-700'}`}>
           <div className="flex items-center justify-between border-b border-purple-500/20 pb-3">
             <div>
               <span className="text-[9px] font-mono text-purple-400 uppercase tracking-widest block">GIS District Hub</span>
@@ -1001,7 +1127,7 @@ export default function CrimeMap({
 
       {/* 6. CASE INFORMATION CARD OVERLAY (ON CASE PIN CLICK) */}
       {selectedCase && !selectedDistrict && (
-        <div className="absolute top-44 right-6 bottom-28 w-80 sm:w-96 backdrop-blur-md bg-black/95 border border-purple-500/20 rounded-2xl shadow-2xl z-45 overflow-y-auto p-5 space-y-4 text-zinc-300">
+        <div className={`absolute top-20 right-4 bottom-4 w-80 sm:w-96 backdrop-blur-md border rounded-2xl shadow-2xl z-45 overflow-y-auto p-5 space-y-4 ${theme.id === 'dark' ? 'bg-zinc-950/95 border-zinc-800 text-zinc-300' : 'bg-white/95 border-zinc-200 text-zinc-700'}`}>
           <div className="flex items-center justify-between border-b border-purple-500/20 pb-3">
             <div>
               <span className="text-[9px] font-mono text-purple-400 uppercase tracking-widest block">Geographical Incident file</span>
