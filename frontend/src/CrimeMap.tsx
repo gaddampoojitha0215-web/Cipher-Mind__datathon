@@ -91,13 +91,31 @@ export default function CrimeMap({
 }: CrimeMapProps) {
   // Map control states
   const [mapMode, setMapMode] = useState<"standard" | "satellite" | "terrain" | "dark" | "heatmap">("dark");
-  const [transform, setTransform] = useState({ x: 0, y: 0, k: 0.75 });
+  const [transform, setTransform] = useState({ x: 100, y: 50, k: 0.75 });
   const [hoveredDistrict, setHoveredDistrict] = useState<DistrictData | null>(null);
   const [selectedDistrict, setSelectedDistrict] = useState<DistrictData | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [highlightedMarker, setHighlightedMarker] = useState<string | null>(null);
   const [isLayersOpen, setIsLayersOpen] = useState(false);
+
+  // Automatically center and scale the map to full screen on mount and resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (svgRef.current) {
+        const rect = svgRef.current.getBoundingClientRect();
+        const W = rect.width || 800;
+        const H = rect.height || 600;
+        const k = Math.min(W / 500, H / 800) * 0.95;
+        const x = (W - 500 * k) / 2;
+        const y = (H - 800 * k) / 2;
+        setTransform({ x, y, k });
+      }
+    };
+    setTimeout(handleResize, 100);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Layer Toggles
   const [layers, setLayers] = useState({
@@ -332,7 +350,17 @@ export default function CrimeMap({
   };
 
   const resetView = () => {
-    animateZoom(250, 400, 0.75);
+    if (svgRef.current) {
+      const rect = svgRef.current.getBoundingClientRect();
+      const W = rect.width || 800;
+      const H = rect.height || 600;
+      const k = Math.min(W / 500, H / 800) * 0.95;
+      const x = (W - 500 * k) / 2;
+      const y = (H - 800 * k) / 2;
+      animateZoom(250, 400, k);
+    } else {
+      animateZoom(250, 400, 0.75);
+    }
     setSelectedDistrict(null);
     setSelectedCityFilter("All");
   };
@@ -431,27 +459,62 @@ export default function CrimeMap({
           </radialGradient>
         </defs>
 
-        {/* Dynamic Map Layer Modes */}
+        {/* Dynamic Map Layer Fills (Fallback background under image layers) */}
         {mapMode === "standard" && <rect width="100%" height="100%" fill="#eae8e4" />}
-        {mapMode === "satellite" && (
-          <>
-            <rect width="100%" height="100%" fill="#0c0d14" />
-            <rect width="100%" height="100%" fill="url(#satellite-grid)" />
-            {/* Satellite Scanning Rings */}
-            <circle cx="250" cy="400" r="300" fill="none" stroke="rgba(0,242,254,0.015)" strokeWidth="1" strokeDasharray="5,15" className="animate-spin" style={{ animationDuration: "120s" }} />
-          </>
-        )}
-        {mapMode === "terrain" && (
-          <>
-            <rect width="100%" height="100%" fill="#e8e4db" />
-            <rect width="100%" height="100%" fill="url(#terrain-contours)" />
-          </>
-        )}
+        {mapMode === "satellite" && <rect width="100%" height="100%" fill="#0c0d14" />}
+        {mapMode === "terrain" && <rect width="100%" height="100%" fill="#e8e4db" />}
         {mapMode === "dark" && <rect width="100%" height="100%" fill="#242f3e" />}
         {mapMode === "heatmap" && <rect width="100%" height="100%" fill="#09090d" />}
 
         {/* Global Transform wrapper for Pan & Zoom */}
         <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.k})`}>
+          
+          {/* Base Map Basemap Image Layers */}
+          {mapMode === "satellite" && (
+            <image
+              href="https://server.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/export?bbox=74.0,11.5,78.5,18.2&bboxSR=4326&size=500,800&format=jpg&f=image"
+              x="0"
+              y="0"
+              width="500"
+              height="800"
+              preserveAspectRatio="none"
+              opacity="0.9"
+            />
+          )}
+          {mapMode === "standard" && (
+            <image
+              href="https://server.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer/export?bbox=74.0,11.5,78.5,18.2&bboxSR=4326&size=500,800&format=png&f=image"
+              x="0"
+              y="0"
+              width="500"
+              height="800"
+              preserveAspectRatio="none"
+              opacity="0.85"
+            />
+          )}
+          {mapMode === "terrain" && (
+            <image
+              href="https://server.arcgisonline.com/arcgis/rest/services/World_Topo_Map/MapServer/export?bbox=74.0,11.5,78.5,18.2&bboxSR=4326&size=500,800&format=png&f=image"
+              x="0"
+              y="0"
+              width="500"
+              height="800"
+              preserveAspectRatio="none"
+              opacity="0.85"
+            />
+          )}
+          {mapMode === "dark" && (
+            <image
+              href="https://server.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer/export?bbox=74.0,11.5,78.5,18.2&bboxSR=4326&size=500,800&format=png&f=image"
+              x="0"
+              y="0"
+              width="500"
+              height="800"
+              preserveAspectRatio="none"
+              opacity="0.8"
+              style={{ filter: "invert(1) hue-rotate(180deg) brightness(0.55) contrast(1.15)" }}
+            />
+          )}
           
           {/* 1. Base District Boundaries - Voronoi Administrative Cells */}
           {layers.districtBoundaries && (
