@@ -1002,13 +1002,13 @@ export default function CrimeMap({
                   <button
                     key={key}
                     onClick={() => setLayers(prev => ({ ...prev, [key]: !val }))}
-                    className="w-full flex items-center justify-between py-1 px-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-all text-left text-[10px] font-sans font-medium cursor-pointer"
+                    className={`w-full flex items-center justify-between py-1 px-2 rounded-lg transition-all text-left text-[10px] font-sans font-medium cursor-pointer ${theme.id === 'dark' ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}
                   >
-                    <span className={val ? "text-zinc-900 dark:text-zinc-200" : "text-zinc-500"}>{label}</span>
+                    <span className={val ? (theme.id === 'dark' ? "text-zinc-200" : "text-zinc-900") : "text-zinc-500"}>{label}</span>
                     {val ? (
                       <Eye className="w-3 h-3 text-purple-400" />
                     ) : (
-                      <EyeOff className="w-3 h-3 text-zinc-400 dark:text-zinc-600" />
+                      <EyeOff className={`w-3 h-3 ${theme.id === 'dark' ? 'text-zinc-600' : 'text-zinc-400'}`} />
                     )}
                   </button>
                 );

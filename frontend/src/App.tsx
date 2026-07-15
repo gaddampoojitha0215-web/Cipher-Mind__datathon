@@ -512,6 +512,14 @@ function App() {
   // Theme state
   const [theme, setTheme] = useState<Theme>(THEMES[0]);
 
+  useEffect(() => {
+    if (theme.id === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [theme]);
+
   // Auth state
   const [token, setToken] = useState<string | null>(localStorage.getItem("crime_token"));
   const [email, setEmail] = useState("");
