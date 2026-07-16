@@ -102,6 +102,15 @@ df_full = df_cases
 # Populate CASES_DB dynamically from detailed df_cases and stats df_stats
 CASES_DB = []
 
+KARNATAKA_DISTRICTS = [
+    "Bidar", "Kalaburagi", "Yadgir", "Vijayapura", "Raichur", "Bagalkote", 
+    "Belagavi", "Koppal", "Gadag", "Dharwad", "Uttara Kannada", "Ballari", 
+    "Vijayanagara", "Haveri", "Shivamogga", "Davangere", "Chitradurga", 
+    "Udupi", "Chikkamagaluru", "Dakshina Kannada", "Hassan", "Tumakuru", 
+    "Chikkaballapur", "Kolar", "Bengaluru Rural", "Bengaluru Urban", 
+    "Ramanagara", "Mandya", "Kodagu", "Mysuru", "Chamarajanagar"
+]
+
 # 1. Load cases from detailed df_cases (2020-2024)
 if not df_cases.empty:
     sample_df = df_cases.head(1000) # Load first 1000 cases for performance
@@ -113,11 +122,13 @@ if not df_cases.empty:
     ]
     for idx, row in sample_df.iterrows():
         rep_num = str(row.get("Report Number", idx))
-        city = str(row.get("City", "Unknown City"))
+        karnataka_dist = KARNATAKA_DISTRICTS[idx % len(KARNATAKA_DISTRICTS)]
+        city = karnataka_dist
         crime_desc = str(row.get("Crime Description", "Unknown Crime")).title()
         
         # Parse dates safely using highly optimized string manipulation for performance
         date_reported_raw = str(row.get("Date Reported", ""))
+
         date_occ_raw = str(row.get("Date of Occurrence", ""))
         
         year_val = "2020"
@@ -200,7 +211,7 @@ if not df_cases.empty:
 # 2. Load cases from 2025 statistical df_stats
 if not df_stats.empty:
     valid_rows = df_stats[df_stats["Number of cases from Jan to Aug(2025)"] > 0].head(100)
-    cities = ["Bengaluru", "Mumbai", "Delhi", "Chennai", "Kolkata", "Hyderabad", "Ahmedabad", "Pune", "Jaipur", "Lucknow"]
+    cities = KARNATAKA_DISTRICTS
     officers_pool = [
         "Officer Gowda", "Officer Patil", "Officer Rao", "Officer Reddy",
         "Officer Mishra", "Officer Sharma", "Officer Singh", "Officer Kumar",
@@ -220,7 +231,7 @@ if not df_stats.empty:
         date_of_registration = (datetime.datetime(2025, 1, 2) + datetime.timedelta(days=idx * 2)).isoformat()
 
         accused_names = [f"Accused-2025-{100 + (idx % 20)}"]
-        phone_numbers = [f"90005432{idx%100:02d}"]
+        phone_numbers = [f"90005432{idx%10:02d}"]
         
         vehicles = []
         if "STOLEN" in crime_head.upper() or "VEHICLE" in crime_head.upper() or "THEFT" in crime_head.upper():
@@ -231,7 +242,7 @@ if not df_stats.empty:
             bank_accounts = [f"SBIN0002{4321 + idx}"]
 
         description = (
-            f"Case registered under {law} for {crime_head}. "
+            f"Case registered under {law} for {crime_head} in {city} District. "
             f"Specific section details: {section}. "
             f"Stated Cause/Reason: {reason}. "
             f"Total aggregated cases reported in this category: {int(total_cases)}."
@@ -243,7 +254,7 @@ if not df_stats.empty:
         CASES_DB.append({
             "id": f"case-stat-{idx}",
             "fir_number": f"FIR-{20000 + idx}/2025",
-            "police_station": f"{city} Central PS",
+            "police_station": f"{city} Town PS",
             "district": f"{city} District",
             "crime_head": crime_head,
             "date_of_offence": date_of_offence,
@@ -263,15 +274,15 @@ else:
         {
             "id": f"case-{i}",
             "fir_number": f"FIR-10{234 + i}/2026",
-            "police_station": "Jayanagar PS" if i % 2 == 0 else "Indiranagar PS",
-            "district": "Bengaluru City",
+            "police_station": f"{KARNATAKA_DISTRICTS[i % len(KARNATAKA_DISTRICTS)]} Town PS",
+            "district": f"{KARNATAKA_DISTRICTS[i % len(KARNATAKA_DISTRICTS)]} District",
             "crime_head": "Burglary" if i % 3 == 0 else ("Vehicle Theft" if i % 3 == 1 else "Cyber Fraud"),
             "date_of_offence": (datetime.datetime.now() - datetime.timedelta(days=i * 5)).isoformat(),
             "date_of_registration": (datetime.datetime.now() - datetime.timedelta(days=i * 5 - 1)).isoformat(),
-            "description": f"Burglary reported at residential building in Bengaluru. Suspect entered through window lock bypass at night. Stole gold ornaments worth Rs 5 Lakhs.",
+            "description": f"Burglary reported in {KARNATAKA_DISTRICTS[i % len(KARNATAKA_DISTRICTS)]}. Suspect entered through window lock bypass at night.",
             "status": "Under Investigation" if i % 5 != 0 else "Closed",
             "accused": [f"Accused-{100 + (i % 5)}", f"Accused-{100 + ((i+1) % 5)}"],
-            "location": "Jayanagar 4th Block" if i % 2 == 0 else "Indiranagar 100ft Road",
+            "location": f"{KARNATAKA_DISTRICTS[i % len(KARNATAKA_DISTRICTS)]} Main Road",
             "phone_numbers": [f"98765432{i%10}{i%10}", f"87654321{i%10}{i%10}"],
             "vehicles": [f"KA-05-MJ-{1000 + i}"] if i % 3 == 1 else [],
             "bank_accounts": [f"SBIN0001{2345 + i}"] if i % 3 == 2 else [],
@@ -282,6 +293,7 @@ else:
                 "Officer Hegde", "Officer Bhat", "Officer Deshpande", "Officer Kulkarni"
             ][i % 16]
         }
+
         for i in range(1, 51)
     ]
 # Always append location-specific cases to guarantee accurate matches for Mysore/Whitefield/Electronic City
@@ -1073,8 +1085,8 @@ def chat_query(payload: ChatQuery, current_user: dict = Depends(get_current_user
         return {
             "message": response_msg,
             "sources": [],
-            "confidence_score": 1.0,
-            "evidence_trail": ["Active system session. Awaiting investigator inquiries."]
+            "confidence_score": -1.0,
+            "evidence_trail": []
         }
 
     # Defaults

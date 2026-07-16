@@ -4,6 +4,7 @@ import {
   Search, ZoomIn, ZoomOut, Maximize2, Layers, MapPin, Eye, EyeOff, Info,
   CheckCircle, Video, Compass, Navigation, Shield, Database, BarChart3, Clock, User
 } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import {
   KARNATAKA_DISTRICTS,
   MAP_LOCATION_FEATURES,
@@ -167,13 +168,13 @@ export default function CrimeMap({
     return cases.map((c, idx) => {
       const distName = c.district.replace(" District", "").replace(" City", "").trim().toLowerCase();
       const district = KARNATAKA_DISTRICTS.find(d => d.name.toLowerCase() === distName) || KARNATAKA_DISTRICTS[25]; // Default to Bangalore
-      
+
       // Compute deterministic scattered coordinates based on case ID
       const angle = (idx * 22.4) % (2 * Math.PI);
       const radius = 0.04 + (idx % 4) * 0.035; // degrees offset
       const lat = district.lat + Math.sin(angle) * radius;
       const lon = district.lon + Math.cos(angle) * radius;
-      
+
       const { x, y } = latLonToSvg(lat, lon);
       return {
         ...c,
@@ -188,7 +189,7 @@ export default function CrimeMap({
   // Aggregate crimes by district for statistics/heatmap calculations
   const districtCrimeStats = useMemo(() => {
     const stats: Record<string, { total: number; active: number; closed: number; typeCounts: Record<string, number> }> = {};
-    
+
     KARNATAKA_DISTRICTS.forEach(d => {
       stats[d.id] = { total: 0, active: 0, closed: 0, typeCounts: {} };
     });
@@ -201,7 +202,7 @@ export default function CrimeMap({
         dStat.total += 1;
         if (c.status === "Closed") dStat.closed += 1;
         else dStat.active += 1;
-        
+
         const type = c.crime_head.split(" ")[0] || "Other";
         dStat.typeCounts[type] = (dStat.typeCounts[type] || 0) + 1;
       }
@@ -216,37 +217,37 @@ export default function CrimeMap({
     const rect = svgRef.current.getBoundingClientRect();
     const cx = rect.width / 2;
     const cy = rect.height / 2;
-    
+
     // Smooth transition simulation using requestAnimationFrame
     const startX = transform.x;
     const startY = transform.y;
     const startK = transform.k;
-    
+
     // We want the target location (targetX, targetY) to end up at the viewport center (cx, cy)
     const endX = cx - targetX * targetScale;
     const endY = cy - targetY * targetScale;
     const endK = targetScale;
-    
+
     const duration = 600;
     const startTime = performance.now();
-    
+
     const step = (now: number) => {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
       // Ease out cubic
       const ease = 1 - Math.pow(1 - progress, 3);
-      
+
       setTransform({
         x: startX + (endX - startX) * ease,
         y: startY + (endY - startY) * ease,
         k: startK + (endK - startK) * ease
       });
-      
+
       if (progress < 1) {
         requestAnimationFrame(step);
       }
     };
-    
+
     requestAnimationFrame(step);
   };
 
@@ -318,14 +319,14 @@ export default function CrimeMap({
     const zoomFactor = 1.15;
     const nextK = e.deltaY < 0 ? transform.k * zoomFactor : transform.k / zoomFactor;
     const boundedK = Math.max(0.35, Math.min(5, nextK));
-    
+
     const rect = e.currentTarget.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
-    
+
     const nextX = mouseX - (mouseX - transform.x) * (boundedK / transform.k);
     const nextY = mouseY - (mouseY - transform.y) * (boundedK / transform.k);
-    
+
     setTransform({ x: nextX, y: nextY, k: boundedK });
   };
 
@@ -369,10 +370,10 @@ export default function CrimeMap({
   const matchingSuggestions = useMemo(() => {
     if (searchQuery.trim().length < 2) return [];
     const q = searchQuery.toLowerCase().trim();
-    
+
     const matchedDistricts = KARNATAKA_DISTRICTS.filter(d => d.name.toLowerCase().includes(q))
       .map(d => ({ type: "district", name: `${d.name} District`, target: d }));
-      
+
     const matchedCities = MAP_LOCATION_FEATURES.filter(f => f.name.toLowerCase().includes(q))
       .map(f => ({ type: "location", name: `${f.name} (${f.type.toUpperCase()})`, target: f }));
 
@@ -385,7 +386,7 @@ export default function CrimeMap({
   const handleSearchSelect = (item: any) => {
     setSearchQuery("");
     setShowSearchSuggestions(false);
-    
+
     if (item.type === "district") {
       const d = item.target;
       setSelectedDistrict(d);
@@ -416,692 +417,793 @@ export default function CrimeMap({
   };
 
   return (
-    <div className="absolute inset-0 w-full h-full overflow-hidden select-none bg-[#09090d]">
-      {/* Interactive Map SVG */}
-      <svg
-        ref={svgRef}
-        className="w-full h-full cursor-grab active:cursor-grabbing select-none"
-        onWheel={handleWheel}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUpOrLeave}
-        onMouseLeave={handleMouseUpOrLeave}
-      >
-        {/* SVG Defs for High-Tech HUD Styling */}
-        <defs>
-          {/* Grid backgrounds */}
-          <pattern id="standard-grid" width="30" height="30" patternUnits="userSpaceOnUse">
-            <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="0.5"/>
-          </pattern>
-          <pattern id="satellite-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(0,242,254,0.03)" strokeWidth="0.5"/>
-            <circle cx="20" cy="20" r="1" fill="rgba(0,242,254,0.15)"/>
-          </pattern>
-          <pattern id="terrain-contours" width="60" height="60" patternUnits="userSpaceOnUse">
-            <path d="M 0 30 Q 15 15, 30 30 T 60 30" fill="none" stroke="rgba(245,158,11,0.03)" strokeWidth="0.8"/>
-            <path d="M 0 10 Q 30 40, 60 10" fill="none" stroke="rgba(245,158,11,0.02)" strokeWidth="0.5"/>
-          </pattern>
-
-          {/* Glow Filters */}
-          <filter id="map-glow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="8" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
-          <filter id="heat-glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="15" result="blur" />
-          </filter>
-
-          {/* Heat gradients */}
-          <radialGradient id="heat-grad-high" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.75" />
-            <stop offset="50%" stopColor="#f97316" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-
-        {/* Dynamic Map Layer Fills (Fallback background under image layers) */}
-        {mapMode === "standard" && <rect width="100%" height="100%" fill="#eae8e4" />}
-        {mapMode === "satellite" && <rect width="100%" height="100%" fill="#0c0d14" />}
-        {mapMode === "terrain" && <rect width="100%" height="100%" fill="#e8e4db" />}
-        {mapMode === "dark" && <rect width="100%" height="100%" fill="#242f3e" />}
-        {mapMode === "heatmap" && <rect width="100%" height="100%" fill="#09090d" />}
-
-        {/* Global Transform wrapper for Pan & Zoom */}
-        <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.k})`}>
-          
-          {/* Base Map Basemap Image Layers */}
-          {mapMode === "satellite" && (
-            <image
-              href="https://server.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/export?bbox=74.0,11.5,78.5,18.2&bboxSR=4326&size=500,800&format=jpg&f=image"
-              x="0"
-              y="0"
-              width="500"
-              height="800"
-              preserveAspectRatio="none"
-              opacity="0.9"
-            />
-          )}
-          {mapMode === "standard" && (
-            <image
-              href="https://server.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer/export?bbox=74.0,11.5,78.5,18.2&bboxSR=4326&size=500,800&format=png&f=image"
-              x="0"
-              y="0"
-              width="500"
-              height="800"
-              preserveAspectRatio="none"
-              opacity="0.85"
-            />
-          )}
-          {mapMode === "terrain" && (
-            <image
-              href="https://server.arcgisonline.com/arcgis/rest/services/World_Topo_Map/MapServer/export?bbox=74.0,11.5,78.5,18.2&bboxSR=4326&size=500,800&format=png&f=image"
-              x="0"
-              y="0"
-              width="500"
-              height="800"
-              preserveAspectRatio="none"
-              opacity="0.85"
-            />
-          )}
-          {mapMode === "dark" && (
-            <image
-              href="https://server.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer/export?bbox=74.0,11.5,78.5,18.2&bboxSR=4326&size=500,800&format=png&f=image"
-              x="0"
-              y="0"
-              width="500"
-              height="800"
-              preserveAspectRatio="none"
-              opacity="0.8"
-              style={{ filter: "invert(1) hue-rotate(180deg) brightness(0.55) contrast(1.15)" }}
-            />
-          )}
-          
-          {/* 1. Base District Boundaries - Voronoi Administrative Cells */}
-          {layers.districtBoundaries && (
-            <g className="district-boundary-group">
-              {voronoiCells.map(({ district, path }) => {
-                const isSelected = selectedDistrict?.id === district.id;
-                const isHovered = hoveredDistrict?.id === district.id;
-                
-                // Color formatting depending on map modes
-                let fill = "rgba(147, 51, 234, 0.01)";
-                let stroke = "rgba(168, 85, 247, 0.12)";
-                let strokeWidth = 1.0;
-                
-                if (mapMode === "standard") {
-                  fill = "#f8f7f4";
-                  stroke = "#d0cdc7";
-                } else if (mapMode === "satellite") {
-                  fill = "rgba(15, 23, 42, 0.5)";
-                  stroke = "rgba(6, 182, 212, 0.2)";
-                } else if (mapMode === "terrain") {
-                  fill = "#f1ede4";
-                  stroke = "#d5cfc4";
-                } else if (mapMode === "dark") {
-                  fill = "#2b3c51";
-                  stroke = "#1f2d3d";
-                } else if (mapMode === "heatmap") {
-                  fill = "#0f172a";
-                  stroke = "rgba(255, 255, 255, 0.05)";
-                }
-                
-                if (isHovered) {
-                  if (mapMode === "standard") {
-                    fill = "#e8eaed";
-                    stroke = "#bdc1c6";
-                  } else if (mapMode === "terrain") {
-                    fill = "#e5dfd3";
-                    stroke = "#bca896";
-                  } else if (mapMode === "dark") {
-                    fill = "#35485f";
-                    stroke = "#4b6c93";
-                  } else {
-                    fill = theme.id === "dark" ? "rgba(168, 85, 247, 0.06)" : "rgba(168, 85, 247, 0.04)";
-                    stroke = "rgba(168, 85, 247, 0.4)";
-                  }
-                  strokeWidth = 1.5;
-                }
-                if (isSelected) {
-                  if (mapMode === "standard") {
-                    fill = "rgba(26, 115, 232, 0.08)";
-                    stroke = "#1a73e8";
-                  } else if (mapMode === "dark") {
-                    fill = "rgba(168, 85, 247, 0.12)";
-                    stroke = "#a855f7";
-                  } else {
-                    fill = "rgba(168, 85, 247, 0.12)";
-                    stroke = "rgba(168, 85, 247, 0.85)";
-                  }
-                  strokeWidth = 2.0;
-                }
-
-                return (
-                  <path
-                    key={district.id}
-                    d={path || ""}
-                    fill={fill}
-                    stroke={stroke}
-                    strokeWidth={strokeWidth}
-                    className="transition-all duration-200 cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedDistrict(district);
-                      setSelectedCityFilter(district.name);
-                      
-                      // Auto zoom on click
-                      const { x, y } = latLonToSvg(district.lat, district.lon);
-                      animateZoom(x, y, 1.8);
-                    }}
-                    onMouseEnter={() => setHoveredDistrict(district)}
-                    onMouseLeave={() => setHoveredDistrict(null)}
-                  />
-                );
-              })}
-            </g>
-          )}
-
-          {/* 2. Karnataka State Outline Boundary for masking/clipping visual aesthetics */}
-          <polygon
-            points="388,34 377,107 388,238 355,358 322,477 466,608 344,752 255,728 177,728 88,632 66,561 33,405 11,274 177,143 344,59"
-            fill="none"
-            stroke={theme.id === "dark" ? "rgba(168, 85, 247, 0.35)" : "rgba(168, 85, 247, 0.5)"}
-            strokeWidth="3.5"
-            strokeDasharray="6,4"
-            className="pointer-events-none"
-            style={{ filter: theme.id === "dark" ? "url(#map-glow)" : "none" }}
-          />
-
-          {/* 3. Highways Layer */}
-          <g className="highways-group opacity-60">
-            {KARNATAKA_HIGHWAYS.map((hw, idx) => {
-              // Convert lat/lon line coordinates to points list
-              const pointsStr = hw.path.map(p => {
-                const { x, y } = latLonToSvg(p.lat, p.lon);
-                return `${x},${y}`;
-              }).join(" ");
-              
-              let baseStroke = "#4b5563";
-              let accentStroke = "#a855f7";
-              
-              if (mapMode === "standard") {
-                baseStroke = "#ffd066";
-                accentStroke = "#ffb81c";
-              } else if (mapMode === "satellite") {
-                baseStroke = "rgba(6, 182, 212, 0.4)";
-                accentStroke = "#22d3ee";
-              } else if (mapMode === "terrain") {
-                baseStroke = "#d5cfc4";
-                accentStroke = "#8e7a68";
-              } else if (mapMode === "dark") {
-                baseStroke = "#38414e";
-                accentStroke = "#ff9c00";
-              }
-              
-              return (
-                <g key={idx}>
-                  <polyline
-                    points={pointsStr}
-                    fill="none"
-                    stroke={baseStroke}
-                    strokeWidth="1.8"
-                    strokeOpacity="0.4"
-                    className="pointer-events-none"
-                  />
-                  <polyline
-                    points={pointsStr}
-                    fill="none"
-                    stroke={accentStroke}
-                    strokeWidth="0.8"
-                    strokeOpacity="0.8"
-                    strokeDasharray="4,8"
-                    className="pointer-events-none"
-                  />
-                </g>
-              );
-            })}
-          </g>
-
-          {/* 4. Patrol Routes (Dashed animated loops) */}
-          {layers.patrolRoutes && (
-            <g className="patrol-routes-group">
-              {PATROL_ROUTES.map((route) => {
-                const pointsStr = route.coords.map(p => {
-                  const { x, y } = latLonToSvg(p.lat, p.lon);
-                  return `${x},${y}`;
-                }).join(" ");
-
-                return (
-                  <polyline
-                    key={route.id}
-                    points={pointsStr}
-                    fill="none"
-                    stroke="rgba(0,255,180,0.4)"
-                    strokeWidth="1.2"
-                    strokeDasharray="5,6"
-                    className="flowing-link pointer-events-none"
-                  />
-                );
-              })}
-            </g>
-          )}
-
-          {/* 5. Heatmap Overlay circles for hotspots */}
-          {(mapMode === "heatmap" || layers.crimeHeatmap) && (
-            <g className="heatmap-group pointer-events-none">
-              {KARNATAKA_DISTRICTS.map((d) => {
-                const dStat = districtCrimeStats[d.id] || { total: 0 };
-                if (dStat.total === 0) return null;
-                const { x, y } = latLonToSvg(d.lat, d.lon);
-                const radius = 25 + dStat.total * 6; // grow with crime counts
-                
-                return (
-                  <circle
-                    key={`heat-${d.id}`}
-                    cx={x}
-                    cy={y}
-                    r={radius}
-                    fill="url(#heat-grad-high)"
-                    style={{ filter: "url(#heat-glow)" }}
-                  />
-                );
-              })}
-            </g>
-          )}
-
-          {/* 6. CCTV Camera Icons (revealed at higher zoom levels) */}
-          {layers.cctv && transform.k > 1.8 && (
-            <g className="cctv-camera-group">
-              {CCTV_CAMERAS.filter((cam) => {
-                const width = svgRef.current ? svgRef.current.clientWidth : 800;
-                const height = svgRef.current ? svgRef.current.clientHeight : 800;
-                const left = -transform.x / transform.k;
-                const right = (width - transform.x) / transform.k;
-                const top = -transform.y / transform.k;
-                const bottom = (height - transform.y) / transform.k;
-                
-                const { x, y } = latLonToSvg(cam.lat, cam.lon);
-                return x >= left - 20 && x <= right + 20 && y >= top - 20 && y <= bottom + 20;
-              }).map((cam) => {
-                const { x, y } = latLonToSvg(cam.lat, cam.lon);
-                return (
-                  <g key={cam.id} className="cursor-pointer" transform={`translate(${x}, ${y})`}>
-                    <circle cx="0" cy="0" r={3.5 / transform.k} fill={cam.status === "active" ? "#10b981" : "#ef4444"} stroke="#000" strokeWidth={0.5 / transform.k} />
-                    <title>{cam.name} ({cam.status.toUpperCase()})</title>
-                  </g>
-                );
-              })}
-            </g>
-          )}
-
-          {/* 7. Detailed Locations (Airports, Railway, Bus Stations, Landmarks) */}
-          {transform.k > 1.0 && (
-            <g className="detailed-features-group pointer-events-none">
-              {MAP_LOCATION_FEATURES.filter((feat) => {
-                // Viewport culling check (bounding box in SVG space)
-                const width = svgRef.current ? svgRef.current.clientWidth : 800;
-                const height = svgRef.current ? svgRef.current.clientHeight : 800;
-                const left = -transform.x / transform.k;
-                const right = (width - transform.x) / transform.k;
-                const top = -transform.y / transform.k;
-                const bottom = (height - transform.y) / transform.k;
-                
-                const { x, y } = latLonToSvg(feat.lat, feat.lon);
-                const isInside = x >= left - 50 && x <= right + 50 && y >= top - 50 && y <= bottom + 50;
-                if (!isInside) return false;
-
-                // Zoom level filter: show different feature types progressively
-                if (feat.type === "city" || feat.type === "airport") {
-                  return transform.k > 1.0;
-                }
-                if (feat.type === "railway" || feat.type === "bus_station") {
-                  return transform.k > 2.2;
-                }
-                if (feat.type === "town" || feat.type === "police_station") {
-                  return transform.k > 3.2;
-                }
-                if (feat.type === "landmark" || feat.type === "village") {
-                  return transform.k > 4.5;
-                }
-                return false;
-              }).map((feat) => {
-                const { x, y } = latLonToSvg(feat.lat, feat.lon);
-                
-                // Set character icons or indicators
-                let icon = "📍";
-                if (feat.type === "airport") icon = "✈️";
-                if (feat.type === "railway") icon = "🚆";
-                if (feat.type === "bus_station") icon = "🚌";
-                if (feat.type === "police_station") icon = "👮";
-                if (feat.type === "landmark") icon = "🏛️";
-
-                const isDarkMap = ["dark", "satellite", "heatmap"].includes(mapMode);
-                const textFill = isDarkMap ? "rgba(255,255,255,0.7)" : "rgba(31,41,55,0.85)";
-
-                return (
-                  <g key={feat.id} transform={`translate(${x}, ${y})`}>
-                    <text y={-10 / transform.k} textAnchor="middle" fontSize={`${7 / transform.k}px`} fill={textFill} fontWeight="semibold" className="font-sans">
-                      {feat.name}
-                    </text>
-                    <text textAnchor="middle" fontSize={`${10 / transform.k}px`}>
-                      {icon}
-                    </text>
-                  </g>
-                );
-              })}
-            </g>
-          )}
-
-          {/* 8. Case / FIR Markers */}
-          {layers.firMarkers && (
-            <g className="fir-markers-group">
-              {mappedCases.filter(isCaseVisible).filter((c) => {
-                const width = svgRef.current ? svgRef.current.clientWidth : 800;
-                const height = svgRef.current ? svgRef.current.clientHeight : 800;
-                const left = -transform.x / transform.k;
-                const right = (width - transform.x) / transform.k;
-                const top = -transform.y / transform.k;
-                const bottom = (height - transform.y) / transform.k;
-                
-                return c.x >= left - 20 && c.x <= right + 20 && c.y >= top - 20 && c.y <= bottom + 20;
-              }).map((c) => {
-                const isSelected = selectedCase?.id === c.id;
-                const isHighlighted = highlightedMarker === c.id;
-                
-                let markerColor = "#a855f7"; // purple
-                if (c.crime_head.toLowerCase().includes("murder")) markerColor = "#ef4444"; // red
-                else if (c.crime_head.toLowerCase().includes("theft")) markerColor = "#fbbf24"; // amber
-                else if (c.crime_head.toLowerCase().includes("cyber") || c.crime_head.toLowerCase().includes("fraud")) markerColor = "#06b6d4"; // cyan
-                
-                return (
-                  <g
-                    key={c.id}
-                    transform={`translate(${c.x}, ${c.y})`}
-                    className="cursor-pointer"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedCase(c);
-                      setHighlightedMarker(c.id);
-                      
-                      // Highlight related link analysis nodes
-                      setSelectedNode({ id: c.fir_number, label: c.fir_number, type: "incident" });
-                    }}
-                  >
-                    {/* Pulsing selection circle */}
-                    {(isSelected || isHighlighted) && (
-                      <circle
-                        cx="0"
-                        cy="0"
-                        r={14 / transform.k}
-                        fill="none"
-                        stroke={markerColor}
-                        strokeWidth={1.5 / transform.k}
-                        className="animate-ping opacity-60"
-                      />
-                    )}
-                    
-                    {/* Inner pin point */}
-                    <circle
-                      cx="0"
-                      cy="0"
-                      r={(isSelected || isHighlighted ? 6 : 4.5) / transform.k}
-                      fill={markerColor}
-                      stroke="#fff"
-                      strokeWidth={(isSelected || isHighlighted ? 2.0 : 1.2) / transform.k}
-                      style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))" }}
-                    />
-                  </g>
-                );
-              })}
-            </g>
-          )}
-
-          {/* 9. Render Selected Case Route/Details (evidence, suspect, arrest locations) */}
-          {selectedCase && (
-            <g className="case-routes-group pointer-events-none">
-              {(() => {
-                const c = mappedCases.find(mc => mc.id === selectedCase.id);
-                if (!c) return null;
-                
-                // Draw line between case marker and district HQ/police station coordinates
-                const distName = c.district.replace(" District", "").replace(" City", "").trim().toLowerCase();
-                const district = KARNATAKA_DISTRICTS.find(d => d.name.toLowerCase() === distName) || KARNATAKA_DISTRICTS[25];
-                const hqCoords = latLonToSvg(district.lat, district.lon);
-                
-                return (
-                  <>
-                    {/* Line connecting Crime Scene to Police Station HQ */}
-                    <line
-                      x1={c.x}
-                      y1={c.y}
-                      x2={hqCoords.x}
-                      y2={hqCoords.y}
-                      stroke="#ef4444"
-                      strokeWidth="1.5"
-                      strokeDasharray="3,3"
-                      strokeOpacity="0.8"
-                    />
-                    
-                    {/* Police Station marker flag */}
-                    <g transform={`translate(${hqCoords.x}, ${hqCoords.y})`}>
-                      <circle cx="0" cy="0" r={3 / transform.k} fill="#ef4444" />
-                      <text x={6 / transform.k} y={2 / transform.k} fill="#ef4444" fontSize={`${7 / transform.k}px`} fontWeight="bold" className="font-mono">Precinct HQ</text>
-                    </g>
-                  </>
-                );
-              })()}
-            </g>
-          )}
-
-          {/* 10. District Labels (HQ text labels) */}
-          <g className="district-labels-group pointer-events-none">
-            {districtPoints.map((p) => {
-              const dStat = districtCrimeStats[p.district.id] || { total: 0 };
-              
-              // Only reveal district names at higher zooms, except major ones
-              const isMajor = ["bengaluru-urban", "mysuru", "belagavi", "dharwad", "dakshina-kannada"].includes(p.district.id);
-              if (transform.k < 0.7 && !isMajor) return null;
-
-              const isDarkMap = ["dark", "satellite", "heatmap"].includes(mapMode);
-              const textFill = isDarkMap ? "#f3f4f6" : "#2d3748";
-              const strokeColor = isDarkMap ? "#000000" : "#ffffff";
-
-              return (
-                <g key={`lbl-${p.district.id}`} transform={`translate(${p.x}, ${p.y})`}>
-                  {/* Subtle shadow backer for text readability */}
-                  <text
-                    y={-12 / transform.k}
-                    textAnchor="middle"
-                    fontSize={`${8 / transform.k}px`}
-                    fontWeight="bold"
-                    fill={strokeColor}
-                    stroke={strokeColor}
-                    strokeWidth={2.5 / transform.k}
-                    strokeLinejoin="round"
-                    className="font-sans tracking-wide uppercase opacity-90"
-                  >
-                    {p.district.name}
-                  </text>
-                  <text
-                    y={-12 / transform.k}
-                    textAnchor="middle"
-                    fontSize={`${8 / transform.k}px`}
-                    fontWeight="bold"
-                    fill={textFill}
-                    className="font-sans tracking-wide uppercase"
-                  >
-                    {p.district.name}
-                  </text>
-                  
-                  {/* Display active crime count bubble */}
-                  {dStat.total > 0 && (
-                    <g transform={`translate(0, ${10 / transform.k})`}>
-                      <circle cx="0" cy="0" r={5 / transform.k} fill="rgba(168, 85, 247, 0.85)" stroke={isDarkMap ? "#000" : "#fff"} strokeWidth={0.5 / transform.k} />
-                      <text textAnchor="middle" y={2 / transform.k} fontSize={`${5.5 / transform.k}px`} fill="#fff" fontWeight="bold" className="font-mono">
-                        {dStat.total}
-                      </text>
-                    </g>
-                  )}
-                </g>
-              );
-            })}
-          </g>
-
-        </g>
-      </svg>
-
-      {/* Floating Google Maps Style UI Controls */}
+    <div className={`flex flex-col h-[calc(100vh-68px)] w-full ${theme.id === 'dark' ? 'bg-[#050409]' : 'bg-slate-50'} ${theme.textMain} p-4 font-sans select-none overflow-hidden relative`}>
       
-      {/* 1. TOP LEFT SEARCH BAR */}
-      <div className={`absolute top-4 left-4 z-50 w-80 sm:w-96 shadow-2xl rounded-2xl backdrop-blur-md border ${theme.id === 'dark' ? 'bg-zinc-950/95 border-zinc-800 text-zinc-100' : 'bg-white/95 border-zinc-200 text-zinc-800'} p-2`}>
-        <div className="relative flex items-center">
-          <Search className="w-4 h-4 text-zinc-500 absolute left-3" />
-          <input
-            type="text"
-            placeholder="Search District, City, Police Station, FIR..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setShowSearchSuggestions(true);
-            }}
-            onFocus={() => setShowSearchSuggestions(true)}
-            className="w-full bg-transparent pl-9 pr-8 py-2 text-xs focus:outline-none placeholder-zinc-500 font-sans text-inherit"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => {
-                setSearchQuery("");
-                setShowSearchSuggestions(false);
-              }}
-              className="absolute right-3 text-zinc-400 hover:text-zinc-200 text-xs font-bold"
-            >
-              ×
-            </button>
-          )}
+      {/* 3-Column main content */}
+      <div className="flex flex-1 gap-4 overflow-hidden min-h-0">
+        
+        {/* Left Column: Karnataka Overview & Legend */}
+        <div className="w-[22%] min-w-[270px] max-w-[320px] flex flex-col gap-4 overflow-y-auto pr-1">
+          {/* Card: Karnataka Overview */}
+          <div className={`rounded-2xl p-4 flex flex-col gap-3 ${theme.cardBg} ${theme.textMain}`}>
+            <h3 className={`text-xs font-bold uppercase tracking-wider border-b pb-2 ${theme.id === 'dark' ? 'text-purple-400 border-purple-500/10' : 'text-purple-700 border-purple-200/50'}`}>
+              Karnataka Overview
+            </h3>
+            
+            {/* Metric 1 */}
+            <div className={`flex items-center gap-3 p-2 rounded-xl transition-all ${
+              theme.id === 'dark' 
+                ? 'bg-purple-950/10 border border-purple-500/5 hover:border-purple-500/20' 
+                : 'bg-purple-50/50 border border-purple-100 hover:border-purple-200'
+            }`}>
+              <div className={`p-2.5 rounded-xl ${theme.id === 'dark' ? 'bg-purple-500/10 text-purple-400' : 'bg-purple-100 text-purple-700'}`}>
+                <Compass className="w-5 h-5" />
+              </div>
+              <div>
+                <span className={`text-[10px] uppercase font-mono block ${theme.id === 'dark' ? 'text-zinc-500' : 'text-slate-400'}`}>Total Districts</span>
+                <span className="text-base font-bold font-mono">31</span>
+                <span className={`text-[9px] block ${theme.id === 'dark' ? 'text-purple-400/70' : 'text-purple-600/70'}`}>All Districts Monitoring</span>
+              </div>
+            </div>
+
+            {/* Metric 2 */}
+            <div className={`flex items-center gap-3 p-2 rounded-xl transition-all ${
+              theme.id === 'dark' 
+                ? 'bg-cyan-950/10 border border-cyan-500/5 hover:border-cyan-500/20' 
+                : 'bg-cyan-50/50 border border-cyan-100 hover:border-cyan-200'
+            }`}>
+              <div className={`p-2.5 rounded-xl ${theme.id === 'dark' ? 'bg-cyan-500/10 text-cyan-400' : 'bg-cyan-100 text-cyan-700'}`}>
+                <Shield className="w-5 h-5" />
+              </div>
+              <div>
+                <span className={`text-[10px] uppercase font-mono block ${theme.id === 'dark' ? 'text-zinc-500' : 'text-slate-400'}`}>Police Stations</span>
+                <span className="text-base font-bold font-mono">1,244</span>
+                <span className={`text-[9px] block ${theme.id === 'dark' ? 'text-cyan-400/70' : 'text-cyan-600/70'}`}>Active Stations</span>
+              </div>
+            </div>
+
+            {/* Metric 3 */}
+            <div className={`flex items-center gap-3 p-2 rounded-xl transition-all ${
+              theme.id === 'dark' 
+                ? 'bg-red-950/10 border border-red-500/5 hover:border-red-500/20' 
+                : 'bg-red-50/50 border border-red-100 hover:border-red-200'
+            }`}>
+              <div className={`p-2.5 rounded-xl ${theme.id === 'dark' ? 'bg-red-500/10 text-red-400' : 'bg-red-100 text-red-700'}`}>
+                <Database className="w-5 h-5" />
+              </div>
+              <div>
+                <span className={`text-[10px] uppercase font-mono block ${theme.id === 'dark' ? 'text-zinc-500' : 'text-slate-400'}`}>Active Cases</span>
+                <span className="text-base font-bold font-mono">2,317</span>
+                <span className={`text-[9px] block ${theme.id === 'dark' ? 'text-red-400/80' : 'text-red-600/80'}`}>+12.6% from last week</span>
+              </div>
+            </div>
+
+            {/* Metric 4 */}
+            <div className={`flex items-center gap-3 p-2 rounded-xl transition-all ${
+              theme.id === 'dark' 
+                ? 'bg-amber-950/10 border border-amber-500/5 hover:border-amber-500/20' 
+                : 'bg-amber-50/50 border border-amber-100 hover:border-amber-200'
+            }`}>
+              <div className={`p-2.5 rounded-xl ${theme.id === 'dark' ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-100 text-amber-700'}`}>
+                <Clock className="w-5 h-5" />
+              </div>
+              <div>
+                <span className={`text-[10px] uppercase font-mono block ${theme.id === 'dark' ? 'text-zinc-500' : 'text-slate-400'}`}>Incidents Today</span>
+                <span className="text-base font-bold font-mono">152</span>
+                <span className={`text-[9px] block ${theme.id === 'dark' ? 'text-amber-400/70' : 'text-amber-600/70'}`}>Across Karnataka</span>
+              </div>
+            </div>
+
+            {/* Metric 5 */}
+            <div className={`flex items-center gap-3 p-2 rounded-xl transition-all ${
+              theme.id === 'dark' 
+                ? 'bg-emerald-950/10 border border-emerald-500/5 hover:border-emerald-500/20' 
+                : 'bg-emerald-50/50 border border-emerald-100 hover:border-emerald-200'
+            }`}>
+              <div className={`p-2.5 rounded-xl ${theme.id === 'dark' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-100 text-emerald-700'}`}>
+                <User className="w-5 h-5" />
+              </div>
+              <div>
+                <span className={`text-[10px] uppercase font-mono block ${theme.id === 'dark' ? 'text-zinc-500' : 'text-slate-400'}`}>Arrests Today</span>
+                <span className="text-base font-bold font-mono">78</span>
+                <span className={`text-[9px] block ${theme.id === 'dark' ? 'text-emerald-400/70' : 'text-emerald-600/70'}`}>Across Karnataka</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card: Legend */}
+          <div className={`rounded-2xl p-4 flex flex-col gap-2 ${theme.cardBg} ${theme.textMain}`}>
+            <h3 className={`text-xs font-bold uppercase tracking-wider border-b pb-2 mb-1 ${theme.id === 'dark' ? 'text-purple-400 border-purple-500/10' : 'text-purple-700 border-purple-200/50'}`}>
+              Legend
+            </h3>
+            <div className={`space-y-2 text-[10px] font-mono ${theme.id === 'dark' ? 'text-zinc-400' : 'text-slate-600'}`}>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block animate-pulse shadow-[0_0_8px_#ef4444]"></span>
+                <span>High Crime Area</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow-[0_0_8px_#f59e0b]"></span>
+                <span>Medium Crime Area</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow-[0_0_8px_#10b981]"></span>
+                <span>Low Crime Area</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block shadow-[0_0_8px_#3b82f6]"></span>
+                <span>Police Station</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block shadow-[0_0_8px_#a855f7]"></span>
+                <span>District HQ</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span>✈️</span>
+                <span>Airport</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`w-6 h-0.5 border-t border-dashed inline-block ${theme.id === 'dark' ? 'border-purple-400/60' : 'border-purple-500/40'}`}></span>
+                <span>National Highway</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`w-6 h-0.5 inline-block ${theme.id === 'dark' ? 'bg-purple-500/40' : 'bg-purple-500/25'}`}></span>
+                <span>Major Road</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Suggestions list */}
-        {showSearchSuggestions && matchingSuggestions.length > 0 && (
-          <div className={`absolute top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto z-50 rounded-2xl border p-2 shadow-2xl ${theme.id === 'dark' ? 'bg-zinc-950/95 border-zinc-800 text-zinc-100' : 'bg-white/95 border-zinc-200 text-zinc-800'}`}>
-            <div className="px-3 pb-1 pt-1 text-[9px] text-zinc-500 uppercase tracking-wider font-bold">Select location to zoom</div>
-            {matchingSuggestions.map((item, idx) => (
-              <div
-                key={idx}
-                className="px-3 py-2 hover:bg-purple-500/10 rounded-lg cursor-pointer flex justify-between items-center text-xs transition-colors"
-                onClick={() => handleSearchSelect(item)}
+        {/* Center Column: Interactive Map */}
+        <div className={`flex-1 flex flex-col gap-3 rounded-2xl p-4 overflow-hidden relative ${theme.cardBg} ${theme.textMain}`}>
+          <div className={`flex justify-between items-center border-b pb-2 ${theme.id === 'dark' ? 'border-purple-500/10' : 'border-purple-200/50'}`}>
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider">
+                Karnataka State Map
+              </h3>
+              <p className={`text-[9px] font-mono ${theme.id === 'dark' ? 'text-purple-400/70' : 'text-purple-700/80'}`}>Real-time Crime Intelligence Overview</p>
+            </div>
+            
+            {/* Search, layers floating components inside the map tab */}
+            <div className="flex items-center gap-2">
+              {/* Layer toggles */}
+              <button
+                onClick={() => setIsLayersOpen(!isLayersOpen)}
+                className={`px-3 py-1.5 rounded-xl border text-[10px] font-mono flex items-center gap-1.5 cursor-pointer transition-all ${
+                  isLayersOpen
+                    ? "bg-purple-600 border-purple-400 text-white shadow-[0_0_10px_rgba(168,85,247,0.3)]"
+                    : theme.id === 'dark'
+                      ? "border-purple-500/20 text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+                      : "border-purple-200/60 text-slate-600 hover:text-slate-800 hover:bg-black/5"
+                }`}
               >
-                <span className={`font-medium ${theme.id === 'dark' ? 'text-zinc-200' : 'text-zinc-800'}`}>{item.name}</span>
-                <span className="text-[9px] text-purple-400 uppercase font-mono">{item.type}</span>
+                <Layers className="w-3 h-3" /> Layers
+              </button>
+              
+              {/* Map modes toggler */}
+              <div className={`flex items-center p-0.5 rounded-xl border ${theme.id === 'dark' ? 'border-purple-500/10 bg-black/40' : 'border-purple-200/60 bg-slate-100'}`}>
+                {(["dark", "standard", "satellite", "heatmap"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setMapMode(mode)}
+                    className={`px-2 py-1 rounded-lg text-[9px] uppercase font-mono transition-all cursor-pointer ${
+                      mapMode === mode
+                        ? "bg-purple-600 text-white font-bold"
+                        : "text-zinc-500 hover:text-zinc-300"
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
-        )}
-      </div>
 
-      {/* 2. TOP RIGHT MAP MODE SWITCHER */}
-      <div className={`absolute top-4 right-4 z-40 flex items-center gap-1.5 p-1.5 rounded-2xl shadow-2xl backdrop-blur-md border ${theme.id === 'dark' ? 'bg-zinc-950/95 border-zinc-800 text-zinc-300' : 'bg-white/95 border-zinc-200 text-zinc-700'}`}>
-        {(["dark", "standard", "satellite", "terrain", "heatmap"] as const).map((mode) => (
-          <button
-            key={mode}
-            onClick={() => setMapMode(mode)}
-            className={`px-3 py-1.5 rounded-xl text-[10px] uppercase font-sans font-bold transition-all cursor-pointer ${
-              mapMode === mode
-                ? "bg-purple-600 border border-purple-400 text-white shadow-[0_0_10px_rgba(168,85,247,0.45)]"
-                : "border border-transparent hover:text-white"
-            }`}
-          >
-            {mode}
-          </button>
-        ))}
-      </div>
-
-      {/* 3. RIGHT VIEWPORT UTILITIES (BOTTOM RIGHT) */}
-      <div className={`absolute bottom-4 right-4 z-40 flex flex-col gap-2 p-1.5 rounded-2xl shadow-2xl backdrop-blur-md border ${theme.id === 'dark' ? 'bg-zinc-950/95 border-zinc-800 text-zinc-400' : 'bg-white/95 border-zinc-200 text-zinc-500'}`}>
-        <button
-          onClick={() => setTransform({ ...transform, k: Math.min(5, transform.k * 1.25) })}
-          className="w-10 h-10 rounded-full flex items-center justify-center hover:text-zinc-200 hover:bg-slate-500/10 transition-colors cursor-pointer"
-          title="Zoom In"
-        >
-          <ZoomIn className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => setTransform({ ...transform, k: Math.max(0.35, transform.k / 1.25) })}
-          className="w-10 h-10 rounded-full flex items-center justify-center hover:text-zinc-200 hover:bg-slate-500/10 transition-colors cursor-pointer"
-          title="Zoom Out"
-        >
-          <ZoomOut className="w-4 h-4" />
-        </button>
-        <button
-          onClick={resetView}
-          className="w-10 h-10 rounded-full flex items-center justify-center hover:text-zinc-200 hover:bg-slate-500/10 transition-colors cursor-pointer"
-          title="Reset Fit"
-        >
-          <Maximize2 className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* 4. LAYERS SELECTION FLOATER (LEFT BOTTOM - COLLAPSIBLE) */}
-      <div className="absolute bottom-4 left-4 z-40 flex flex-col items-start gap-2">
-        {isLayersOpen && (
-          <div className={`p-4 rounded-2xl shadow-2xl backdrop-blur-md border w-60 mb-2 ${theme.id === 'dark' ? 'bg-zinc-950/95 border-zinc-800 text-zinc-300' : 'bg-white/95 border-zinc-200 text-zinc-700'}`}>
-            <div className="flex items-center justify-between border-b border-zinc-850/10 dark:border-zinc-800 pb-2 mb-3">
-              <div className="flex items-center gap-2">
-                <Layers className="w-3.5 h-3.5 text-purple-400" />
-                <h4 className="text-xs font-bold uppercase tracking-wider font-sans">Map Layers</h4>
+          {/* Interactive Map SVG Wrapper */}
+          <div className={`flex-1 min-h-0 w-full relative rounded-xl overflow-hidden ${theme.id === 'dark' ? 'bg-[#09090d]' : 'bg-[#f4f2f0] border border-purple-200/40'}`}>
+            {/* Floating Autocomplete Search box */}
+            <div className={`absolute top-4 left-4 z-20 w-72 shadow-2xl rounded-xl backdrop-blur-md border p-1.5 ${
+              theme.id === 'dark' 
+                ? 'border-purple-500/20 bg-zinc-950/95 text-zinc-100' 
+                : 'border-purple-200/80 bg-white/95 text-zinc-800'
+            }`}>
+              <div className="relative flex items-center">
+                <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-2.5" />
+                <input
+                  type="text"
+                  placeholder="Search District, HQ, FIR..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowSearchSuggestions(true);
+                  }}
+                  onFocus={() => setShowSearchSuggestions(true)}
+                  className="w-full bg-transparent pl-8 pr-6 py-1.5 text-[11px] focus:outline-none placeholder-zinc-500 font-sans text-inherit"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => {
+                      setSearchQuery("");
+                      setShowSearchSuggestions(false);
+                    }}
+                    className="absolute right-2.5 text-zinc-400 hover:text-zinc-200 text-xs font-bold"
+                  >
+                    ×
+                  </button>
+                )}
               </div>
-              <button 
-                onClick={() => setIsLayersOpen(false)}
-                className="text-xs font-bold hover:text-zinc-900 dark:hover:text-white"
+
+              {showSearchSuggestions && matchingSuggestions.length > 0 && (
+                <div className={`absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto z-50 rounded-xl border p-1 shadow-2xl ${
+                  theme.id === 'dark' ? 'bg-zinc-950 border-purple-500/20 text-zinc-300' : 'bg-white border-purple-200/80 text-zinc-800'
+                }`}>
+                  {matchingSuggestions.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="px-2.5 py-1.5 hover:bg-purple-500/10 rounded-lg cursor-pointer flex justify-between items-center text-[10px] transition-colors"
+                      onClick={() => handleSearchSelect(item)}
+                    >
+                      <span className="font-medium">{item.name}</span>
+                      <span className="text-[8px] text-purple-400 uppercase font-mono">{item.type}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <svg
+              ref={svgRef}
+              className="w-full h-full cursor-grab active:cursor-grabbing select-none"
+              onWheel={handleWheel}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUpOrLeave}
+              onMouseLeave={handleMouseUpOrLeave}
+            >
+              <defs>
+                <pattern id="standard-grid" width="30" height="30" patternUnits="userSpaceOnUse">
+                  <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="0.5"/>
+                </pattern>
+                <pattern id="satellite-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke={theme.id === 'dark' ? 'rgba(0,242,254,0.03)' : 'rgba(0,0,0,0.02)'} strokeWidth="0.5"/>
+                  <circle cx="20" cy="20" r="1" fill={theme.id === 'dark' ? 'rgba(0,242,254,0.15)' : 'rgba(0,0,0,0.08)'}/>
+                </pattern>
+                <pattern id="terrain-contours" width="60" height="60" patternUnits="userSpaceOnUse">
+                  <path d="M 0 30 Q 15 15, 30 30 T 60 30" fill="none" stroke="rgba(245,158,11,0.03)" strokeWidth="0.8"/>
+                  <path d="M 0 10 Q 30 40, 60 10" fill="none" stroke="rgba(245,158,11,0.02)" strokeWidth="0.5"/>
+                </pattern>
+                <filter id="map-glow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="8" result="blur" />
+                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+                <filter id="heat-glow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur stdDeviation="15" result="blur" />
+                </filter>
+                <radialGradient id="heat-grad-high" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#ef4444" stopOpacity="0.75" />
+                  <stop offset="50%" stopColor="#f97316" stopOpacity="0.35" />
+                  <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+                </radialGradient>
+              </defs>
+
+              {mapMode === "standard" && <rect width="100%" height="100%" fill="#eae8e4" />}
+              {mapMode === "satellite" && <rect width="100%" height="100%" fill="#0c0d14" />}
+              {mapMode === "standard" && <rect width="100%" height="100%" fill="url(#standard-grid)" />}
+              {mapMode === "satellite" && <rect width="100%" height="100%" fill="url(#satellite-grid)" />}
+              {mapMode === "heatmap" && <rect width="100%" height="100%" fill={theme.id === 'dark' ? '#09090d' : '#f0edf5'} />}
+              {mapMode === "dark" && <rect width="100%" height="100%" fill="#030206" />}
+
+              <g transform={`translate(${transform.x}, ${transform.y}) scale(${transform.k})`}>
+                {mapMode === "satellite" && (
+                  <image
+                    href="https://server.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/export?bbox=74.0,11.5,78.5,18.2&bboxSR=4326&size=500,800&format=jpg&f=image"
+                    x="0" y="0" width="500" height="800"
+                    preserveAspectRatio="none" opacity="0.4"
+                  />
+                )}
+                
+                {layers.districtBoundaries && (
+                  <g className="district-boundary-group">
+                    {voronoiCells.map(({ district, path }) => {
+                      const isSelected = selectedDistrict?.id === district.id;
+                      const isHovered = hoveredDistrict?.id === district.id;
+                      
+                      let fill = theme.id === 'dark' ? "rgba(147, 51, 234, 0.02)" : "rgba(147, 51, 234, 0.04)";
+                      let stroke = theme.id === 'dark' ? "rgba(168, 85, 247, 0.2)" : "rgba(168, 85, 247, 0.25)";
+                      let strokeWidth = 1.0;
+                      
+                      if (mapMode === "standard") {
+                        fill = "#f8f7f4";
+                        stroke = "#d0cdc7";
+                      } else if (mapMode === "satellite") {
+                        fill = "rgba(15, 23, 42, 0.4)";
+                        stroke = "rgba(6, 182, 212, 0.2)";
+                      } else if (mapMode === "heatmap") {
+                        fill = theme.id === 'dark' ? "#0f172a" : "#eae4f2";
+                        stroke = theme.id === 'dark' ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)";
+                      }
+                      
+                      if (isHovered) {
+                        fill = theme.id === 'dark' ? "rgba(168, 85, 247, 0.08)" : "rgba(168, 85, 247, 0.12)";
+                        stroke = "rgba(168, 85, 247, 0.6)";
+                        strokeWidth = 1.5;
+                      }
+                      if (isSelected) {
+                        fill = "rgba(168, 85, 247, 0.18)";
+                        stroke = "rgba(168, 85, 247, 0.9)";
+                        strokeWidth = 2.0;
+                      }
+
+                      return (
+                        <path
+                          key={district.id}
+                          d={path || ""}
+                          fill={fill}
+                          stroke={stroke}
+                          strokeWidth={strokeWidth}
+                          className="transition-all duration-200 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedDistrict(district);
+                            setSelectedCityFilter(district.name);
+                            const { x, y } = latLonToSvg(district.lat, district.lon);
+                            animateZoom(x, y, 1.8);
+                          }}
+                          onMouseEnter={() => setHoveredDistrict(district)}
+                          onMouseLeave={() => setHoveredDistrict(null)}
+                        />
+                      );
+                    })}
+                  </g>
+                )}
+
+                <polygon
+                  points="410,20 390,107 395,238 355,358 322,477 466,608 344,765 255,765 177,728 88,632 66,561 33,405 11,274 177,143 344,59"
+                  fill="none"
+                  stroke={theme.id === 'dark' ? "rgba(168, 85, 247, 0.7)" : "rgba(168, 85, 247, 0.8)"}
+                  strokeWidth="3"
+                  strokeDasharray="5,4"
+                  className="pointer-events-none"
+                  style={{ filter: "url(#map-glow)" }}
+                />
+
+                <g className="highways-group opacity-40">
+                  {KARNATAKA_HIGHWAYS.map((hw, idx) => {
+                    const pointsStr = hw.path.map(p => {
+                      const { x, y } = latLonToSvg(p.lat, p.lon);
+                      return `${x},${y}`;
+                    }).join(" ");
+                    
+                    return (
+                      <g key={idx}>
+                        <polyline
+                          points={pointsStr}
+                          fill="none"
+                          stroke={theme.id === 'dark' ? '#4b5563' : '#a1a8b5'}
+                          strokeWidth="1.2"
+                          strokeOpacity="0.3"
+                          className="pointer-events-none"
+                        />
+                        <polyline
+                          points={pointsStr}
+                          fill="none"
+                          stroke="#a855f7"
+                          strokeWidth="0.6"
+                          strokeOpacity="0.6"
+                          strokeDasharray="3,6"
+                          className="pointer-events-none"
+                        />
+                      </g>
+                    );
+                  })}
+                </g>
+
+                {layers.patrolRoutes && (
+                  <g className="patrol-routes-group">
+                    {PATROL_ROUTES.map((route) => {
+                      const pointsStr = route.coords.map(p => {
+                        const { x, y } = latLonToSvg(p.lat, p.lon);
+                        return `${x},${y}`;
+                      }).join(" ");
+                      return (
+                        <polyline
+                          key={route.id}
+                          points={pointsStr}
+                          fill="none"
+                          stroke={theme.id === 'dark' ? "rgba(0,255,180,0.35)" : "rgba(0,180,120,0.45)"}
+                          strokeWidth="1.0"
+                          strokeDasharray="4,5"
+                          className="flowing-link pointer-events-none"
+                        />
+                      );
+                    })}
+                  </g>
+                )}
+
+                {(mapMode === "heatmap" || layers.crimeHeatmap) && (
+                  <g className="heatmap-group pointer-events-none">
+                    {KARNATAKA_DISTRICTS.map((d) => {
+                      const dStat = districtCrimeStats[d.id] || { total: 0 };
+                      if (dStat.total === 0) return null;
+                      const { x, y } = latLonToSvg(d.lat, d.lon);
+                      const radius = 25 + dStat.total * 6;
+                      return (
+                        <circle
+                          key={`heat-${d.id}`}
+                          cx={x}
+                          cy={y}
+                          r={radius}
+                          fill="url(#heat-grad-high)"
+                          style={{ filter: "url(#heat-glow)" }}
+                        />
+                      );
+                    })}
+                  </g>
+                )}
+
+                {layers.cctv && transform.k > 1.8 && (
+                  <g className="cctv-camera-group">
+                    {CCTV_CAMERAS.map((cam) => {
+                      const { x, y } = latLonToSvg(cam.lat, cam.lon);
+                      return (
+                        <g key={cam.id} className="cursor-pointer" transform={`translate(${x}, ${y})`}>
+                          <circle cx="0" cy="0" r={3 / transform.k} fill={cam.status === "active" ? "#10b981" : "#ef4444"} stroke="#000" strokeWidth={0.5 / transform.k} />
+                          <title>{cam.name}</title>
+                        </g>
+                      );
+                    })}
+                  </g>
+                )}
+
+                {transform.k > 1.0 && (
+                  <g className="detailed-features-group pointer-events-none">
+                    {MAP_LOCATION_FEATURES.filter((feat) => {
+                      if (feat.type === "city" || feat.type === "airport") return transform.k > 1.0;
+                      if (feat.type === "police_station") return transform.k > 2.5;
+                      return false;
+                    }).map((feat) => {
+                      const { x, y } = latLonToSvg(feat.lat, feat.lon);
+                      let icon = "📍";
+                      if (feat.type === "airport") icon = "✈️";
+                      if (feat.type === "police_station") icon = "👮";
+                      return (
+                        <g key={feat.id} transform={`translate(${x}, ${y})`}>
+                          <text y={-8 / transform.k} textAnchor="middle" fontSize={`${6 / transform.k}px`} fill={theme.id === 'dark' ? "rgba(255,255,255,0.7)" : "rgba(15,23,42,0.85)"} fontWeight="semibold" className="font-sans">
+                            {feat.name}
+                          </text>
+                          <text textAnchor="middle" fontSize={`${8 / transform.k}px`}>
+                            {icon}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </g>
+                )}
+
+                {layers.firMarkers && (
+                  <g className="fir-markers-group">
+                    {mappedCases.filter(isCaseVisible).map((c) => {
+                      const isSelected = selectedCase?.id === c.id;
+                      const isHighlighted = highlightedMarker === c.id;
+                      let markerColor = "#a855f7";
+                      if (c.crime_head.toLowerCase().includes("murder")) markerColor = "#ef4444";
+                      else if (c.crime_head.toLowerCase().includes("theft")) markerColor = "#fbbf24";
+                      else if (c.crime_head.toLowerCase().includes("cyber") || c.crime_head.toLowerCase().includes("fraud")) markerColor = "#06b6d4";
+                      return (
+                        <g
+                          key={c.id}
+                          transform={`translate(${c.x}, ${c.y})`}
+                          className="cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedCase(c);
+                            setHighlightedMarker(c.id);
+                            setSelectedNode({ id: c.fir_number, label: c.fir_number, type: "incident" });
+                          }}
+                        >
+                          {(isSelected || isHighlighted) && (
+                            <circle cx="0" cy="0" r={12 / transform.k} fill="none" stroke={markerColor} strokeWidth={1.5 / transform.k} className="animate-ping opacity-60" />
+                          )}
+                          <circle
+                            cx="0" cy="0"
+                            r={(isSelected || isHighlighted ? 6 : 4) / transform.k}
+                            fill={markerColor}
+                            stroke="#fff"
+                            strokeWidth={(isSelected || isHighlighted ? 1.8 : 1.0) / transform.k}
+                          />
+                        </g>
+                      );
+                    })}
+                  </g>
+                )}
+
+                {selectedCase && (
+                  <g className="case-routes-group pointer-events-none">
+                    {(() => {
+                      const c = mappedCases.find(mc => mc.id === selectedCase.id);
+                      if (!c) return null;
+                      const distName = c.district.replace(" District", "").replace(" City", "").trim().toLowerCase();
+                      const district = KARNATAKA_DISTRICTS.find(d => d.name.toLowerCase() === distName) || KARNATAKA_DISTRICTS[25];
+                      const hqCoords = latLonToSvg(district.lat, district.lon);
+                      return (
+                        <>
+                          <line
+                            x1={c.x} y1={c.y} x2={hqCoords.x} y2={hqCoords.y}
+                            stroke="#ef4444" strokeWidth="1.5" strokeDasharray="3,3" strokeOpacity="0.8"
+                          />
+                          <g transform={`translate(${hqCoords.x}, ${hqCoords.y})`}>
+                            <circle cx="0" cy="0" r={3 / transform.k} fill="#ef4444" />
+                          </g>
+                        </>
+                      );
+                    })()}
+                  </g>
+                )}
+
+                <g className="district-labels-group pointer-events-none">
+                  {districtPoints.map((p) => {
+                    const dStat = districtCrimeStats[p.district.id] || { total: 0 };
+                    const isMajor = ["bengaluru-urban", "mysuru", "belagavi", "dharwad", "dakshina-kannada"].includes(p.district.id);
+                    if (transform.k < 0.7 && !isMajor) return null;
+                    return (
+                      <g key={`lbl-${p.district.id}`} transform={`translate(${p.x}, ${p.y})`}>
+                        <text
+                          y={-10 / transform.k}
+                          textAnchor="middle"
+                          fontSize={`${8 / transform.k}px`}
+                          fontWeight="bold"
+                          fill={theme.id === 'dark' ? '#000' : '#fff'}
+                          stroke={theme.id === 'dark' ? '#000' : '#fff'}
+                          strokeWidth={2 / transform.k}
+                          strokeLinejoin="round"
+                          className="font-sans tracking-wide uppercase opacity-85"
+                        >
+                          {p.district.name}
+                        </text>
+                        <text
+                          y={-10 / transform.k}
+                          textAnchor="middle"
+                          fontSize={`${8 / transform.k}px`}
+                          fontWeight="bold"
+                          fill={theme.id === 'dark' ? '#f3f4f6' : '#1e293b'}
+                          className="font-sans tracking-wide uppercase"
+                        >
+                          {p.district.name}
+                        </text>
+                        {dStat.total > 0 && (
+                          <g transform={`translate(0, ${8 / transform.k})`}>
+                            <circle cx="0" cy="0" r={4.5 / transform.k} fill="rgba(168, 85, 247, 0.9)" stroke={theme.id === 'dark' ? '#000' : '#fff'} strokeWidth={0.5 / transform.k} />
+                            <text textAnchor="middle" y={1.5 / transform.k} fontSize={`${5 / transform.k}px`} fill="#fff" fontWeight="bold" className="font-mono">
+                              {dStat.total}
+                            </text>
+                          </g>
+                        )}
+                      </g>
+                    );
+                  })}
+                </g>
+
+                <text x="450" y="320" fill={theme.id === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'} fontSize="10px" fontWeight="bold" letterSpacing="2px" textAnchor="middle" className="pointer-events-none uppercase font-mono">Telangana</text>
+                <text x="460" y="520" fill={theme.id === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'} fontSize="10px" fontWeight="bold" letterSpacing="2px" textAnchor="middle" className="pointer-events-none uppercase font-mono">Andhra Pradesh</text>
+                <text x="430" y="700" fill={theme.id === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'} fontSize="10px" fontWeight="bold" letterSpacing="2px" textAnchor="middle" className="pointer-events-none uppercase font-mono">Tamil Nadu</text>
+                <text x="210" y="770" fill={theme.id === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'} fontSize="10px" fontWeight="bold" letterSpacing="2px" textAnchor="middle" className="pointer-events-none uppercase font-mono">Kerala</text>
+                <text x="30" y="550" fill={theme.id === 'dark' ? 'rgba(0,180,255,0.15)' : 'rgba(0,100,200,0.12)'} fontSize="10px" fontWeight="bold" letterSpacing="2px" textAnchor="middle" className="pointer-events-none uppercase font-mono">Arabian Sea</text>
+                <text x="230" y="30" fill={theme.id === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'} fontSize="10px" fontWeight="bold" letterSpacing="2px" textAnchor="middle" className="pointer-events-none uppercase font-mono">Maharashtra</text>
+              </g>
+            </svg>
+            
+            <div className={`absolute bottom-4 left-4 pointer-events-none flex flex-col gap-1 text-[9px] font-mono ${theme.id === 'dark' ? 'text-zinc-500' : 'text-slate-400'}`}>
+              <div className={`flex justify-between items-end w-32 border-b pb-0.5 ${theme.id === 'dark' ? 'border-zinc-700' : 'border-slate-300'}`}>
+                <span>0</span>
+                <span>50</span>
+                <span>100</span>
+                <span>150 km</span>
+              </div>
+            </div>
+
+            <div className={`absolute bottom-4 right-4 flex flex-col gap-1.5 border p-1 rounded-xl shadow-2xl ${
+              theme.id === 'dark' ? 'bg-black/85 border-purple-500/25' : 'bg-white/95 border-purple-200/80'
+            }`}>
+              <button
+                onClick={() => setTransform({ ...transform, k: Math.min(5, transform.k * 1.25) })}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-purple-400 hover:bg-slate-500/10 transition-colors cursor-pointer"
+                title="Zoom In"
               >
-                ✕
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => setTransform({ ...transform, k: Math.max(0.35, transform.k / 1.25) })}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-purple-400 hover:bg-slate-500/10 transition-colors cursor-pointer"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={resetView}
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-purple-400 hover:bg-slate-500/10 transition-colors cursor-pointer"
+                title="Reset View"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
               </button>
             </div>
-            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
-              {Object.entries(layers).map(([key, val]) => {
-                const label = key
-                  .replace(/([A-Z])/g, " $1")
-                  .replace(/^./, str => str.toUpperCase());
-                  
-                return (
-                  <button
-                    key={key}
-                    onClick={() => setLayers(prev => ({ ...prev, [key]: !val }))}
-                    className={`w-full flex items-center justify-between py-1 px-2 rounded-lg transition-all text-left text-[10px] font-sans font-medium cursor-pointer ${theme.id === 'dark' ? 'hover:bg-white/5' : 'hover:bg-black/5'}`}
-                  >
-                    <span className={val ? (theme.id === 'dark' ? "text-zinc-200" : "text-zinc-900") : "text-zinc-500"}>{label}</span>
-                    {val ? (
-                      <Eye className="w-3 h-3 text-purple-400" />
-                    ) : (
-                      <EyeOff className={`w-3 h-3 ${theme.id === 'dark' ? 'text-zinc-600' : 'text-zinc-400'}`} />
-                    )}
-                  </button>
-                );
-              })}
+          </div>
+        </div>
+
+        <div className="w-[25%] min-w-[320px] max-w-[380px] flex flex-col gap-4 overflow-y-auto pr-1">
+          <div className={`rounded-2xl p-4 flex flex-col gap-3 ${theme.cardBg} ${theme.textMain}`}>
+            <h3 className={`text-xs font-bold uppercase tracking-wider border-b pb-1.5 ${theme.id === 'dark' ? 'text-purple-400 border-purple-500/10' : 'text-purple-700 border-purple-200/50'}`}>
+              Crime Intensity Heatmap
+            </h3>
+            <div className="flex gap-4 items-center">
+              <div className={`w-[50%] h-32 border rounded-xl flex items-center justify-center p-1 relative overflow-hidden ${
+                theme.id === 'dark' ? 'bg-black/40 border-purple-500/5' : 'bg-slate-100/50 border-purple-200/40'
+              }`}>
+                <svg viewBox="0 0 500 800" className="w-full h-full opacity-70">
+                  <polygon
+                    points="410,20 390,107 395,238 355,358 322,477 466,608 344,765 255,765 177,728 88,632 66,561 33,405 11,274 177,143 344,59"
+                    fill={theme.id === 'dark' ? '#180e29' : '#f1edf7'}
+                    stroke={theme.id === 'dark' ? 'rgba(168, 85, 247, 0.4)' : 'rgba(168, 85, 247, 0.2)'}
+                    strokeWidth="8"
+                  />
+                  {KARNATAKA_DISTRICTS.map((d) => {
+                    const { x, y } = latLonToSvg(d.lat, d.lon);
+                    const intensityColor = d.crimeRateIndex > 65 ? "#ef4444" : d.crimeRateIndex > 45 ? "#fbbf24" : "#10b981";
+                    return (
+                      <g key={`mini-${d.id}`}>
+                        <circle cx={x} cy={y} r={25 + (d.crimeRateIndex / 3)} fill={intensityColor} opacity="0.16" style={{ filter: "blur(5px)" }} />
+                        <circle cx={x} cy={y} r="6" fill={intensityColor} opacity="0.7" />
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+              <div className="flex-1 flex flex-col gap-2.5">
+                <div className={`h-20 w-3 rounded-full bg-gradient-to-t from-emerald-500 via-yellow-500 to-red-500 border ${
+                  theme.id === 'dark' ? 'border-zinc-800' : 'border-slate-200'
+                }`} />
+                <div className={`flex flex-col gap-1 text-[9px] font-mono ${theme.id === 'dark' ? 'text-zinc-400' : 'text-slate-500'}`}>
+                  <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Very High</div>
+                  <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-orange-500" /> High</div>
+                  <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-yellow-500" /> Medium</div>
+                  <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Low</div>
+                </div>
+              </div>
             </div>
           </div>
-        )}
-        <button
-          onClick={() => setIsLayersOpen(!isLayersOpen)}
-          className={`w-10 h-10 rounded-full flex items-center justify-center shadow-2xl backdrop-blur-md border transition-all cursor-pointer ${
-            isLayersOpen 
-              ? "bg-purple-600 border-purple-400 text-white" 
-              : theme.id === 'dark'
-                ? "bg-zinc-950/95 border-zinc-800 text-zinc-300 hover:text-zinc-100"
-                : "bg-white/95 border-zinc-200 text-zinc-700 hover:text-zinc-900"
-          }`}
-          title="Toggle Map Layers"
-        >
-          <Layers className="w-4 h-4" />
-        </button>
+          <div className={`rounded-2xl p-4 flex flex-col gap-2 ${theme.cardBg} ${theme.textMain}`}>
+            <h3 className={`text-xs font-bold uppercase tracking-wider border-b pb-1.5 ${theme.id === 'dark' ? 'text-purple-400 border-purple-500/10' : 'text-purple-700 border-purple-200/50'}`}>
+              Top 5 Crime Categories
+            </h3>
+            <div className="h-28 flex items-center">
+              <div className="w-[45%] h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: "Theft", value: 28.4, color: "#3b82f6" },
+                        { name: "Assault", value: 21.7, color: "#fbbf24" },
+                        { name: "Cyber Crime", value: 16.3, color: "#ec4899" },
+                        { name: "Fraud", value: 14.8, color: "#ef4444" },
+                        { name: "Others", value: 18.8, color: "#10b981" }
+                      ]}
+                      cx="50%" cy="50%"
+                      innerRadius={22}
+                      outerRadius={38}
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      {[
+                        { color: "#3b82f6" },
+                        { color: "#fbbf24" },
+                        { color: "#ec4899" },
+                        { color: "#ef4444" },
+                        { color: "#10b981" }
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex-1 flex flex-col gap-1 text-[9px] font-mono pr-2">
+                {[
+                  { name: "Theft", value: "28.4%", color: "bg-blue-500" },
+                  { name: "Assault", value: "21.7%", color: "bg-amber-400" },
+                  { name: "Cyber Crime", value: "16.3%", color: "bg-pink-500" },
+                  { name: "Fraud", value: "14.8%", color: "bg-red-500" },
+                  { name: "Others", value: "18.8%", color: "bg-emerald-500" }
+                ].map((cat, idx) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${cat.color}`} />
+                      <span className={theme.id === 'dark' ? 'text-zinc-400' : 'text-slate-600'}>{cat.name}</span>
+                    </div>
+                    <span className="font-bold">{cat.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className={`rounded-2xl p-4 flex flex-col gap-3 ${theme.cardBg} ${theme.textMain}`}>
+            <h3 className={`text-xs font-bold uppercase tracking-wider border-b pb-1.5 ${theme.id === 'dark' ? 'text-purple-400 border-purple-500/10' : 'text-purple-700 border-purple-200/50'}`}>
+              Top 5 Districts (By Active Cases)
+            </h3>
+            <div className="space-y-2 text-[10px] font-mono">
+              {[
+                { name: "Bengaluru Urban", val: 542, max: 600, color: "bg-red-500" },
+                { name: "Bengaluru Rural", val: 321, max: 600, color: "bg-orange-500" },
+                { name: "Mysuru", val: 198, max: 600, color: "bg-yellow-500" },
+                { name: "Dharwad", val: 176, max: 600, color: "bg-emerald-500" },
+                { name: "Belagavi", val: 154, max: 600, color: "bg-blue-500" }
+              ].map((item, idx) => (
+                <div key={idx} className="space-y-1">
+                  <div className="flex justify-between items-center text-[9px]">
+                    <span className={theme.id === 'dark' ? 'text-zinc-400' : 'text-slate-600'}>{item.name}</span>
+                    <span className="font-bold">{item.val}</span>
+                  </div>
+                  <div className={`w-full rounded-full h-1.5 overflow-hidden ${theme.id === 'dark' ? 'bg-zinc-900' : 'bg-slate-200'}`}>
+                    <div className={`h-full ${item.color} rounded-full`} style={{ width: `${(item.val / item.max) * 100}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className={`rounded-2xl p-4 flex flex-col gap-2 flex-1 min-h-0 ${theme.cardBg} ${theme.textMain}`}>
+            <h3 className={`text-xs font-bold uppercase tracking-wider border-b pb-1.5 ${theme.id === 'dark' ? 'text-purple-400 border-purple-500/10' : 'text-purple-700 border-purple-200/50'}`}>
+              Real-time Incident Feed
+            </h3>
+            <div className="space-y-2 overflow-y-auto flex-1 min-h-0 text-[10px] font-mono pr-1">
+              <div className={`p-2 rounded-xl border flex items-start gap-2.5 ${
+                theme.id === 'dark' ? 'bg-red-950/10 border-red-500/10' : 'bg-red-50/55 border-red-100'
+              }`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1 inline-block shrink-0 animate-pulse" />
+                <div className="flex-1">
+                  <div className="text-red-500 font-bold">Theft Reported</div>
+                  <div className={`text-[9px] mt-0.5 ${theme.id === 'dark' ? 'text-zinc-400' : 'text-slate-500'}`}>Vijayapura District</div>
+                </div>
+                <div className="text-zinc-500 text-[9px]">10:32 AM</div>
+              </div>
+              <div className={`p-2 rounded-xl border flex items-start gap-2.5 ${
+                theme.id === 'dark' ? 'bg-amber-950/10 border-amber-500/10' : 'bg-amber-50/55 border-amber-100'
+              }`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1 inline-block shrink-0" />
+                <div className="flex-1">
+                  <div className="text-amber-500 font-bold">Assault Case</div>
+                  <div className={`text-[9px] mt-0.5 ${theme.id === 'dark' ? 'text-zinc-400' : 'text-slate-500'}`}>Davanagere District</div>
+                </div>
+                <div className="text-zinc-500 text-[9px]">10:21 AM</div>
+              </div>
+              <div className={`p-2 rounded-xl border flex items-start gap-2.5 ${
+                theme.id === 'dark' ? 'bg-purple-950/10 border-purple-500/10' : 'bg-purple-50/55 border-purple-100'
+              }`}>
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-1 inline-block shrink-0" />
+                <div className="flex-1">
+                  <div className="text-purple-500 font-bold">Cyber Fraud</div>
+                  <div className={`text-[9px] mt-0.5 ${theme.id === 'dark' ? 'text-zinc-455' : 'text-slate-500'}`}>Bengaluru Urban</div>
+                </div>
+                <div className="text-zinc-500 text-[9px]">10:15 AM</div>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveTab("cases")}
+              className={`text-right text-[9px] font-bold font-mono mt-1 flex items-center justify-end gap-1 cursor-pointer ${
+                theme.id === 'dark' ? 'text-purple-400 hover:text-purple-300' : 'text-purple-700 hover:text-purple-800'
+              }`}
+            >
+              View All Incidents →
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* 5. DISTRICT DETAILS CARD OVERLAY (RIGHT INTERACTIVE BAR) */}
       {selectedDistrict && (
-        <div className={`absolute top-20 right-4 bottom-4 w-80 sm:w-96 backdrop-blur-md border rounded-2xl shadow-2xl z-45 overflow-y-auto p-5 space-y-4 ${theme.id === 'dark' ? 'bg-zinc-950/95 border-zinc-800 text-zinc-300' : 'bg-white/95 border-zinc-200 text-zinc-700'}`}>
-          <div className="flex items-center justify-between border-b border-purple-500/20 pb-3">
+        <div className={`absolute top-16 right-1/4 w-80 backdrop-blur-md border rounded-2xl shadow-2xl z-45 p-4 space-y-3 ${
+          theme.id === 'dark' ? 'border-purple-500/20 bg-zinc-950/95 text-zinc-300' : 'border-purple-200/80 bg-white/95 text-zinc-700'
+        }`}>
+          <div className={`flex items-center justify-between border-b pb-2 ${theme.id === 'dark' ? 'border-purple-500/20' : 'border-purple-200/50'}`}>
             <div>
-              <span className="text-[9px] font-mono text-purple-400 uppercase tracking-widest block">GIS District Hub</span>
-              <h3 className="text-sm font-bold font-sans tracking-wide text-zinc-100 flex items-center gap-1.5">
-                <Compass className="w-4 h-4 text-purple-400 animate-spin" style={{ animationDuration: "12s" }} /> {selectedDistrict.name}
+              <span className={`text-[9px] font-mono uppercase tracking-widest block ${theme.id === 'dark' ? 'text-purple-400' : 'text-purple-650'}`}>GIS District Hub</span>
+              <h3 className="text-xs font-bold font-sans tracking-wide flex items-center gap-1.5">
+                <Compass className="w-3.5 h-3.5 text-purple-500" /> {selectedDistrict.name}
               </h3>
             </div>
             <button
@@ -1109,78 +1211,56 @@ export default function CrimeMap({
                 setSelectedDistrict(null);
                 setSelectedCityFilter("All");
               }}
-              className="text-zinc-500 hover:text-zinc-300 text-xs font-semibold cursor-pointer"
+              className="text-zinc-550 hover:text-zinc-300 text-xs font-semibold cursor-pointer"
             >
               Close
             </button>
           </div>
-
-          {/* District Metrics Info */}
           {(() => {
             const stats = districtCrimeStats[selectedDistrict.id] || { total: 0, active: 0, closed: 0 };
             return (
               <>
-                <div className="grid grid-cols-2 gap-3 text-center">
-                  <div className="p-3 bg-zinc-900/60 border border-purple-500/10 rounded-xl">
-                    <div className="text-lg font-bold font-mono text-purple-300">{stats.total}</div>
-                    <div className="text-[8px] font-sans text-zinc-500 uppercase font-bold">Total FIRs</div>
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className={`p-2 border rounded-xl ${
+                    theme.id === 'dark' ? 'bg-zinc-900/40 border-purple-500/10' : 'bg-slate-50 border-purple-200/30'
+                  }`}>
+                    <div className={`text-sm font-bold font-mono ${theme.id === 'dark' ? 'text-purple-300' : 'text-purple-700'}`}>{stats.total}</div>
+                    <div className="text-[8px] text-zinc-500 uppercase font-bold">Total FIRs</div>
                   </div>
-                  <div className="p-3 bg-zinc-900/60 border border-purple-500/10 rounded-xl">
-                    <div className="text-lg font-bold font-mono text-amber-400">{stats.active}</div>
-                    <div className="text-[8px] font-sans text-zinc-500 uppercase font-bold">Active Cases</div>
+                  <div className={`p-2 border rounded-xl ${
+                    theme.id === 'dark' ? 'bg-zinc-900/40 border-purple-500/10' : 'bg-slate-50 border-purple-200/30'
+                  }`}>
+                    <div className="text-sm font-bold font-mono text-amber-500">{stats.active}</div>
+                    <div className="text-[8px] text-zinc-500 uppercase font-bold">Active Cases</div>
                   </div>
                 </div>
-
-                <div className="p-4 bg-purple-950/10 border border-purple-500/10 rounded-xl space-y-2 text-xs font-mono">
-                  <div className="flex justify-between items-center py-0.5 border-b border-purple-500/5">
-                    <span className="text-zinc-500 font-sans">Crime Rate Index</span>
-                    <span className="font-bold text-zinc-100">{selectedDistrict.crimeRateIndex}/100</span>
+                <div className={`p-3 border rounded-xl space-y-1.5 text-[10px] font-mono ${
+                  theme.id === 'dark' ? 'bg-purple-950/10 border-purple-500/10' : 'bg-purple-50/45 border-purple-200/40'
+                }`}>
+                  <div className={`flex justify-between items-center py-0.5 border-b ${theme.id === 'dark' ? 'border-purple-500/5' : 'border-purple-200/20'}`}>
+                    <span className="text-zinc-500">Crime Index</span>
+                    <span className="font-bold">{selectedDistrict.crimeRateIndex}/100</span>
                   </div>
-                  <div className="flex justify-between items-center py-0.5 border-b border-purple-500/5">
-                    <span className="text-zinc-500 font-sans">Most Common Crime</span>
-                    <span className="font-bold text-zinc-100">{selectedDistrict.commonCrime}</span>
+                  <div className={`flex justify-between items-center py-0.5 border-b ${theme.id === 'dark' ? 'border-purple-500/5' : 'border-purple-200/20'}`}>
+                    <span className="text-zinc-500">Common Crime</span>
+                    <span className="font-bold">{selectedDistrict.commonCrime}</span>
                   </div>
-                  <div className="flex justify-between items-center py-0.5 border-b border-purple-500/5">
-                    <span className="text-zinc-500 font-sans">Precincts & Stations</span>
-                    <span className="font-bold text-zinc-100">{selectedDistrict.policeStations.length}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-0.5 border-b border-purple-500/5">
-                    <span className="text-zinc-500 font-sans">Hotspot Flag</span>
-                    <span className={`font-bold ${selectedDistrict.crimeRateIndex > 60 ? "text-red-400 animate-pulse" : "text-emerald-400"}`}>
+                  <div className={`flex justify-between items-center py-0.5 border-b ${theme.id === 'dark' ? 'border-purple-500/5' : 'border-purple-200/20'}`}>
+                    <span className="text-zinc-500">Risk Assessment</span>
+                    <span className={`font-bold ${selectedDistrict.crimeRateIndex > 60 ? "text-red-500" : "text-emerald-500"}`}>
                       {selectedDistrict.crimeRateIndex > 60 ? "HIGH RISK" : "NORMAL"}
                     </span>
                   </div>
                 </div>
-
-                {/* Sub-locations list */}
-                <div className="space-y-2">
-                  <h4 className="text-[10px] font-bold text-zinc-500 uppercase font-sans tracking-wide">Precinct Stations & Landmarks</h4>
-                  <div className="space-y-1 text-xs">
-                    {selectedDistrict.policeStations.map((ps, idx) => (
-                      <div key={idx} className="flex items-center gap-2 py-1 px-2.5 rounded-lg bg-zinc-900/40 border border-zinc-900">
-                        <Shield className="w-3 h-3 text-purple-400" />
-                        <span className="font-mono text-[10px] text-zinc-300">{ps}</span>
-                      </div>
-                    ))}
-                    {selectedDistrict.landmarks.map((lm, idx) => (
-                      <div key={idx} className="flex items-center gap-2 py-1 px-2.5 rounded-lg bg-zinc-900/40 border border-zinc-900">
-                        <MapPin className="w-3 h-3 text-cyan-400" />
-                        <span className="font-mono text-[10px] text-zinc-300">{lm}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Quick actions */}
                 <button
                   type="button"
                   onClick={() => {
                     setSelectedCityFilter(selectedDistrict.name);
                     setActiveTab("dashboard");
                   }}
-                  className="w-full py-2.5 mt-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-[10px] uppercase shadow-lg transition-colors flex items-center justify-center gap-1.5"
+                  className="w-full py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-[9px] uppercase shadow-lg transition-colors flex items-center justify-center gap-1"
                 >
-                  <BarChart3 className="w-3.5 h-3.5" /> View Dashboard Analytics
+                  <BarChart3 className="w-3 h-3" /> View Analytics
                 </button>
               </>
             );
@@ -1188,53 +1268,45 @@ export default function CrimeMap({
         </div>
       )}
 
-      {/* 6. CASE INFORMATION CARD OVERLAY (ON CASE PIN CLICK) */}
       {selectedCase && !selectedDistrict && (
-        <div className={`absolute top-20 right-4 bottom-4 w-80 sm:w-96 backdrop-blur-md border rounded-2xl shadow-2xl z-45 overflow-y-auto p-5 space-y-4 ${theme.id === 'dark' ? 'bg-zinc-950/95 border-zinc-800 text-zinc-300' : 'bg-white/95 border-zinc-200 text-zinc-700'}`}>
-          <div className="flex items-center justify-between border-b border-purple-500/20 pb-3">
+        <div className={`absolute top-16 right-1/4 w-80 backdrop-blur-md border rounded-2xl shadow-2xl z-45 p-4 space-y-3 ${
+          theme.id === 'dark' ? 'border-purple-500/20 bg-zinc-950/95 text-zinc-300' : 'border-purple-200/80 bg-white/95 text-zinc-700'
+        }`}>
+          <div className={`flex items-center justify-between border-b pb-2 ${theme.id === 'dark' ? 'border-purple-500/20' : 'border-purple-200/50'}`}>
             <div>
-              <span className="text-[9px] font-mono text-purple-400 uppercase tracking-widest block">Geographical Incident file</span>
-              <h3 className="text-xs font-bold font-mono tracking-wide text-zinc-100 flex items-center gap-1.5">
-                <Database className="w-4 h-4 text-purple-400" /> {selectedCase.fir_number}
+              <span className={`text-[9px] font-mono uppercase tracking-widest block ${theme.id === 'dark' ? 'text-purple-400' : 'text-purple-600'}`}>Geographical Incident file</span>
+              <h3 className="text-xs font-bold font-mono tracking-wide flex items-center gap-1.5">
+                <Database className="w-3.5 h-3.5 text-purple-500" /> {selectedCase.fir_number}
               </h3>
             </div>
             <button
               onClick={() => setSelectedCase(null)}
-              className="text-zinc-500 hover:text-zinc-300 text-xs font-semibold cursor-pointer"
+              className="text-zinc-550 hover:text-zinc-350 text-xs font-semibold cursor-pointer"
             >
               Close
             </button>
           </div>
-
-          <div className="space-y-3 font-mono text-xs">
-            <div className="flex justify-between items-center py-0.5 border-b border-purple-500/5">
-              <span className="text-zinc-500 font-sans">Crime Type</span>
-              <span className="font-bold text-zinc-100">{selectedCase.crime_head}</span>
+          <div className="space-y-1.5 font-mono text-[10px]">
+            <div className={`flex justify-between items-center py-0.5 border-b ${theme.id === 'dark' ? 'border-purple-500/5' : 'border-purple-200/20'}`}>
+              <span className="text-zinc-500">Crime Type</span>
+              <span className="font-bold">{selectedCase.crime_head}</span>
             </div>
-            <div className="flex justify-between items-center py-0.5 border-b border-purple-500/5">
-              <span className="text-zinc-500 font-sans">Precinct Station</span>
-              <span className="font-bold text-zinc-100">{selectedCase.police_station}</span>
+            <div className={`flex justify-between items-center py-0.5 border-b ${theme.id === 'dark' ? 'border-purple-500/5' : 'border-purple-200/20'}`}>
+              <span className="text-zinc-500">Precinct Station</span>
+              <span className="font-bold">{selectedCase.police_station}</span>
             </div>
-            <div className="flex justify-between items-center py-0.5 border-b border-purple-500/5">
-              <span className="text-zinc-500 font-sans">Case Officer</span>
-              <span className="font-bold text-zinc-100 flex items-center gap-1"><User className="w-3 h-3 text-zinc-500" /> {selectedCase.officer}</span>
+            <div className={`flex justify-between items-center py-0.5 border-b ${theme.id === 'dark' ? 'border-purple-500/5' : 'border-purple-200/20'}`}>
+              <span className="text-zinc-500">Officer</span>
+              <span className="font-bold">{selectedCase.officer}</span>
             </div>
-            <div className="flex justify-between items-center py-0.5 border-b border-purple-500/5">
-              <span className="text-zinc-500 font-sans">Status</span>
-              <span className={`font-bold px-1.5 py-0.5 rounded text-[9px] border ${selectedCase.status === "Closed" ? "border-emerald-500/30 text-emerald-400" : "border-amber-500/30 text-amber-400"}`}>{selectedCase.status}</span>
-            </div>
-            <div className="flex justify-between items-center py-0.5 border-b border-purple-500/5">
-              <span className="text-zinc-500 font-sans">Suspect(s)</span>
-              <span className="font-bold text-zinc-100 text-right truncate max-w-[160px]">{selectedCase.accused.join(", ") || "None"}</span>
+            <div className={`flex justify-between items-center py-0.5 border-b ${theme.id === 'dark' ? 'border-purple-500/5' : 'border-purple-200/20'}`}>
+              <span className="text-zinc-500">Status</span>
+              <span className={`font-bold px-1 py-0.2 rounded text-[8px] border ${selectedCase.status === "Closed" ? "border-emerald-500/30 text-emerald-500" : "border-amber-500/30 text-amber-500"}`}>{selectedCase.status}</span>
             </div>
           </div>
-
-          <div className="p-3 bg-zinc-900/60 border border-purple-500/10 rounded-xl space-y-1.5">
-            <div className="text-[8px] font-sans text-zinc-500 uppercase font-bold flex items-center gap-1"><Clock className="w-3 h-3" /> Incident Context</div>
-            <p className="text-[10px] text-zinc-300 font-mono leading-relaxed">{selectedCase.description}</p>
+          <div className={`p-2.5 border rounded-xl ${theme.id === 'dark' ? 'bg-zinc-900/60 border-purple-500/10' : 'bg-slate-50 border-purple-200/40'}`}>
+            <p className="text-[9px] font-mono leading-relaxed truncate">{selectedCase.description}</p>
           </div>
-
-          {/* Quick actions */}
           <div className="flex gap-2">
             <button
               type="button"
@@ -1243,30 +1315,81 @@ export default function CrimeMap({
                 setActiveSuspect(selectedCase.accused[0] || null);
                 setActiveTab("network");
               }}
-              className="flex-1 py-2 rounded-xl border border-purple-500/25 hover:bg-purple-500/10 text-zinc-200 font-bold text-[10px] uppercase transition-all text-center"
+              className="flex-1 py-2 rounded-lg border border-purple-500/25 hover:bg-purple-500/10 font-bold text-[9px] uppercase transition-all text-center"
             >
               Analyze Relations
             </button>
             <button
               type="button"
-              onClick={() => {
-                setActiveTab("cases");
-              }}
-              className="flex-1 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-[10px] uppercase shadow-lg transition-colors flex items-center justify-center gap-1"
+              onClick={() => setActiveTab("cases")}
+              className="flex-1 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-[9px] uppercase shadow-lg transition-colors flex items-center justify-center gap-1"
             >
-              Open Full Case <CheckCircle className="w-3.5 h-3.5" />
+              Open Case
             </button>
           </div>
         </div>
       )}
 
-      {/* 7. RADAR SWEEP SCANNING HUD DISPLAY */}
-      <div className="absolute bottom-6 right-6 z-40 p-3 rounded-full border border-purple-500/20 bg-black/90 shadow-lg backdrop-blur-md text-[10px] font-mono flex items-center gap-3 text-zinc-400 pointer-events-none">
-        <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-ping"></span> GIS SCAN ENGINE: STANDBY</span>
-        <span className="border-l border-zinc-800 h-3"></span>
-        <span>LAYERS ACTIVE</span>
-      </div>
+      {isLayersOpen && (
+        <div className={`absolute bottom-16 left-80 p-3 rounded-xl shadow-2xl border w-56 z-50 ${
+          theme.id === 'dark' ? 'border-purple-500/25 bg-zinc-950 text-zinc-300' : 'border-purple-200/80 bg-white text-zinc-700'
+        }`}>
+          <div className={`flex items-center justify-between border-b pb-1.5 mb-2 ${theme.id === 'dark' ? 'border-purple-500/10' : 'border-purple-200/30'}`}>
+            <h4 className="text-[10px] font-bold uppercase tracking-wider font-mono">Map Layers</h4>
+            <button onClick={() => setIsLayersOpen(false)} className="text-[10px] font-bold hover:text-white">✕</button>
+          </div>
+          <div className="space-y-1 max-h-40 overflow-y-auto">
+            {Object.entries(layers).map(([key, val]) => (
+              <button
+                key={key}
+                onClick={() => setLayers(prev => ({ ...prev, [key]: !val }))}
+                className="w-full flex items-center justify-between py-1 px-1.5 rounded hover:bg-slate-500/10 text-left text-[9px] font-mono cursor-pointer"
+              >
+                <span className={val ? "text-inherit font-semibold" : "text-zinc-550"}>
+                  {key.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())}
+                </span>
+                {val ? <Eye className="w-2.5 h-2.5 text-purple-500" /> : <EyeOff className="w-2.5 h-2.5 text-zinc-500" />}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
+      <div className={`h-12 border-t flex items-center justify-between px-4 text-[9px] font-mono rounded-xl mt-4 ${
+        theme.id === 'dark' 
+          ? 'border-purple-500/10 bg-zinc-950/80 text-zinc-400' 
+          : 'border-purple-200/50 bg-white/85 text-zinc-600 shadow-md'
+      }`}>
+        <div className="flex items-center gap-5">
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block shadow-[0_0_8px_#10b981]" />
+            SYSTEM STATUS: <span className="text-emerald-500 font-bold">ALL SYSTEMS OPERATIONAL</span>
+          </span>
+          <span className="border-l border-zinc-800 h-3 inline-block opacity-20" />
+          <span className="flex items-center gap-1">
+            <Clock className="w-3 h-3 text-zinc-500" />
+            <span>LAST UPDATED:</span>
+            <span className="font-bold">10:35:24 AM, 15 May 2025</span>
+          </span>
+          <span className="border-l border-zinc-800 h-3 inline-block opacity-20" />
+          <span className={`flex items-center gap-1 ${theme.id === 'dark' ? 'text-purple-400' : 'text-purple-650'}`}>
+            <Shield className="w-3 h-3" />
+            <span>AI ANALYSIS STATUS:</span>
+            <span className="font-bold">ACTIVE</span>
+            <span className="text-zinc-500 opacity-60">(Real-time Processing)</span>
+          </span>
+          <span className="border-l border-zinc-800 h-3 inline-block opacity-20" />
+          <span className={`flex items-center gap-1 ${theme.id === 'dark' ? 'text-cyan-400' : 'text-cyan-600'}`}>
+            <Database className="w-3 h-3" />
+            <span>DATA SOURCES:</span>
+            <span className="font-bold">128+ SOURCES INTEGRATED</span>
+          </span>
+        </div>
+        <div className="flex items-center gap-2 border-l border-zinc-800 pl-4 h-full opacity-90">
+          <img src="/logo.png" className="w-4 h-4 object-contain" alt="KSP Logo" />
+          <span className="text-[8px] font-bold tracking-wider">KARNATAKA STATE POLICE // SEVA - SURAKSHA - SAMARPANE</span>
+        </div>
+      </div>
     </div>
   );
 }

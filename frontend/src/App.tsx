@@ -5,7 +5,7 @@ import {
   Phone, User, Car, Briefcase,
   Search, TrendingUp, AlertTriangle, HelpCircle, Sun, Moon,
   Copy, Check, Globe, ChevronDown, Paperclip, ZoomIn, ZoomOut, Maximize2, Trash2, ArrowUpRight,
-  Edit, MapPin
+  Edit, MapPin, Bell, Settings
 } from "lucide-react";
 import {
   ResponsiveContainer, XAxis, YAxis,
@@ -246,6 +246,7 @@ function App() {
     { code: "ta" as const, label: "Tamil", native: "தமிழ்" }
   ];
   const getSafeConfidence = (score?: number) => {
+    if (score === -1) return undefined;
     if (score === undefined || score === null || isNaN(score) || score < 0.90) {
       return parseFloat((0.91 + Math.random() * 0.07).toFixed(2));
     }
@@ -1446,9 +1447,9 @@ function App() {
       const assistantMsg: Message = {
         role: "assistant",
         text: data.message,
-        sources: data.sources,
-        confidence_score: getSafeConfidence(data.confidence_score),
-        evidence_trail: data.evidence_trail
+        sources: data.sources && data.sources.length > 0 ? data.sources : undefined,
+        confidence_score: data.confidence_score === -1 ? undefined : getSafeConfidence(data.confidence_score),
+        evidence_trail: data.evidence_trail && data.evidence_trail.length > 0 ? data.evidence_trail : undefined
       };
       updateCurrentSessionMessages(prev => [...prev, assistantMsg]);
 
@@ -1466,25 +1467,48 @@ function App() {
     } catch (err) {
       // Local fallback simulator for offline/standalone execution
       setTimeout(() => {
+        const greetings = ["hi", "hello", "hey", "hii", "heyy", "good morning", "good afternoon", "good evening", "namaste", "namaskara", "yo"];
+        const cleanMsg = editingText.replace(/\[target suspect:.*?\]/i, '').replace(/\[target case:.*?\]/i, '').trim().toLowerCase().replace(/[.,;:!?()'"\-\/]/g, "");
+        const words = cleanMsg.split(/\s+/);
+        const isGreeting = (words.length >= 1 && words.every(w => greetings.includes(w))) || cleanMsg === "how are you" || cleanMsg === "who are you" || cleanMsg === "what can you do";
+
         let text = `Simulated response: Analyzed databases for focus "${editingText}".`;
-        if (activeSuspect) {
+        let sources: string[] | undefined = ["FIR-10234", "FIR-10237"];
+        let confidenceScore: number | undefined = 0.94;
+        let evidenceTrail: string[] | undefined = ["Pattern detected via Jayanagar police precinct reports."];
+
+        if (isGreeting) {
+          text = "Hello! I am CrimeMind AI, your digital intelligence assistant for the Karnataka State Police. How can I help you with your cases, suspect profiling, or analysis enquiries today?";
+          sources = undefined;
+          confidenceScore = undefined;
+          evidenceTrail = undefined;
+        } else if (activeSuspect) {
           text = `Successfully retrieved connection trail for suspect **${activeSuspect}**. Suspect is linked to ${cases.filter(c => c.accused.some(a => a.toLowerCase() === activeSuspect.toLowerCase())).map(c => c.fir_number).join(", ") || "FIR-4012/2026"}. Mapped 2 active phones and 1 vehicle.`;
         } else if (editingText.toLowerCase().includes("burglary")) {
           text = "Found 2 matching Burglaries in South Bengaluru. Accessing cases FIR-10234, FIR-10237, showing similarity patterns.";
+        } else {
+          text = `I can help you analyze patterns or find associations. Please try searching for specific details such as "burglary" or a suspect name, or let me know how I can guide your investigation.`;
+          sources = undefined;
+          confidenceScore = undefined;
+          evidenceTrail = undefined;
         }
+
         updateCurrentSessionMessages(prev => [...prev, {
           role: "assistant",
           text: text,
-          confidence_score: getSafeConfidence(0.94),
-          sources: ["FIR-10234", "FIR-10237"],
-          evidence_trail: ["Pattern detected via Jayanagar police precinct reports."]
+          confidence_score: confidenceScore ? getSafeConfidence(confidenceScore) : undefined,
+          sources: sources,
+          evidence_trail: evidenceTrail
         }]);
-        const found = cases.filter(c => ["FIR-10234", "FIR-10237"].includes(c.fir_number));
-        if (found.length > 0) {
-          setGraphCases(found);
-          setSelectedCase(found[0]);
-          if (found[0].accused.length > 0) {
-            setActiveSuspect(found[0].accused[0]);
+
+        if (sources) {
+          const found = cases.filter(c => sources.includes(c.fir_number));
+          if (found.length > 0) {
+            setGraphCases(found);
+            setSelectedCase(found[0]);
+            if (found[0].accused.length > 0) {
+              setActiveSuspect(found[0].accused[0]);
+            }
           }
         }
       }, 800);
@@ -1530,9 +1554,9 @@ function App() {
       const assistantMsg: Message = {
         role: "assistant",
         text: data.message,
-        sources: data.sources,
-        confidence_score: getSafeConfidence(data.confidence_score),
-        evidence_trail: data.evidence_trail
+        sources: data.sources && data.sources.length > 0 ? data.sources : undefined,
+        confidence_score: data.confidence_score === -1 ? undefined : getSafeConfidence(data.confidence_score),
+        evidence_trail: data.evidence_trail && data.evidence_trail.length > 0 ? data.evidence_trail : undefined
       };
       updateCurrentSessionMessages(prev => [...prev, assistantMsg]);
 
@@ -1553,30 +1577,53 @@ function App() {
     } catch (err) {
       // Local fallback simulator for offline/standalone execution
       setTimeout(() => {
+        const greetings = ["hi", "hello", "hey", "hii", "heyy", "good morning", "good afternoon", "good evening", "namaste", "namaskara", "yo"];
+        const cleanMsg = userMsg.replace(/\[target suspect:.*?\]/i, '').replace(/\[target case:.*?\]/i, '').trim().toLowerCase().replace(/[.,;:!?()'"\-\/]/g, "");
+        const words = cleanMsg.split(/\s+/);
+        const isGreeting = (words.length >= 1 && words.every(w => greetings.includes(w))) || cleanMsg === "how are you" || cleanMsg === "who are you" || cleanMsg === "what can you do";
+
         let text = `Simulated response: Analyzed databases for focus "${userMsg}".`;
-        if (activeSuspect) {
+        let sources: string[] | undefined = ["FIR-10234", "FIR-10237"];
+        let confidenceScore: number | undefined = 0.88;
+        let evidenceTrail: string[] | undefined = ["Pattern detected via Jayanagar police precinct reports."];
+
+        if (isGreeting) {
+          text = "Hello! I am CrimeMind AI, your digital intelligence assistant for the Karnataka State Police. How can I help you with your cases, suspect profiling, or analysis enquiries today?";
+          sources = undefined;
+          confidenceScore = undefined;
+          evidenceTrail = undefined;
+        } else if (activeSuspect) {
           text = `Successfully retrieved connection trail for suspect **${activeSuspect}**. Suspect is linked to ${cases.filter(c => c.accused.some(a => a.toLowerCase() === activeSuspect.toLowerCase())).map(c => c.fir_number).join(", ") || "FIR-4012/2026"}. Mapped 2 active phones and 1 vehicle.`;
         } else if (userMsg.toLowerCase().includes("burglary")) {
           text = "Found 2 matching Burglaries in South Bengaluru. Accessing cases FIR-10234, FIR-10237, showing similarity patterns.";
+        } else {
+          text = `I can help you analyze patterns or find associations. Please try searching for specific details such as "burglary" or a suspect name, or let me know how I can guide your investigation.`;
+          sources = undefined;
+          confidenceScore = undefined;
+          evidenceTrail = undefined;
         }
+
         updateCurrentSessionMessages(prev => [...prev, {
           role: "assistant",
           text: text,
-          confidence_score: getSafeConfidence(0.88),
-          sources: ["FIR-10234", "FIR-10237"],
-          evidence_trail: ["Pattern detected via Jayanagar police precinct reports."]
+          confidence_score: confidenceScore ? getSafeConfidence(confidenceScore) : undefined,
+          sources: sources,
+          evidence_trail: evidenceTrail
         }]);
-        const found = cases.filter(c => ["FIR-10234", "FIR-10237"].includes(c.fir_number));
-        if (found.length > 0) {
-          setGraphCases(found);
-          setSelectedCase(found[0]);
-          if (found[0].accused.length > 0) {
-            setActiveSuspect(found[0].accused[0]);
+
+        if (sources) {
+          const found = cases.filter(c => sources.includes(c.fir_number));
+          if (found.length > 0) {
+            setGraphCases(found);
+            setSelectedCase(found[0]);
+            if (found[0].accused.length > 0) {
+              setActiveSuspect(found[0].accused[0]);
+            }
           }
         }
         // speakText(text); // voice output disabled
         setLoadingResponse(false);
-        syncChatWithMap(userMsg, text, ["FIR-10234", "FIR-10237"]);
+        syncChatWithMap(userMsg, text, sources || []);
       }, 800);
     }
   };
@@ -1768,23 +1815,31 @@ function App() {
             )}
           </div>
 
-          {/* Theme and Logout Controls */}
-          <div className="flex items-center gap-3">
+          {/* Theme, Notification, Settings, and User Info */}
+          <div className="flex items-center gap-4">
             <button 
               onClick={() => setTheme(theme.id === "dark" ? THEMES[1] : THEMES[0])}
-              className={`p-2 rounded-full border ${theme.border} hover:bg-slate-500/10 transition-all cursor-pointer flex items-center justify-center`}
+              className={`p-2 rounded-xl border ${theme.border} bg-slate-500/5 dark:bg-white/5 hover:bg-slate-500/10 dark:hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center ${theme.textMain}`}
               title="Switch Theme"
             >
               {theme.id === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-500" />}
             </button>
-          </div>
 
-          {/* Inspector Badge Details */}
-          <div className={`text-right border-l ${theme.border} pl-5`}>
-            <div className="text-xs font-semibold">
-              admin
+            {/* Admin Profile */}
+            <div className={`flex items-center gap-3 border-l ${theme.border} pl-4`}>
+              <div className="text-right">
+                <div className="text-xs font-bold text-zinc-100">KSP Admin</div>
+                <div className="text-[9px] text-zinc-500 font-mono">Super Admin</div>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-purple-900/30 border border-purple-500/30 flex items-center justify-center text-xs font-bold text-purple-300">
+                KA
+              </div>
             </div>
-            <div className={`text-[9px] ${theme.textMuted} font-mono uppercase tracking-wider`}>KSP-8932</div>
+
+            {/* KSP Emblem Logo */}
+            <div className={`w-8 h-8 rounded-full overflow-hidden border ${theme.border} bg-black/40 flex items-center justify-center p-1`}>
+              <img src="/logo.png" className="w-full h-full object-contain" alt="KSP Emblem" />
+            </div>
           </div>
         </div>
       </header>

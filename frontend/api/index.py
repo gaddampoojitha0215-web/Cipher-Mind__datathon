@@ -204,7 +204,34 @@ def chat_query(payload: ChatQuery):
             evidence = [f"Failed to call NVIDIA API: {str(e)}. Graceful fallback applied."]
 
     if not response_msg:
-        if "burglary" in msg or "ಕಳ್ಳತನ" in msg:
+        # Detect greetings or general chat queries
+        greetings = ["hi", "hello", "hey", "hii", "heyy", "good morning", "good afternoon", "good evening", "namaste", "namaskara", "yo"]
+        import re
+        clean_msg = re.sub(r'\[target suspect:.*?\]', '', msg)
+        clean_msg = re.sub(r'\[target case:.*?\]', '', clean_msg)
+        clean_msg_stripped = re.sub(r'[.,;:!?()-"\'/]', '', clean_msg.strip().lower())
+        words = clean_msg_stripped.split()
+        
+        is_greeting = len(words) >= 1 and all(w in greetings for w in words)
+        is_casual = clean_msg_stripped in ["how are you", "who are you", "what can you do", "help"]
+
+        if is_greeting or is_casual:
+            response_msg = (
+                "Hello! I am CrimeMind AI, your digital intelligence assistant for the Karnataka State Police. "
+                "How can I help you with your cases, suspect profiling, or analysis enquiries today?"
+            )
+            if payload.language == "kn":
+                response_msg = "ನಮಸ್ಕಾರ! ನಾನು ಕ್ರೈಮ್‌ಮೈಂಡ್ ಎಐ ಸಹಾಯಕಿ. ಪ್ರಕರಣಗಳ ವಿಶ್ಲೇಷಣೆ, ಶಂಕಿತರ ವಿವರ ಅಥವಾ ತನಿಖಾ ವಿಚಾರಣೆಗಳ ಬಗ್ಗೆ ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ?"
+            elif payload.language == "hi":
+                response_msg = "नमस्ते! मैं क्राइममाइंड एಐ सहायक हूँ। मामलों के विश्लेषण, संदिग्धों के विवरण या जांच से जुड़े प्रश्नों में आज मैं आपकी क्या सहायता कर सकता हूँ?"
+            elif payload.language == "te":
+                response_msg = "నమస్కారం! నేను క్రైమ్‌మైండ్ AI అసిస్టెంట్‌ని. ఈ రోజు కేసుల విశ్లేషణ లేదా అనుమానితుల వివరాల గురించి నేను మీకు ఎలా సహాయపడగలను?"
+            elif payload.language == "ta":
+                response_msg = "வணக்கம்! நான் கிரைம்மைண்ட் AI உதவியாளர். வழக்குகள் அல்லது சந்தேக நபர்களைப் பற்றிய தகவல்களைக் கண்டறிய இன்று நான் உங்களுக்கு எவ்வாறு உதவ முடியும்?"
+            sources = []
+            confidence = -1
+            evidence = []
+        elif "burglary" in msg or "ಕಳ್ಳತನ" in msg:
             matching_cases = [c for c in CASES_DB if c["crime_head"] == "Burglary"][:3]
             sources = [c["fir_number"] for c in matching_cases]
             evidence = ["Matched Modus Operandi: Residential lock bypass & entry through window."]
