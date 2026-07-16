@@ -679,9 +679,9 @@ export default function CrimeMap({
                   <feGaussianBlur stdDeviation="15" result="blur" />
                 </filter>
                 <radialGradient id="heat-grad-high" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#ef4444" stopOpacity="0.75" />
-                  <stop offset="50%" stopColor="#f97316" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#ef4444" stopOpacity={theme.id === 'dark' ? 0.45 : 0.22} />
+                  <stop offset="50%" stopColor="#f97316" stopOpacity={theme.id === 'dark' ? 0.20 : 0.08} />
+                  <stop offset="100%" stopColor="#f59e0b" stopOpacity={0} />
                 </radialGradient>
               </defs>
 
@@ -825,7 +825,7 @@ export default function CrimeMap({
                       const dStat = districtCrimeStats[d.id] || { total: 0 };
                       if (dStat.total === 0) return null;
                       const { x, y } = latLonToSvg(d.lat, d.lon);
-                      const radius = 25 + dStat.total * 6;
+                      const radius = 15 + Math.sqrt(dStat.total) * 10;
                       return (
                         <circle
                           key={`heat-${d.id}`}
@@ -879,7 +879,7 @@ export default function CrimeMap({
                   </g>
                 )}
 
-                {layers.firMarkers && (
+                {layers.firMarkers && transform.k >= 1.3 && (
                   <g className="fir-markers-group">
                     {mappedCases.filter(isCaseVisible).map((c) => {
                       const isSelected = selectedCase?.id === c.id;
@@ -970,9 +970,9 @@ export default function CrimeMap({
                           {p.district.name}
                         </text>
                         {dStat.total > 0 && (
-                          <g transform={`translate(0, ${8 / transform.k})`}>
-                            <circle cx="0" cy="0" r={4.5 / transform.k} fill="rgba(168, 85, 247, 0.9)" stroke={theme.id === 'dark' ? '#000' : '#fff'} strokeWidth={0.5 / transform.k} />
-                            <text textAnchor="middle" y={1.5 / transform.k} fontSize={`${5 / transform.k}px`} fill="#fff" fontWeight="bold" className="font-mono">
+                          <g transform={`translate(0, ${10 / transform.k})`}>
+                            <circle cx="0" cy="0" r={5.5 / transform.k} fill="rgba(168, 85, 247, 0.9)" stroke={theme.id === 'dark' ? '#000' : '#fff'} strokeWidth={0.5 / transform.k} />
+                            <text textAnchor="middle" y={1.8 / transform.k} fontSize={`${6.5 / transform.k}px`} fill="#fff" fontWeight="bold" className="font-mono">
                               {dStat.total}
                             </text>
                           </g>
