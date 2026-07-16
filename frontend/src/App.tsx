@@ -2376,7 +2376,15 @@ function App() {
                 <button
                   type="submit"
                   disabled={loadingResponse || !chatInput.trim()}
-                  className={`${theme.accentBg} ${theme.accentText} px-5 py-3 rounded-xl uppercase font-bold tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center gap-1.5 cursor-pointer shadow-sm`}
+                  className={`px-5 py-3 rounded-xl uppercase font-bold tracking-wider text-xs flex items-center gap-1.5 cursor-pointer transition-all duration-300 shadow-md ${
+                    loadingResponse || !chatInput.trim()
+                      ? (theme.id === "dark"
+                          ? "bg-[#E8F0FE]/10 border border-[#E8F0FE]/15 text-[#E8F0FE]/40 cursor-not-allowed shadow-none"
+                          : "bg-[#1A182F]/10 border border-[#1A182F]/10 text-[#1A182F]/40 cursor-not-allowed shadow-none")
+                      : (theme.id === "dark"
+                          ? "bg-[#E8F0FE] text-[#090C10] hover:bg-white hover:shadow-[0_0_20px_rgba(232,240,254,0.7)] shadow-[0_0_12px_rgba(232,240,254,0.4)] scale-102 font-bold"
+                          : "bg-[#1A182F] text-white hover:bg-black hover:shadow-[0_4px_15px_rgba(26,24,47,0.3)] scale-102")
+                  }`}
                 >
                   Send
                 </button>
@@ -3053,7 +3061,7 @@ function App() {
                           }
                         }, 200);
                       }}
-                      className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer shadow-lg"
+                      className="bg-purple-600 hover:bg-purple-700 text-[#090C10] px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer shadow-lg hover:shadow-[0_0_15px_rgba(232,240,254,0.55)]"
                       title="Locate Case Scene on Intelligence Map"
                     >
                       <MapPin className="w-4 h-4" /> View on Map
@@ -3062,8 +3070,8 @@ function App() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center text-center py-20 text-slate-500">
-                  <img src="/logo.png" className="w-12 h-12 mb-3.5 object-contain opacity-50 animate-pulse grayscale" alt="CrimeMind Logo" />
-                  <p className="text-xs font-semibold">Select a case file from the registry to inspect records.</p>
+                  <img src="/logo.png" className="w-12 h-12 mb-3.5 object-contain opacity-80 animate-pulse" alt="CrimeMind Logo" />
+                  <p className={`text-xs font-semibold ${theme.id === 'dark' ? 'text-zinc-400' : 'text-zinc-650'}`}>Select a case file from the registry to inspect records.</p>
                 </div>
               )}
             </div>
