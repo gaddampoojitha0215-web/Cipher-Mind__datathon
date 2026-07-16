@@ -122,7 +122,7 @@ export default function CrimeMap({
   const [layers, setLayers] = useState({
     districtBoundaries: true,
     policeBoundaries: true,
-    crimeHeatmap: true,
+    crimeHeatmap: false,
     firMarkers: true,
     murder: true,
     theft: true,
@@ -418,10 +418,10 @@ export default function CrimeMap({
 
   return (
     <div className={`flex flex-col h-[calc(100vh-68px)] w-full ${theme.id === 'dark' ? 'bg-[#050409]' : 'bg-slate-50'} ${theme.textMain} p-4 font-sans select-none overflow-hidden relative`}>
-      
+
       {/* 3-Column main content */}
       <div className="flex flex-1 gap-4 overflow-hidden min-h-0">
-        
+
         {/* Left Column: Karnataka Overview & Legend */}
         <div className="w-[22%] min-w-[270px] max-w-[320px] flex flex-col gap-4 overflow-y-auto pr-1">
           {/* Card: Karnataka Overview */}
@@ -429,13 +429,12 @@ export default function CrimeMap({
             <h3 className={`text-xs font-bold uppercase tracking-wider border-b pb-2 ${theme.id === 'dark' ? 'text-purple-400 border-purple-500/10' : 'text-purple-700 border-purple-200/50'}`}>
               Karnataka Overview
             </h3>
-            
+
             {/* Metric 1 */}
-            <div className={`flex items-center gap-3 p-2 rounded-xl transition-all ${
-              theme.id === 'dark' 
-                ? 'bg-purple-950/10 border border-purple-500/5 hover:border-purple-500/20' 
-                : 'bg-purple-50/50 border border-purple-100 hover:border-purple-200'
-            }`}>
+            <div className={`flex items-center gap-3 p-2 rounded-xl transition-all ${theme.id === 'dark'
+              ? 'bg-purple-950/10 border border-purple-500/5 hover:border-purple-500/20'
+              : 'bg-purple-50/50 border border-purple-100 hover:border-purple-200'
+              }`}>
               <div className={`p-2.5 rounded-xl ${theme.id === 'dark' ? 'bg-purple-500/10 text-purple-400' : 'bg-purple-100 text-purple-700'}`}>
                 <Compass className="w-5 h-5" />
               </div>
@@ -447,11 +446,10 @@ export default function CrimeMap({
             </div>
 
             {/* Metric 2 */}
-            <div className={`flex items-center gap-3 p-2 rounded-xl transition-all ${
-              theme.id === 'dark' 
-                ? 'bg-cyan-950/10 border border-cyan-500/5 hover:border-cyan-500/20' 
-                : 'bg-cyan-50/50 border border-cyan-100 hover:border-cyan-200'
-            }`}>
+            <div className={`flex items-center gap-3 p-2 rounded-xl transition-all ${theme.id === 'dark'
+              ? 'bg-cyan-950/10 border border-cyan-500/5 hover:border-cyan-500/20'
+              : 'bg-cyan-50/50 border border-cyan-100 hover:border-cyan-200'
+              }`}>
               <div className={`p-2.5 rounded-xl ${theme.id === 'dark' ? 'bg-cyan-500/10 text-cyan-400' : 'bg-cyan-100 text-cyan-700'}`}>
                 <Shield className="w-5 h-5" />
               </div>
@@ -463,11 +461,10 @@ export default function CrimeMap({
             </div>
 
             {/* Metric 3 */}
-            <div className={`flex items-center gap-3 p-2 rounded-xl transition-all ${
-              theme.id === 'dark' 
-                ? 'bg-red-950/10 border border-red-500/5 hover:border-red-500/20' 
-                : 'bg-red-50/50 border border-red-100 hover:border-red-200'
-            }`}>
+            <div className={`flex items-center gap-3 p-2 rounded-xl transition-all ${theme.id === 'dark'
+              ? 'bg-red-950/10 border border-red-500/5 hover:border-red-500/20'
+              : 'bg-red-50/50 border border-red-100 hover:border-red-200'
+              }`}>
               <div className={`p-2.5 rounded-xl ${theme.id === 'dark' ? 'bg-red-500/10 text-red-400' : 'bg-red-100 text-red-700'}`}>
                 <Database className="w-5 h-5" />
               </div>
@@ -479,11 +476,10 @@ export default function CrimeMap({
             </div>
 
             {/* Metric 4 */}
-            <div className={`flex items-center gap-3 p-2 rounded-xl transition-all ${
-              theme.id === 'dark' 
-                ? 'bg-amber-950/10 border border-amber-500/5 hover:border-amber-500/20' 
-                : 'bg-amber-50/50 border border-amber-100 hover:border-amber-200'
-            }`}>
+            <div className={`flex items-center gap-3 p-2 rounded-xl transition-all ${theme.id === 'dark'
+              ? 'bg-amber-950/10 border border-amber-500/5 hover:border-amber-500/20'
+              : 'bg-amber-50/50 border border-amber-100 hover:border-amber-200'
+              }`}>
               <div className={`p-2.5 rounded-xl ${theme.id === 'dark' ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-100 text-amber-700'}`}>
                 <Clock className="w-5 h-5" />
               </div>
@@ -495,11 +491,10 @@ export default function CrimeMap({
             </div>
 
             {/* Metric 5 */}
-            <div className={`flex items-center gap-3 p-2 rounded-xl transition-all ${
-              theme.id === 'dark' 
-                ? 'bg-emerald-950/10 border border-emerald-500/5 hover:border-emerald-500/20' 
-                : 'bg-emerald-50/50 border border-emerald-100 hover:border-emerald-200'
-            }`}>
+            <div className={`flex items-center gap-3 p-2 rounded-xl transition-all ${theme.id === 'dark'
+              ? 'bg-emerald-950/10 border border-emerald-500/5 hover:border-emerald-500/20'
+              : 'bg-emerald-50/50 border border-emerald-100 hover:border-emerald-200'
+              }`}>
               <div className={`p-2.5 rounded-xl ${theme.id === 'dark' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-100 text-emerald-700'}`}>
                 <User className="w-5 h-5" />
               </div>
@@ -562,34 +557,32 @@ export default function CrimeMap({
               </h3>
               <p className={`text-[9px] font-mono ${theme.id === 'dark' ? 'text-purple-400/70' : 'text-purple-700/80'}`}>Real-time Crime Intelligence Overview</p>
             </div>
-            
+
             {/* Search, layers floating components inside the map tab */}
             <div className="flex items-center gap-2">
               {/* Layer toggles */}
               <button
                 onClick={() => setIsLayersOpen(!isLayersOpen)}
-                className={`px-3 py-1.5 rounded-xl border text-[10px] font-mono flex items-center gap-1.5 cursor-pointer transition-all ${
-                  isLayersOpen
-                    ? "bg-purple-600 border-purple-400 text-white shadow-[0_0_10px_rgba(168,85,247,0.3)]"
-                    : theme.id === 'dark'
-                      ? "border-purple-500/20 text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
-                      : "border-purple-200/60 text-slate-600 hover:text-slate-800 hover:bg-black/5"
-                }`}
+                className={`px-3 py-1.5 rounded-xl border text-[10px] font-mono flex items-center gap-1.5 cursor-pointer transition-all ${isLayersOpen
+                  ? "bg-purple-600 border-purple-400 text-[#090C10] font-bold shadow-[0_0_12px_rgba(232,240,254,0.5)]"
+                  : theme.id === 'dark'
+                    ? "border-purple-500/20 text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+                    : "border-purple-200/60 text-slate-600 hover:text-slate-800 hover:bg-black/5"
+                  }`}
               >
                 <Layers className="w-3 h-3" /> Layers
               </button>
-              
+
               {/* Map modes toggler */}
               <div className={`flex items-center p-0.5 rounded-xl border ${theme.id === 'dark' ? 'border-purple-500/10 bg-black/40' : 'border-purple-200/60 bg-slate-100'}`}>
                 {(["dark", "standard", "satellite", "heatmap"] as const).map((mode) => (
                   <button
                     key={mode}
                     onClick={() => setMapMode(mode)}
-                    className={`px-2 py-1 rounded-lg text-[9px] uppercase font-mono transition-all cursor-pointer ${
-                      mapMode === mode
-                        ? "bg-purple-600 text-white font-bold"
-                        : "text-zinc-500 hover:text-zinc-300"
-                    }`}
+                    className={`px-2 py-1 rounded-lg text-[9px] uppercase font-mono transition-all cursor-pointer ${mapMode === mode
+                      ? "bg-purple-600 text-[#090C10] font-bold"
+                      : "text-zinc-500 hover:text-zinc-300"
+                      }`}
                   >
                     {mode}
                   </button>
@@ -601,11 +594,10 @@ export default function CrimeMap({
           {/* Interactive Map SVG Wrapper */}
           <div className={`flex-1 min-h-0 w-full relative rounded-xl overflow-hidden ${theme.id === 'dark' ? 'bg-[#09090d]' : 'bg-[#f4f2f0] border border-purple-200/40'}`}>
             {/* Floating Autocomplete Search box */}
-            <div className={`absolute top-4 left-4 z-20 w-72 shadow-2xl rounded-xl backdrop-blur-md border p-1.5 ${
-              theme.id === 'dark' 
-                ? 'border-purple-500/20 bg-zinc-950/95 text-zinc-100' 
-                : 'border-purple-200/80 bg-white/95 text-zinc-800'
-            }`}>
+            <div className={`absolute top-4 left-4 z-20 w-72 shadow-2xl rounded-xl backdrop-blur-md border p-1.5 ${theme.id === 'dark'
+              ? 'border-purple-500/20 bg-zinc-950/95 text-zinc-100'
+              : 'border-purple-200/80 bg-white/95 text-zinc-800'
+              }`}>
               <div className="relative flex items-center">
                 <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-2.5" />
                 <input
@@ -633,9 +625,8 @@ export default function CrimeMap({
               </div>
 
               {showSearchSuggestions && matchingSuggestions.length > 0 && (
-                <div className={`absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto z-50 rounded-xl border p-1 shadow-2xl ${
-                  theme.id === 'dark' ? 'bg-zinc-950 border-purple-500/20 text-zinc-300' : 'bg-white border-purple-200/80 text-zinc-800'
-                }`}>
+                <div className={`absolute top-full left-0 right-0 mt-1 max-h-48 overflow-y-auto z-50 rounded-xl border p-1 shadow-2xl ${theme.id === 'dark' ? 'bg-zinc-950 border-purple-500/20 text-zinc-300' : 'bg-white border-purple-200/80 text-zinc-800'
+                  }`}>
                   {matchingSuggestions.map((item, idx) => (
                     <div
                       key={idx}
@@ -661,15 +652,15 @@ export default function CrimeMap({
             >
               <defs>
                 <pattern id="standard-grid" width="30" height="30" patternUnits="userSpaceOnUse">
-                  <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="0.5"/>
+                  <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="0.5" />
                 </pattern>
                 <pattern id="satellite-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke={theme.id === 'dark' ? 'rgba(0,242,254,0.03)' : 'rgba(0,0,0,0.02)'} strokeWidth="0.5"/>
-                  <circle cx="20" cy="20" r="1" fill={theme.id === 'dark' ? 'rgba(0,242,254,0.15)' : 'rgba(0,0,0,0.08)'}/>
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke={theme.id === 'dark' ? 'rgba(0,242,254,0.03)' : 'rgba(0,0,0,0.02)'} strokeWidth="0.5" />
+                  <circle cx="20" cy="20" r="1" fill={theme.id === 'dark' ? 'rgba(0,242,254,0.15)' : 'rgba(0,0,0,0.08)'} />
                 </pattern>
                 <pattern id="terrain-contours" width="60" height="60" patternUnits="userSpaceOnUse">
-                  <path d="M 0 30 Q 15 15, 30 30 T 60 30" fill="none" stroke="rgba(245,158,11,0.03)" strokeWidth="0.8"/>
-                  <path d="M 0 10 Q 30 40, 60 10" fill="none" stroke="rgba(245,158,11,0.02)" strokeWidth="0.5"/>
+                  <path d="M 0 30 Q 15 15, 30 30 T 60 30" fill="none" stroke="rgba(245,158,11,0.03)" strokeWidth="0.8" />
+                  <path d="M 0 10 Q 30 40, 60 10" fill="none" stroke="rgba(245,158,11,0.02)" strokeWidth="0.5" />
                 </pattern>
                 <filter id="map-glow" x="-20%" y="-20%" width="140%" height="140%">
                   <feGaussianBlur stdDeviation="8" result="blur" />
@@ -700,17 +691,17 @@ export default function CrimeMap({
                     preserveAspectRatio="none" opacity="0.4"
                   />
                 )}
-                
+
                 {layers.districtBoundaries && (
                   <g className="district-boundary-group">
                     {voronoiCells.map(({ district, path }) => {
                       const isSelected = selectedDistrict?.id === district.id;
                       const isHovered = hoveredDistrict?.id === district.id;
-                      
-                      let fill = theme.id === 'dark' ? "rgba(147, 51, 234, 0.02)" : "rgba(147, 51, 234, 0.04)";
-                      let stroke = theme.id === 'dark' ? "rgba(168, 85, 247, 0.2)" : "rgba(168, 85, 247, 0.25)";
+
+                      let fill = theme.id === 'dark' ? "rgba(26, 24, 47, 0.05)" : "rgba(26, 24, 47, 0.08)";
+                      let stroke = theme.id === 'dark' ? "rgba(180, 187, 197, 0.25)" : "rgba(26, 24, 47, 0.25)";
                       let strokeWidth = 1.0;
-                      
+
                       if (mapMode === "standard") {
                         fill = "#f8f7f4";
                         stroke = "#d0cdc7";
@@ -718,18 +709,18 @@ export default function CrimeMap({
                         fill = "rgba(15, 23, 42, 0.4)";
                         stroke = "rgba(6, 182, 212, 0.2)";
                       } else if (mapMode === "heatmap") {
-                        fill = theme.id === 'dark' ? "#0f172a" : "#eae4f2";
+                        fill = theme.id === 'dark' ? "#090c10" : "#e8f0fe";
                         stroke = theme.id === 'dark' ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)";
                       }
-                      
+
                       if (isHovered) {
-                        fill = theme.id === 'dark' ? "rgba(168, 85, 247, 0.08)" : "rgba(168, 85, 247, 0.12)";
-                        stroke = "rgba(168, 85, 247, 0.6)";
+                        fill = theme.id === 'dark' ? "rgba(180, 187, 197, 0.1)" : "rgba(26, 24, 47, 0.12)";
+                        stroke = theme.id === 'dark' ? "rgba(180, 187, 197, 0.7)" : "rgba(26, 24, 47, 0.7)";
                         strokeWidth = 1.5;
                       }
                       if (isSelected) {
-                        fill = "rgba(168, 85, 247, 0.18)";
-                        stroke = "rgba(168, 85, 247, 0.9)";
+                        fill = theme.id === 'dark' ? "rgba(180, 187, 197, 0.2)" : "rgba(26, 24, 47, 0.22)";
+                        stroke = theme.id === 'dark' ? "rgba(180, 187, 197, 0.9)" : "rgba(26, 24, 47, 0.9)";
                         strokeWidth = 2.0;
                       }
 
@@ -759,7 +750,7 @@ export default function CrimeMap({
                 <polygon
                   points="410,20 390,107 395,238 355,358 322,477 466,608 344,765 255,765 177,728 88,632 66,561 33,405 11,274 177,143 344,59"
                   fill="none"
-                  stroke={theme.id === 'dark' ? "rgba(168, 85, 247, 0.7)" : "rgba(168, 85, 247, 0.8)"}
+                  stroke={theme.id === 'dark' ? "rgba(180, 187, 197, 0.5)" : "rgba(26, 24, 47, 0.6)"}
                   strokeWidth="3"
                   strokeDasharray="5,4"
                   className="pointer-events-none"
@@ -772,7 +763,7 @@ export default function CrimeMap({
                       const { x, y } = latLonToSvg(p.lat, p.lon);
                       return `${x},${y}`;
                     }).join(" ");
-                    
+
                     return (
                       <g key={idx}>
                         <polyline
@@ -945,10 +936,10 @@ export default function CrimeMap({
                     const isMajor = ["bengaluru-urban", "mysuru", "belagavi", "dharwad", "dakshina-kannada"].includes(p.district.id);
                     if (transform.k < 0.7 && !isMajor) return null;
 
-                    const labelText = dStat.total > 0 
-                      ? `${p.district.name} • ${dStat.total}` 
+                    const labelText = dStat.total > 0
+                      ? `${p.district.name} • ${dStat.total}`
                       : p.district.name;
-                    
+
                     // Estimate size dynamically to keep it crisp at all zoom levels
                     const fontSize = (isMajor ? 8.5 : 7.5) / transform.k;
                     // ~0.58 width multiplier per character for uppercase bold sans font
@@ -967,10 +958,10 @@ export default function CrimeMap({
                           width={pillWidth}
                           height={pillHeight}
                           rx={pillHeight / 2}
-                          fill={theme.id === 'dark' ? 'rgba(15, 10, 25, 0.85)' : 'rgba(255, 255, 255, 0.95)'}
+                          fill={theme.id === 'dark' ? 'rgba(26, 24, 47, 0.85)' : 'rgba(255, 255, 255, 0.95)'}
                           stroke={
                             dStat.total > 0
-                              ? (theme.id === 'dark' ? 'rgba(168, 85, 247, 0.5)' : 'rgba(168, 85, 247, 0.6)')
+                              ? (theme.id === 'dark' ? 'rgba(180, 187, 197, 0.6)' : 'rgba(26, 24, 47, 0.6)')
                               : (theme.id === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)')
                           }
                           strokeWidth={1 / transform.k}
@@ -984,7 +975,7 @@ export default function CrimeMap({
                           fontWeight="bold"
                           fill={
                             dStat.total > 0
-                              ? (theme.id === 'dark' ? '#f3f4f6' : '#6b21a8')
+                              ? (theme.id === 'dark' ? '#f3f4f6' : '#1a182f')
                               : (theme.id === 'dark' ? '#94a3b8' : '#475569')
                           }
                           className="font-sans tracking-wide uppercase"
@@ -1004,7 +995,7 @@ export default function CrimeMap({
                 <text x="230" y="30" fill={theme.id === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)'} fontSize="10px" fontWeight="bold" letterSpacing="2px" textAnchor="middle" className="pointer-events-none uppercase font-mono">Maharashtra</text>
               </g>
             </svg>
-            
+
             <div className={`absolute bottom-4 left-4 pointer-events-none flex flex-col gap-1 text-[9px] font-mono ${theme.id === 'dark' ? 'text-zinc-500' : 'text-slate-400'}`}>
               <div className={`flex justify-between items-end w-32 border-b pb-0.5 ${theme.id === 'dark' ? 'border-zinc-700' : 'border-slate-300'}`}>
                 <span>0</span>
@@ -1014,9 +1005,8 @@ export default function CrimeMap({
               </div>
             </div>
 
-            <div className={`absolute bottom-4 right-4 flex flex-col gap-1.5 border p-1 rounded-xl shadow-2xl ${
-              theme.id === 'dark' ? 'bg-black/85 border-purple-500/25' : 'bg-white/95 border-purple-200/80'
-            }`}>
+            <div className={`absolute bottom-4 right-4 flex flex-col gap-1.5 border p-1 rounded-xl shadow-2xl ${theme.id === 'dark' ? 'bg-black/85 border-purple-500/25' : 'bg-white/95 border-purple-200/80'
+              }`}>
               <button
                 onClick={() => setTransform({ ...transform, k: Math.min(5, transform.k * 1.25) })}
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-purple-400 hover:bg-slate-500/10 transition-colors cursor-pointer"
@@ -1048,9 +1038,8 @@ export default function CrimeMap({
               Crime Intensity Heatmap
             </h3>
             <div className="flex gap-4 items-center">
-              <div className={`w-[50%] h-32 border rounded-xl flex items-center justify-center p-1 relative overflow-hidden ${
-                theme.id === 'dark' ? 'bg-black/40 border-purple-500/5' : 'bg-slate-100/50 border-purple-200/40'
-              }`}>
+              <div className={`w-[50%] h-32 border rounded-xl flex items-center justify-center p-1 relative overflow-hidden ${theme.id === 'dark' ? 'bg-black/40 border-purple-500/5' : 'bg-slate-100/50 border-purple-200/40'
+                }`}>
                 <svg viewBox="0 0 500 800" className="w-full h-full opacity-70">
                   <polygon
                     points="410,20 390,107 395,238 355,358 322,477 466,608 344,765 255,765 177,728 88,632 66,561 33,405 11,274 177,143 344,59"
@@ -1071,9 +1060,8 @@ export default function CrimeMap({
                 </svg>
               </div>
               <div className="flex-1 flex flex-col gap-2.5">
-                <div className={`h-20 w-3 rounded-full bg-gradient-to-t from-emerald-500 via-yellow-500 to-red-500 border ${
-                  theme.id === 'dark' ? 'border-zinc-800' : 'border-slate-200'
-                }`} />
+                <div className={`h-20 w-3 rounded-full bg-gradient-to-t from-emerald-500 via-yellow-500 to-red-500 border ${theme.id === 'dark' ? 'border-zinc-800' : 'border-slate-200'
+                  }`} />
                 <div className={`flex flex-col gap-1 text-[9px] font-mono ${theme.id === 'dark' ? 'text-zinc-400' : 'text-slate-500'}`}>
                   <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-red-500" /> Very High</div>
                   <div className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-orange-500" /> High</div>
@@ -1166,9 +1154,8 @@ export default function CrimeMap({
               Real-time Incident Feed
             </h3>
             <div className="space-y-2 overflow-y-auto flex-1 min-h-0 text-[10px] font-mono pr-1">
-              <div className={`p-2 rounded-xl border flex items-start gap-2.5 ${
-                theme.id === 'dark' ? 'bg-red-950/10 border-red-500/10' : 'bg-red-50/55 border-red-100'
-              }`}>
+              <div className={`p-2 rounded-xl border flex items-start gap-2.5 ${theme.id === 'dark' ? 'bg-red-950/10 border-red-500/10' : 'bg-red-50/55 border-red-100'
+                }`}>
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1 inline-block shrink-0 animate-pulse" />
                 <div className="flex-1">
                   <div className="text-red-500 font-bold">Theft Reported</div>
@@ -1176,9 +1163,8 @@ export default function CrimeMap({
                 </div>
                 <div className="text-zinc-500 text-[9px]">10:32 AM</div>
               </div>
-              <div className={`p-2 rounded-xl border flex items-start gap-2.5 ${
-                theme.id === 'dark' ? 'bg-amber-950/10 border-amber-500/10' : 'bg-amber-50/55 border-amber-100'
-              }`}>
+              <div className={`p-2 rounded-xl border flex items-start gap-2.5 ${theme.id === 'dark' ? 'bg-amber-950/10 border-amber-500/10' : 'bg-amber-50/55 border-amber-100'
+                }`}>
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1 inline-block shrink-0" />
                 <div className="flex-1">
                   <div className="text-amber-500 font-bold">Assault Case</div>
@@ -1186,9 +1172,8 @@ export default function CrimeMap({
                 </div>
                 <div className="text-zinc-500 text-[9px]">10:21 AM</div>
               </div>
-              <div className={`p-2 rounded-xl border flex items-start gap-2.5 ${
-                theme.id === 'dark' ? 'bg-purple-950/10 border-purple-500/10' : 'bg-purple-50/55 border-purple-100'
-              }`}>
+              <div className={`p-2 rounded-xl border flex items-start gap-2.5 ${theme.id === 'dark' ? 'bg-purple-950/10 border-purple-500/10' : 'bg-purple-50/55 border-purple-100'
+                }`}>
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-1 inline-block shrink-0" />
                 <div className="flex-1">
                   <div className="text-purple-500 font-bold">Cyber Fraud</div>
@@ -1199,9 +1184,8 @@ export default function CrimeMap({
             </div>
             <button
               onClick={() => setActiveTab("cases")}
-              className={`text-right text-[9px] font-bold font-mono mt-1 flex items-center justify-end gap-1 cursor-pointer ${
-                theme.id === 'dark' ? 'text-purple-400 hover:text-purple-300' : 'text-purple-700 hover:text-purple-800'
-              }`}
+              className={`text-right text-[9px] font-bold font-mono mt-1 flex items-center justify-end gap-1 cursor-pointer ${theme.id === 'dark' ? 'text-purple-400 hover:text-purple-300' : 'text-purple-700 hover:text-purple-800'
+                }`}
             >
               View All Incidents →
             </button>
@@ -1210,9 +1194,8 @@ export default function CrimeMap({
       </div>
 
       {selectedDistrict && (
-        <div className={`absolute top-16 right-1/4 w-80 backdrop-blur-md border rounded-2xl shadow-2xl z-45 p-4 space-y-3 ${
-          theme.id === 'dark' ? 'border-purple-500/20 bg-zinc-950/95 text-zinc-300' : 'border-purple-200/80 bg-white/95 text-zinc-700'
-        }`}>
+        <div className={`absolute top-16 right-1/4 w-80 backdrop-blur-md border rounded-2xl shadow-2xl z-45 p-4 space-y-3 ${theme.id === 'dark' ? 'border-purple-500/20 bg-zinc-950/95 text-zinc-300' : 'border-purple-200/80 bg-white/95 text-zinc-700'
+          }`}>
           <div className={`flex items-center justify-between border-b pb-2 ${theme.id === 'dark' ? 'border-purple-500/20' : 'border-purple-200/50'}`}>
             <div>
               <span className={`text-[9px] font-mono uppercase tracking-widest block ${theme.id === 'dark' ? 'text-purple-400' : 'text-purple-650'}`}>GIS District Hub</span>
@@ -1235,22 +1218,19 @@ export default function CrimeMap({
             return (
               <>
                 <div className="grid grid-cols-2 gap-2 text-center">
-                  <div className={`p-2 border rounded-xl ${
-                    theme.id === 'dark' ? 'bg-zinc-900/40 border-purple-500/10' : 'bg-slate-50 border-purple-200/30'
-                  }`}>
+                  <div className={`p-2 border rounded-xl ${theme.id === 'dark' ? 'bg-zinc-900/40 border-purple-500/10' : 'bg-slate-50 border-purple-200/30'
+                    }`}>
                     <div className={`text-sm font-bold font-mono ${theme.id === 'dark' ? 'text-purple-300' : 'text-purple-700'}`}>{stats.total}</div>
                     <div className="text-[8px] text-zinc-500 uppercase font-bold">Total FIRs</div>
                   </div>
-                  <div className={`p-2 border rounded-xl ${
-                    theme.id === 'dark' ? 'bg-zinc-900/40 border-purple-500/10' : 'bg-slate-50 border-purple-200/30'
-                  }`}>
+                  <div className={`p-2 border rounded-xl ${theme.id === 'dark' ? 'bg-zinc-900/40 border-purple-500/10' : 'bg-slate-50 border-purple-200/30'
+                    }`}>
                     <div className="text-sm font-bold font-mono text-amber-500">{stats.active}</div>
                     <div className="text-[8px] text-zinc-500 uppercase font-bold">Active Cases</div>
                   </div>
                 </div>
-                <div className={`p-3 border rounded-xl space-y-1.5 text-[10px] font-mono ${
-                  theme.id === 'dark' ? 'bg-purple-950/10 border-purple-500/10' : 'bg-purple-50/45 border-purple-200/40'
-                }`}>
+                <div className={`p-3 border rounded-xl space-y-1.5 text-[10px] font-mono ${theme.id === 'dark' ? 'bg-purple-950/10 border-purple-500/10' : 'bg-purple-50/45 border-purple-200/40'
+                  }`}>
                   <div className={`flex justify-between items-center py-0.5 border-b ${theme.id === 'dark' ? 'border-purple-500/5' : 'border-purple-200/20'}`}>
                     <span className="text-zinc-500">Crime Index</span>
                     <span className="font-bold">{selectedDistrict.crimeRateIndex}/100</span>
@@ -1283,9 +1263,8 @@ export default function CrimeMap({
       )}
 
       {selectedCase && !selectedDistrict && (
-        <div className={`absolute top-16 right-1/4 w-80 backdrop-blur-md border rounded-2xl shadow-2xl z-45 p-4 space-y-3 ${
-          theme.id === 'dark' ? 'border-purple-500/20 bg-zinc-950/95 text-zinc-300' : 'border-purple-200/80 bg-white/95 text-zinc-700'
-        }`}>
+        <div className={`absolute top-16 right-1/4 w-80 backdrop-blur-md border rounded-2xl shadow-2xl z-45 p-4 space-y-3 ${theme.id === 'dark' ? 'border-purple-500/20 bg-zinc-950/95 text-zinc-300' : 'border-purple-200/80 bg-white/95 text-zinc-700'
+          }`}>
           <div className={`flex items-center justify-between border-b pb-2 ${theme.id === 'dark' ? 'border-purple-500/20' : 'border-purple-200/50'}`}>
             <div>
               <span className={`text-[9px] font-mono uppercase tracking-widest block ${theme.id === 'dark' ? 'text-purple-400' : 'text-purple-600'}`}>Geographical Incident file</span>
@@ -1345,9 +1324,8 @@ export default function CrimeMap({
       )}
 
       {isLayersOpen && (
-        <div className={`absolute bottom-16 left-80 p-3 rounded-xl shadow-2xl border w-56 z-50 ${
-          theme.id === 'dark' ? 'border-purple-500/25 bg-zinc-950 text-zinc-300' : 'border-purple-200/80 bg-white text-zinc-700'
-        }`}>
+        <div className={`absolute bottom-16 left-80 p-3 rounded-xl shadow-2xl border w-56 z-50 ${theme.id === 'dark' ? 'border-purple-500/25 bg-zinc-950 text-zinc-300' : 'border-purple-200/80 bg-white text-zinc-700'
+          }`}>
           <div className={`flex items-center justify-between border-b pb-1.5 mb-2 ${theme.id === 'dark' ? 'border-purple-500/10' : 'border-purple-200/30'}`}>
             <h4 className="text-[10px] font-bold uppercase tracking-wider font-mono">Map Layers</h4>
             <button onClick={() => setIsLayersOpen(false)} className="text-[10px] font-bold hover:text-white">✕</button>
@@ -1369,11 +1347,10 @@ export default function CrimeMap({
         </div>
       )}
 
-      <div className={`h-12 border-t flex items-center justify-between px-4 text-[9px] font-mono rounded-xl mt-4 ${
-        theme.id === 'dark' 
-          ? 'border-purple-500/10 bg-zinc-950/80 text-zinc-400' 
-          : 'border-purple-200/50 bg-white/85 text-zinc-600 shadow-md'
-      }`}>
+      <div className={`h-12 border-t flex items-center justify-between px-4 text-[9px] font-mono rounded-xl mt-4 ${theme.id === 'dark'
+        ? 'border-purple-500/10 bg-zinc-950/80 text-zinc-400'
+        : 'border-purple-200/50 bg-white/85 text-zinc-600 shadow-md'
+        }`}>
         <div className="flex items-center gap-5">
           <span className="flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block shadow-[0_0_8px_#10b981]" />

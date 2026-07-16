@@ -5,6 +5,30 @@
 @theme {
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "Fira Code", "IBM Plex Mono", monospace;
+
+  --color-purple-50: #e8f0fe;
+  --color-purple-100: #d7e6fc;
+  --color-purple-200: #cbdcf8;
+  --color-purple-300: #a9c6f5;
+  --color-purple-400: #e8f0fe;
+  --color-purple-500: #e8f0fe;
+  --color-purple-600: #e8f0fe;
+  --color-purple-700: #f1f6ff;
+  --color-purple-800: #ffffff;
+  --color-purple-900: #0a1020;
+  --color-purple-950: #050810;
+
+  --color-fuchsia-50: #e8f0fe;
+  --color-fuchsia-100: #d7e6fc;
+  --color-fuchsia-200: #cbdcf8;
+  --color-fuchsia-300: #a9c6f5;
+  --color-fuchsia-400: #e8f0fe;
+  --color-fuchsia-500: #e8f0fe;
+  --color-fuchsia-600: #e8f0fe;
+  --color-fuchsia-700: #f1f6ff;
+  --color-fuchsia-800: #ffffff;
+  --color-fuchsia-900: #0a1020;
+  --color-fuchsia-950: #050810;
 }
 
 /* Custom Scrollbar styling for a high-tech/premium look */
@@ -45,10 +69,13 @@ body {
 
 /* Custom glowing and pulsing animations for security status indicators */
 @keyframes pulse-glow-green {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
   }
+
   50% {
     transform: scale(1.15);
     box-shadow: 0 0 10px 4px rgba(16, 185, 129, 0.3);
@@ -56,10 +83,13 @@ body {
 }
 
 @keyframes pulse-glow-amber {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
   }
+
   50% {
     transform: scale(1.15);
     box-shadow: 0 0 10px 4px rgba(245, 158, 11, 0.3);
@@ -67,10 +97,13 @@ body {
 }
 
 @keyframes pulse-glow-red {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
   }
+
   50% {
     transform: scale(1.15);
     box-shadow: 0 0 10px 4px rgba(239, 68, 68, 0.3);
@@ -115,11 +148,12 @@ body {
 .scanlines::before {
   content: "";
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(
-    rgba(18, 16, 16, 0) 50%, 
-    rgba(0, 0, 0, 0.25) 50%
-  );
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%,
+      rgba(0, 0, 0, 0.25) 50%);
   background-size: 100% 4px;
   z-index: 10;
   pointer-events: none;
@@ -131,12 +165,14 @@ body {
   position: relative;
 }
 
-.cyber-panel::before, .cyber-panel::after {
+.cyber-panel::before,
+.cyber-panel::after {
   content: "";
   position: absolute;
   width: 8px;
   height: 8px;
-  border-color: rgba(216, 180, 254, 0.5); /* Lavender fallback */
+  border-color: rgba(216, 180, 254, 0.5);
+  /* Lavender fallback */
   border-style: solid;
   pointer-events: none;
 }
@@ -154,12 +190,35 @@ body {
 }
 
 /* Neon color modifiers for cyber-panel */
-.cyber-cyan::before, .cyber-cyan::after { border-color: #06b6d4; }
-.cyber-purple::before, .cyber-purple::after { border-color: #8b5cf6; }
-.cyber-emerald::before, .cyber-emerald::after { border-color: #10b981; }
-.cyber-rose::before, .cyber-rose::after { border-color: #f43f5e; }
-.cyber-zinc::before, .cyber-zinc::after { border-color: #52525b; }
-.cyber-white::before, .cyber-white::after { border-color: #ffffff; }
+.cyber-cyan::before,
+.cyber-cyan::after {
+  border-color: #06b6d4;
+}
+
+.cyber-purple::before,
+.cyber-purple::after {
+  border-color: #8b5cf6;
+}
+
+.cyber-emerald::before,
+.cyber-emerald::after {
+  border-color: #10b981;
+}
+
+.cyber-rose::before,
+.cyber-rose::after {
+  border-color: #f43f5e;
+}
+
+.cyber-zinc::before,
+.cyber-zinc::after {
+  border-color: #52525b;
+}
+
+.cyber-white::before,
+.cyber-white::after {
+  border-color: #ffffff;
+}
 
 /* Glowing typography */
 .glow-text-cyan {
@@ -176,13 +235,20 @@ body {
 
 /* Scanline scrolling effect */
 @keyframes scanline-roll {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(100%);
+  }
 }
 
 .scanline-light {
   position: absolute;
-  top: 0; left: 0; right: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   height: 2px;
   background: rgba(216, 180, 254, 0.15);
   animation: scanline-roll 6s infinite linear;

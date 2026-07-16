@@ -79,46 +79,46 @@ const THEMES: Theme[] = [
   {
     id: "dark",
     name: "Dark Mode",
-    bodyBg: "bg-black bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-[#1a0f2e] via-[#050409] to-[#000000]",
-    cardBg: "backdrop-blur-md bg-black/90 border border-purple-500/20 shadow-[0_0_30px_rgba(230,230,250,0.08)]",
-    border: "border-purple-500/20",
+    bodyBg: "bg-[#090C10] bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-[#1A182F] via-[#090C10] to-[#090C10]",
+    cardBg: "backdrop-blur-md bg-[#1A182F]/45 border border-[#B4BBC5]/15 shadow-[0_0_30px_rgba(232,240,254,0.05)]",
+    border: "border-[#B4BBC5]/15",
     textMain: "text-zinc-100",
-    textMuted: "text-purple-300/60",
-    accentBg: "bg-gradient-to-r from-purple-400 via-fuchsia-500 to-purple-500 hover:from-purple-300 hover:to-purple-400 text-black font-semibold shadow-[0_0_15px_rgba(214,180,254,0.35)] transition-all duration-300",
-    accentText: "text-black",
-    chatUser: "bg-purple-950/40 border border-purple-500/30 text-purple-100 shadow-[0_0_15px_rgba(230,230,250,0.1)]",
-    chatAssistant: "bg-zinc-950/95 border border-purple-500/20 text-zinc-100 shadow-[0_0_20px_rgba(0,0,0,0.6)]",
-    chartGrid: "#1a0f30",
-    chartStroke: "#e6e6fa",
-    chartBar: "#d8b4fe",
-    chartLine: "#d8b4fe",
-    nodeIncident: "#e6e6fa",
-    nodeAccused: "#c084fc",
-    nodePhone: "#a78bfa",
-    nodeVehicle: "#f3e8ff",
-    nodeBankAccount: "#d8b4fe"
+    textMuted: "text-[#B4BBC5]/65",
+    accentBg: "bg-[#E8F0FE] hover:bg-white text-[#090C10] font-bold shadow-[0_0_15px_rgba(232,240,254,0.4)] hover:shadow-[0_0_22px_rgba(232,240,254,0.7)] transition-all duration-300",
+    accentText: "text-[#090C10] font-bold",
+    chatUser: "bg-[#E8F0FE]/10 border border-[#E8F0FE]/25 text-zinc-100",
+    chatAssistant: "bg-[#090C10]/95 border border-[#B4BBC5]/15 text-zinc-100",
+    chartGrid: "#1c1a2f",
+    chartStroke: "#e8f0fe",
+    chartBar: "#e8f0fe",
+    chartLine: "#e8f0fe",
+    nodeIncident: "#e8f0fe",
+    nodeAccused: "#cbdcf8",
+    nodePhone: "#a9c6f5",
+    nodeVehicle: "#d7e6fc",
+    nodeBankAccount: "#cbdcf8"
   },
   {
     id: "light",
     name: "Light Mode",
-    bodyBg: "bg-slate-50 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-[#f3e8ff] via-[#f8fafc] to-[#ffffff]",
-    cardBg: "backdrop-blur-md bg-white/90 border border-purple-200/80 shadow-[0_8px_30px_rgba(147,51,234,0.04)]",
-    border: "border-purple-200/80",
-    textMain: "text-zinc-800",
-    textMuted: "text-purple-700/60",
-    accentBg: "bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-500 hover:to-purple-700 text-white font-medium shadow-[0_4px_15px_rgba(147,51,234,0.15)] transition-all duration-300",
+    bodyBg: "bg-[#E8F0FE] bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-[#E8F0FE] via-[#f8fafc] to-[#ffffff]",
+    cardBg: "backdrop-blur-md bg-white/90 border border-[#B4BBC5]/50 shadow-[0_8px_30px_rgba(26,24,47,0.03)]",
+    border: "border-[#B4BBC5]/50",
+    textMain: "text-[#1A182F]",
+    textMuted: "text-[#1A182F]/70",
+    accentBg: "bg-[#1A182F] hover:bg-[#1A182F]/90 text-white font-medium shadow-[0_4px_15px_rgba(26,24,47,0.15)] transition-all duration-300",
     accentText: "text-white",
-    chatUser: "bg-purple-50 border border-purple-200/60 text-purple-950 shadow-[0_4px_12px_rgba(147,51,234,0.05)]",
-    chatAssistant: "bg-white/95 border border-purple-100 text-zinc-800 shadow-[0_4px_12px_rgba(0,0,0,0.04)]",
-    chartGrid: "#f3e8ff",
-    chartStroke: "#6b21a8",
-    chartBar: "#a78bfa",
-    chartLine: "#a78bfa",
-    nodeIncident: "#581c87",
-    nodeAccused: "#7c3aed",
-    nodePhone: "#6d28d9",
-    nodeVehicle: "#4c1d95",
-    nodeBankAccount: "#86198f"
+    chatUser: "bg-[#E8F0FE]/70 border border-[#B4BBC5]/60 text-[#1A182F]",
+    chatAssistant: "bg-white/95 border border-[#B4BBC5]/50 text-zinc-800",
+    chartGrid: "#e8f0fe",
+    chartStroke: "#1a182f",
+    chartBar: "#1a182f",
+    chartLine: "#1a182f",
+    nodeIncident: "#1a182f",
+    nodeAccused: "#475569",
+    nodePhone: "#64748b",
+    nodeVehicle: "#94a3b8",
+    nodeBankAccount: "#cbd5e1"
   }
 ];
 
@@ -384,7 +384,7 @@ function App() {
   }, [filteredCases.length, selectedCityFilter, selectedCrimeFilter]);
 
   const scaledClosed = React.useMemo(() => {
-    const ratio = filteredCases.length 
+    const ratio = filteredCases.length
       ? (filteredCases.filter(c => c.status === "Closed").length / filteredCases.length)
       : 0.76;
     const safeRatio = Math.max(0.4, Math.min(0.9, ratio));
@@ -444,7 +444,7 @@ function App() {
   const displayedFilteredCases = React.useMemo(() => {
     const list: Case[] = [...filteredCases];
     const targetCount = Math.min(scaledTotal, 50); // limit to 50 for performance
-    
+
     if (list.length < targetCount) {
       let hash = 0;
       const str = `${selectedCityFilter}-${selectedCrimeFilter}`;
@@ -452,15 +452,15 @@ function App() {
         hash = (hash << 5) - hash + str.charCodeAt(i);
         hash |= 0;
       }
-      
+
       const citySeed = selectedCityFilter !== "All" ? selectedCityFilter : "Bengaluru";
       const crimeSeed = selectedCrimeFilter !== "All" ? selectedCrimeFilter : "Robbery";
-      
+
       const padCount = targetCount - list.length;
       for (let i = 0; i < padCount; i++) {
         const simulatedId = 10000 + Math.abs((hash + i) % 89999);
         const firNum = `FIR-${selectedCityFilter === "All" ? "KSP" : selectedCityFilter.slice(0, 3).toUpperCase()}-${simulatedId}/2026`;
-        
+
         list.push({
           id: `sim-${simulatedId}`,
           fir_number: firNum,
@@ -672,7 +672,7 @@ function App() {
   // Chat queries location parser for AI Assistant & Map synchronization
   const syncChatWithMap = (msgText: string, respText: string, sourcesList: string[]) => {
     const q = msgText.toLowerCase();
-    
+
     // 1. Check for specific FIR numbers
     const firRegex = /fir[- ]?(\d+)/i;
     const firMatch = q.match(firRegex);
@@ -700,17 +700,17 @@ function App() {
       "Vijayapura", "Yadgir", "Raichur", "Koppal", "Gadag", "Haveri",
       "Chikkaballapur", "Ramanagara", "Mandya", "Kodagu", "Chamarajanagar"
     ];
-    
+
     let queryNormalized = q.replace("bangalore", "bengaluru")
-                           .replace("mysore", "mysuru")
-                           .replace("belgaum", "belagavi")
-                           .replace("hubli", "hubballi")
-                           .replace("mangalore", "mangaluru")
-                           .replace("gulbarga", "kalaburagi")
-                           .replace("bijapur", "vijayapura");
+      .replace("mysore", "mysuru")
+      .replace("belgaum", "belagavi")
+      .replace("hubli", "hubballi")
+      .replace("mangalore", "mangaluru")
+      .replace("gulbarga", "kalaburagi")
+      .replace("bijapur", "vijayapura");
 
     const foundDistrict = districts.find(d => queryNormalized.includes(d.toLowerCase()));
-    
+
     if (foundDistrict) {
       setSelectedCityFilter(foundDistrict);
       setActiveTab("map");
@@ -1176,7 +1176,7 @@ function App() {
 
     // ---- Mouseover / Mouseout (hover preview) ----
     node
-      .on("mouseover", function(_event, d: any) {
+      .on("mouseover", function (_event, d: any) {
         d3.select(this).select(".node-bg")
           .transition().duration(130)
           .attr("stroke-width", 2.2);
@@ -1186,7 +1186,7 @@ function App() {
           return (s === d.id || t === d.id) ? 1.0 : 0.15;
         });
       })
-      .on("mouseout", function() {
+      .on("mouseout", function () {
         d3.select(this).select(".node-bg")
           .transition().duration(130)
           .attr("stroke-width", 1.2);
@@ -1646,7 +1646,7 @@ function App() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `CrimeMind_Session_${chatSessionId.slice(0,6)}.pdf`;
+      a.download = `CrimeMind_Session_${chatSessionId.slice(0, 6)}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -1817,7 +1817,7 @@ function App() {
 
           {/* Theme, Notification, Settings, and User Info */}
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => setTheme(theme.id === "dark" ? THEMES[1] : THEMES[0])}
               className={`p-2 rounded-xl border ${theme.border} bg-slate-500/5 dark:bg-white/5 hover:bg-slate-500/10 dark:hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center ${theme.textMain}`}
               title="Switch Theme"
@@ -1830,7 +1830,7 @@ function App() {
               <div className="text-right">
                 <div className={`text-xs font-bold ${theme.textMain}`}>KSP Admin</div>
               </div>
-              
+
               {/* KSP Emblem Logo */}
               <div className={`w-8 h-8 rounded-full overflow-hidden border ${theme.border} bg-purple-950/10 dark:bg-white/5 flex items-center justify-center p-1`}>
                 <img src="/logo.png" className="w-full h-full object-contain" alt="KSP Emblem" />
@@ -2495,21 +2495,20 @@ function App() {
             {/* Filter Chips (Google Maps style category chips right below the search bar) */}
             <div className="absolute top-44 left-6 z-30 flex flex-wrap gap-1.5 max-w-lg sm:max-w-xl">
               {[
-                { label: "Phones",    key: "phone" },
-                { label: "Vehicles",  key: "vehicle" },
-                { label: "Banks",     key: "bank_account" },
-                { label: "People",    key: "people" },
-                { label: "Officers",  key: "officer" },
+                { label: "Phones", key: "phone" },
+                { label: "Vehicles", key: "vehicle" },
+                { label: "Banks", key: "bank_account" },
+                { label: "People", key: "people" },
+                { label: "Officers", key: "officer" },
                 { label: "Locations", key: "location" }
               ].map((f) => (
                 <button
                   key={f.key}
                   onClick={() => setActiveEntityFilter(prev => prev === f.key ? null : f.key)}
-                  className={`px-3 py-1.5 rounded-full text-[10px] font-sans font-semibold border transition-all cursor-pointer shadow-sm ${
-                    activeEntityFilter === f.key
-                      ? "bg-purple-600 border-purple-400 text-white shadow-[0_0_14px_rgba(168,85,247,0.55)] scale-105"
-                      : (theme.id === "dark" ? "bg-black/85 border-purple-500/20 text-purple-300/60 hover:text-purple-200 hover:border-purple-500/40" : "bg-white border-purple-300 text-purple-700 hover:bg-purple-50/50 hover:text-purple-800")
-                  }`}
+                  className={`px-3 py-1.5 rounded-full text-[10px] font-sans font-semibold border transition-all cursor-pointer shadow-sm ${activeEntityFilter === f.key
+                    ? "bg-purple-600 border-purple-400 text-white shadow-[0_0_14px_rgba(168,85,247,0.55)] scale-105"
+                    : (theme.id === "dark" ? "bg-black/85 border-purple-500/20 text-purple-300/60 hover:text-purple-200 hover:border-purple-500/40" : "bg-white border-purple-300 text-purple-700 hover:bg-purple-50/50 hover:text-purple-800")
+                    }`}
                 >
                   {f.label}
                 </button>
@@ -2580,23 +2579,23 @@ function App() {
                     }}
                   >
                     {selectedNode.type === "incident" ? "📂" :
-                     selectedNode.type === "accused" ? "👤" :
-                     selectedNode.type === "phone" ? "📱" :
-                     selectedNode.type === "vehicle" ? "🚗" :
-                     selectedNode.type === "bank_account" ? "🏦" :
-                     selectedNode.type === "location" ? "📍" :
-                     selectedNode.type === "officer" ? "👮" : "❓"}
+                      selectedNode.type === "accused" ? "👤" :
+                        selectedNode.type === "phone" ? "📱" :
+                          selectedNode.type === "vehicle" ? "🚗" :
+                            selectedNode.type === "bank_account" ? "🏦" :
+                              selectedNode.type === "location" ? "📍" :
+                                selectedNode.type === "officer" ? "👮" : "❓"}
                   </div>
                   <div>
                     <h4 className={`text-sm font-bold ${theme.id === 'dark' ? 'text-zinc-100' : 'text-zinc-800'} font-sans tracking-tight`}>{selectedNode.label || selectedNode.id}</h4>
                     <span className="text-[10px] font-bold uppercase tracking-wider block" style={{ color: getNodeColor(selectedNode.type) }}>
                       {selectedNode.type === "incident" ? "Case File" :
-                       selectedNode.type === "accused" ? "Primary Suspect" :
-                       selectedNode.type === "phone" ? "Active Phone Node" :
-                       selectedNode.type === "vehicle" ? "Vehicle" :
-                       selectedNode.type === "bank_account" ? "Bank Account" :
-                       selectedNode.type === "location" ? "Location" :
-                       selectedNode.type === "officer" ? "Investigating Officer" : "Entity"}
+                        selectedNode.type === "accused" ? "Primary Suspect" :
+                          selectedNode.type === "phone" ? "Active Phone Node" :
+                            selectedNode.type === "vehicle" ? "Vehicle" :
+                              selectedNode.type === "bank_account" ? "Bank Account" :
+                                selectedNode.type === "location" ? "Location" :
+                                  selectedNode.type === "officer" ? "Investigating Officer" : "Entity"}
                     </span>
                   </div>
                 </div>
@@ -2694,9 +2693,8 @@ function App() {
                       <button
                         key={key as string}
                         onClick={() => setActiveEntityFilter(prev => prev === key ? null : key as string)}
-                        className={`p-2 rounded-xl bg-slate-500/5 border transition-all text-center cursor-pointer hover:bg-slate-500/10 ${
-                          activeEntityFilter === key ? "border-purple-500/50 bg-purple-500/10" : brd as string
-                        }`}
+                        className={`p-2 rounded-xl bg-slate-500/5 border transition-all text-center cursor-pointer hover:bg-slate-500/10 ${activeEntityFilter === key ? "border-purple-500/50 bg-purple-500/10" : brd as string
+                          }`}
                       >
                         <div className={`text-sm font-bold font-mono ${clr as string}`}>{cnt as number}</div>
                         <div className="text-[8px] font-bold text-zinc-500 font-sans uppercase">{lbl as string}</div>
@@ -2712,9 +2710,8 @@ function App() {
                       <button
                         key={key as string}
                         onClick={() => setActiveEntityFilter(prev => prev === key ? null : key as string)}
-                        className={`p-2 rounded-xl bg-slate-500/5 border transition-all text-center cursor-pointer hover:bg-slate-500/10 ${
-                          activeEntityFilter === key ? "border-purple-500/50 bg-purple-500/10" : brd as string
-                        }`}
+                        className={`p-2 rounded-xl bg-slate-500/5 border transition-all text-center cursor-pointer hover:bg-slate-500/10 ${activeEntityFilter === key ? "border-purple-500/50 bg-purple-500/10" : brd as string
+                          }`}
                       >
                         <div className={`text-sm font-bold font-mono ${clr as string}`}>{cnt as number}</div>
                         <div className="text-[8px] font-bold text-zinc-500 font-sans uppercase">{lbl as string}</div>
@@ -2805,32 +2802,32 @@ function App() {
                   const filtered = !rawQuery
                     ? cases
                     : cases.filter(c => {
-                        // Priority 1: Direct FIR number match (exact substring)
-                        if (c.fir_number.toLowerCase().includes(rawQuery)) return true;
+                      // Priority 1: Direct FIR number match (exact substring)
+                      if (c.fir_number.toLowerCase().includes(rawQuery)) return true;
 
-                        const keywords = rawQuery
-                          .split(/[\s,.:;!?()"\'-]+/)
-                          .map(w => w.trim())
-                          .filter(w => w.length > 1 && !stopWords.has(w));
+                      const keywords = rawQuery
+                        .split(/[\s,.:;!?()"\'-]+/)
+                        .map(w => w.trim())
+                        .filter(w => w.length > 1 && !stopWords.has(w));
 
-                        if (keywords.length === 0) {
-                          return (
-                            c.crime_head.toLowerCase().includes(rawQuery) ||
-                            c.location.toLowerCase().includes(rawQuery)
-                          );
-                        }
-
-                        return keywords.some(q =>
-                          c.fir_number.toLowerCase().includes(q) ||
-                          c.crime_head.toLowerCase().includes(q) ||
-                          c.location.toLowerCase().includes(q) ||
-                          c.description.toLowerCase().includes(q) ||
-                          c.accused.some(a => a.toLowerCase().includes(q)) ||
-                          c.phone_numbers.some(p => p.toLowerCase().includes(q)) ||
-                          c.vehicles.some(v => v.toLowerCase().includes(q)) ||
-                          c.bank_accounts.some(b => b.toLowerCase().includes(q))
+                      if (keywords.length === 0) {
+                        return (
+                          c.crime_head.toLowerCase().includes(rawQuery) ||
+                          c.location.toLowerCase().includes(rawQuery)
                         );
-                      });
+                      }
+
+                      return keywords.some(q =>
+                        c.fir_number.toLowerCase().includes(q) ||
+                        c.crime_head.toLowerCase().includes(q) ||
+                        c.location.toLowerCase().includes(q) ||
+                        c.description.toLowerCase().includes(q) ||
+                        c.accused.some(a => a.toLowerCase().includes(q)) ||
+                        c.phone_numbers.some(p => p.toLowerCase().includes(q)) ||
+                        c.vehicles.some(v => v.toLowerCase().includes(q)) ||
+                        c.bank_accounts.some(b => b.toLowerCase().includes(q))
+                      );
+                    });
 
                   if (filtered.length === 0 && rawQuery) {
                     return (
@@ -2970,8 +2967,8 @@ function App() {
                         <div className="absolute -left-[21px] top-1 bg-blue-500 h-2 w-2 rounded-full border border-slate-900"></div>
                         <div className="text-[10px] text-slate-400 font-mono">Status: {selectedCase.status}</div>
                         <div className="text-xs font-semibold">
-                          {selectedCase.status === "Closed" 
-                            ? "Case resolved and archived in KSP Registry." 
+                          {selectedCase.status === "Closed"
+                            ? "Case resolved and archived in KSP Registry."
                             : "Active leads monitored. Intelligence mapping initialized."}
                         </div>
                       </div>
