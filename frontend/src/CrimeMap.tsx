@@ -944,39 +944,53 @@ export default function CrimeMap({
                     const dStat = districtCrimeStats[p.district.id] || { total: 0 };
                     const isMajor = ["bengaluru-urban", "mysuru", "belagavi", "dharwad", "dakshina-kannada"].includes(p.district.id);
                     if (transform.k < 0.7 && !isMajor) return null;
+
+                    const labelText = dStat.total > 0 
+                      ? `${p.district.name} • ${dStat.total}` 
+                      : p.district.name;
+                    
+                    // Estimate size dynamically to keep it crisp at all zoom levels
+                    const fontSize = (isMajor ? 8.5 : 7.5) / transform.k;
+                    // ~0.58 width multiplier per character for uppercase bold sans font
+                    const textWidth = labelText.length * (fontSize * 0.58);
+                    const paddingX = 10 / transform.k;
+                    const paddingY = 6 / transform.k;
+                    const pillWidth = textWidth + paddingX;
+                    const pillHeight = fontSize + paddingY;
+
                     return (
                       <g key={`lbl-${p.district.id}`} transform={`translate(${p.x}, ${p.y})`}>
+                        {/* Pill Background */}
+                        <rect
+                          x={-pillWidth / 2}
+                          y={-pillHeight / 2}
+                          width={pillWidth}
+                          height={pillHeight}
+                          rx={pillHeight / 2}
+                          fill={theme.id === 'dark' ? 'rgba(15, 10, 25, 0.85)' : 'rgba(255, 255, 255, 0.95)'}
+                          stroke={
+                            dStat.total > 0
+                              ? (theme.id === 'dark' ? 'rgba(168, 85, 247, 0.5)' : 'rgba(168, 85, 247, 0.6)')
+                              : (theme.id === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)')
+                          }
+                          strokeWidth={1 / transform.k}
+                          className="transition-all duration-300"
+                        />
+                        {/* Pill Text */}
                         <text
-                          y={-10 / transform.k}
                           textAnchor="middle"
-                          fontSize={`${8 / transform.k}px`}
+                          y={fontSize * 0.3}
+                          fontSize={`${fontSize}px`}
                           fontWeight="bold"
-                          fill={theme.id === 'dark' ? '#000' : '#fff'}
-                          stroke={theme.id === 'dark' ? '#000' : '#fff'}
-                          strokeWidth={2 / transform.k}
-                          strokeLinejoin="round"
-                          className="font-sans tracking-wide uppercase opacity-85"
-                        >
-                          {p.district.name}
-                        </text>
-                        <text
-                          y={-10 / transform.k}
-                          textAnchor="middle"
-                          fontSize={`${8 / transform.k}px`}
-                          fontWeight="bold"
-                          fill={theme.id === 'dark' ? '#f3f4f6' : '#1e293b'}
+                          fill={
+                            dStat.total > 0
+                              ? (theme.id === 'dark' ? '#f3f4f6' : '#6b21a8')
+                              : (theme.id === 'dark' ? '#94a3b8' : '#475569')
+                          }
                           className="font-sans tracking-wide uppercase"
                         >
-                          {p.district.name}
+                          {labelText}
                         </text>
-                        {dStat.total > 0 && (
-                          <g transform={`translate(0, ${10 / transform.k})`}>
-                            <circle cx="0" cy="0" r={5.5 / transform.k} fill="rgba(168, 85, 247, 0.9)" stroke={theme.id === 'dark' ? '#000' : '#fff'} strokeWidth={0.5 / transform.k} />
-                            <text textAnchor="middle" y={1.8 / transform.k} fontSize={`${6.5 / transform.k}px`} fill="#fff" fontWeight="bold" className="font-mono">
-                              {dStat.total}
-                            </text>
-                          </g>
-                        )}
                       </g>
                     );
                   })}
