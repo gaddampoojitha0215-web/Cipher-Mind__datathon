@@ -2357,10 +2357,15 @@ function App() {
                   <Paperclip className="w-4 h-4" />
                 </button>
 
-                <input
-                  type="text"
+                <textarea
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      submitChat();
+                    }
+                  }}
                   placeholder={
                     language === "kn" ? "ಬೆಂಗಳೂರಿನಲ್ಲಿ ಇತ್ತೀಚಿನ ಕಳ್ಳತನ ಪ್ರಕರಣಗಳನ್ನು ತೋರಿಸಿ..." :
                       language === "hi" ? "बेंगलुरु में चोरी के मामले दिखाएं..." :
@@ -2368,7 +2373,8 @@ function App() {
                           language === "ta" ? "பெங்களூரில் திருட்டு வழக்குகளைக் காட்டு..." :
                             "Show burglary cases in Bengaluru..."
                   }
-                  className={`flex-1 bg-transparent border ${theme.border} rounded-xl px-4 py-3 text-xs focus:outline-none focus:ring-1 focus:ring-zinc-500 ${theme.textMain} placeholder-slate-500`}
+                  rows={1}
+                  className={`flex-1 bg-transparent border ${theme.border} rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-zinc-500 ${theme.textMain} placeholder-slate-500 resize-none overflow-y-auto max-h-24 min-h-[38px]`}
                 />
 
 
