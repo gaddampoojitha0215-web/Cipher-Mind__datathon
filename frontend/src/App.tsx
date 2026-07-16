@@ -1744,10 +1744,10 @@ function App() {
   return (
     <div className={`h-screen overflow-hidden ${theme.bodyBg} ${theme.textMain} transition-colors duration-300 flex flex-col font-sans selection:${theme.id === "dark" ? "bg-purple-500 text-white" : "bg-purple-600 text-white"}`}>
       {/* Header */}
-      <header className={`border-b ${theme.border} bg-transparent px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50 ${theme.textMain}`}>
+      <header className={`border-b ${theme.border} bg-white/80 dark:bg-black/80 px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50 ${theme.textMain}`}>
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-xl bg-gradient-to-br ${theme.id === "dark" ? "from-purple-500/10 to-fuchsia-500/20 border border-purple-500/30" : "from-purple-100 to-fuchsia-100 border border-purple-200/60"}`}>
-            <img src="/logo.png" className="w-5 h-5 object-cover rounded-md" alt="CrimeMind Logo" />
+            <img src="/logo.png" className="w-5 h-5 object-contain" alt="CrimeMind Logo" />
           </div>
           <div>
             <h1 className="text-sm font-bold tracking-tight font-sans">
@@ -1758,7 +1758,7 @@ function App() {
         </div>
 
         {/* Minimal Underlined Navigation Tabs */}
-        <nav className="flex gap-1.5 bg-slate-500/10 dark:bg-white/5 p-1 rounded-full border border-slate-200/50 dark:border-slate-800/40">
+        <nav className={`flex gap-1.5 bg-slate-500/10 dark:bg-white/5 p-1 rounded-full border ${theme.border}`}>
           {(["dashboard", "chat", "network", "cases", "map"] as const).map((tab) => (
             <button
               key={tab}
@@ -1768,7 +1768,7 @@ function App() {
                 : `${theme.textMuted} hover:${theme.textMain}`
                 }`}
             >
-              {tab === "chat" ? "AI Assistant" : tab === "network" ? "Link Analysis" : tab === "map" ? "Crime Intelligence Map" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab === "chat" ? "AI Assistant" : tab === "network" ? "Link Analysis" : tab === "map" ? "KSP Intelligence Map" : tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
         </nav>
@@ -1828,17 +1828,13 @@ function App() {
             {/* Admin Profile */}
             <div className={`flex items-center gap-3 border-l ${theme.border} pl-4`}>
               <div className="text-right">
-                <div className="text-xs font-bold text-zinc-100">KSP Admin</div>
-                <div className="text-[9px] text-zinc-500 font-mono">Super Admin</div>
+                <div className={`text-xs font-bold ${theme.textMain}`}>KSP Admin</div>
               </div>
-              <div className="w-8 h-8 rounded-full bg-purple-900/30 border border-purple-500/30 flex items-center justify-center text-xs font-bold text-purple-300">
-                KA
+              
+              {/* KSP Emblem Logo */}
+              <div className={`w-8 h-8 rounded-full overflow-hidden border ${theme.border} bg-purple-950/10 dark:bg-white/5 flex items-center justify-center p-1`}>
+                <img src="/logo.png" className="w-full h-full object-contain" alt="KSP Emblem" />
               </div>
-            </div>
-
-            {/* KSP Emblem Logo */}
-            <div className={`w-8 h-8 rounded-full overflow-hidden border ${theme.border} bg-black/40 flex items-center justify-center p-1`}>
-              <img src="/logo.png" className="w-full h-full object-contain" alt="KSP Emblem" />
             </div>
           </div>
         </div>

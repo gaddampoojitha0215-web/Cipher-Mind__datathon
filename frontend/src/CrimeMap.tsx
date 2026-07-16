@@ -558,7 +558,7 @@ export default function CrimeMap({
           <div className={`flex justify-between items-center border-b pb-2 ${theme.id === 'dark' ? 'border-purple-500/10' : 'border-purple-200/50'}`}>
             <div>
               <h3 className="text-xs font-bold uppercase tracking-wider">
-                Karnataka State Map
+                KSP Intelligence Map
               </h3>
               <p className={`text-[9px] font-mono ${theme.id === 'dark' ? 'text-purple-400/70' : 'text-purple-700/80'}`}>Real-time Crime Intelligence Overview</p>
             </div>
