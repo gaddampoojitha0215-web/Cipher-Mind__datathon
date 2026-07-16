@@ -522,7 +522,7 @@ function App() {
   }, [theme]);
 
   // Auth state
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem("crime_token"));
+  const [token, setToken] = useState<string | null>("bypass-token");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -1255,8 +1255,13 @@ function App() {
 
   // Load cases from mock API or local fallback on init
   useEffect(() => {
+    if (!token) return;
     fetch(`${API_BASE_URL}/api/v1/cases/all`, { headers: { "Authorization": `Bearer ${token}` } })
       .then(res => {
+        if (res.status === 401) {
+          handleLogout();
+          throw new Error("Session expired. Please log in again.");
+        }
         if (!res.ok) throw new Error(`API error ${res.status}`);
         return res.json();
       })
@@ -1291,7 +1296,14 @@ function App() {
       });
 
     fetch(`${API_BASE_URL}/api/v1/analytics/stats`, { headers: { "Authorization": `Bearer ${token}` } })
-      .then(res => res.json())
+      .then(res => {
+        if (res.status === 401) {
+          handleLogout();
+          throw new Error("Session expired. Please log in again.");
+        }
+        if (!res.ok) throw new Error(`API error ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         if (data.classifications) setClassifications(data.classifications);
         if (data.city_distribution) setCityDistribution(data.city_distribution);
@@ -1442,6 +1454,11 @@ function App() {
           language: language
         })
       });
+      if (res.status === 401) {
+        handleLogout();
+        throw new Error("Session expired. Please log in again.");
+      }
+      if (!res.ok) throw new Error(`API error ${res.status}`);
       const data = await res.json();
 
       const assistantMsg: Message = {
@@ -1548,6 +1565,10 @@ function App() {
           language: language
         })
       });
+      if (res.status === 401) {
+        handleLogout();
+        throw new Error("Session expired. Please log in again.");
+      }
       if (!res.ok) throw new Error(`API error ${res.status}`);
       const data = await res.json();
 
@@ -1734,15 +1755,8 @@ function App() {
               <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-2.5 outline-none focus:border-purple-500" required placeholder="••••••••" />
             </div>
             {loginError && <div className="text-red-400 text-sm text-center font-medium bg-red-900/20 p-2 rounded">{loginError}</div>}
-            <button type="submit" className="w-full bg-[#E8F0FE] hover:bg-white text-[#090C10] font-bold py-2.5 rounded-lg transition-all duration-300 shadow-lg hover:shadow-[0_0_15px_rgba(232,240,254,0.5)] cursor-pointer">Authorize Protocol</button>
+            <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 rounded-lg transition-colors shadow-lg">Authorize Protocol</button>
           </form>
-          <div className="text-center mt-6 pt-4 border-t border-slate-700/40">
-            <p className="text-[10px] text-slate-500 font-mono leading-relaxed">
-              DEV PROTOCOL CREDENTIALS:<br />
-              Email: <span className="text-slate-400 select-all">inspector.gowda@ksp.gov.in</span><br />
-              Access Code: <span className="text-slate-400 select-all">admin123</span>
-            </p>
-          </div>
         </div>
       </div>
     );
@@ -1836,12 +1850,6 @@ function App() {
             <div className={`flex items-center gap-3 border-l ${theme.border} pl-4`}>
               <div className="text-right">
                 <div className={`text-xs font-bold ${theme.textMain}`}>KSP Admin</div>
-                <button
-                  onClick={handleLogout}
-                  className="text-[9px] font-semibold text-rose-500 hover:text-rose-450 cursor-pointer block mt-0.5"
-                >
-                  LOGOUT
-                </button>
               </div>
 
               {/* KSP Emblem Logo */}
