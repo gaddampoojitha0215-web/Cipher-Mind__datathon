@@ -2526,10 +2526,15 @@ function App() {
                 <button
                   key={f.key}
                   onClick={() => setActiveEntityFilter(prev => prev === f.key ? null : f.key)}
-                  className={`px-3 py-1.5 rounded-full text-[10px] font-sans font-semibold border transition-all cursor-pointer shadow-sm ${activeEntityFilter === f.key
-                    ? "bg-purple-600 border-purple-400 text-white shadow-[0_0_14px_rgba(168,85,247,0.55)] scale-105"
-                    : (theme.id === "dark" ? "bg-black/85 border-purple-500/20 text-purple-300/60 hover:text-purple-200 hover:border-purple-500/40" : "bg-white border-purple-300 text-purple-700 hover:bg-purple-50/50 hover:text-purple-800")
-                    }`}
+                  className={`px-3 py-1.5 rounded-full text-[10px] font-sans font-semibold border transition-all cursor-pointer shadow-sm ${
+                    activeEntityFilter === f.key
+                      ? (theme.id === "dark" 
+                          ? "bg-[#E8F0FE] border-[#E8F0FE] text-[#090C10] shadow-[0_0_12px_rgba(232,240,254,0.55)] scale-105 font-bold" 
+                          : "bg-[#1A182F] border-[#1A182F] text-white shadow-[0_4px_12px_rgba(26,24,47,0.25)] scale-105")
+                      : (theme.id === "dark" 
+                          ? "bg-[#1A182F]/40 border-[#B4BBC5]/25 text-[#B4BBC5]/70 hover:text-[#E8F0FE] hover:border-[#E8F0FE]/40 hover:bg-[#E8F0FE]/10" 
+                          : "bg-white border-[#B4BBC5]/50 text-[#1A182F]/80 hover:bg-[#E8F0FE]/60 hover:text-[#1A182F] hover:border-[#1A182F]/30")
+                  }`}
                 >
                   {f.label}
                 </button>

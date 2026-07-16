@@ -1308,14 +1308,14 @@ export default function CrimeMap({
                 setActiveSuspect(selectedCase.accused[0] || null);
                 setActiveTab("network");
               }}
-              className="flex-1 py-2 rounded-lg border border-purple-500/25 hover:bg-purple-500/10 font-bold text-[9px] uppercase transition-all text-center"
+              className={`flex-1 py-2 rounded-lg border ${theme.id === 'dark' ? 'border-[#B4BBC5]/25 hover:bg-[#E8F0FE]/10 text-zinc-200 hover:text-[#E8F0FE]' : 'border-[#B4BBC5] hover:bg-[#E8F0FE]/20 text-[#1A182F]'} font-bold text-[9px] uppercase transition-all text-center cursor-pointer`}
             >
               Analyze Relations
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("cases")}
-              className="flex-1 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold text-[9px] uppercase shadow-lg transition-colors flex items-center justify-center gap-1"
+              className={`flex-1 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-[#090C10] font-bold text-[9px] uppercase shadow-lg transition-colors flex items-center justify-center gap-1 cursor-pointer`}
             >
               Open Case
             </button>
@@ -1324,9 +1324,9 @@ export default function CrimeMap({
       )}
 
       {isLayersOpen && (
-        <div className={`absolute bottom-16 left-80 p-3 rounded-xl shadow-2xl border w-56 z-50 ${theme.id === 'dark' ? 'border-purple-500/25 bg-zinc-950 text-zinc-300' : 'border-purple-200/80 bg-white text-zinc-700'
+        <div className={`absolute bottom-16 left-80 p-3 rounded-xl shadow-2xl border w-56 z-50 ${theme.id === 'dark' ? 'border-[#B4BBC5]/25 bg-zinc-950 text-zinc-300' : 'border-[#B4BBC5]/50 bg-white text-zinc-700'
           }`}>
-          <div className={`flex items-center justify-between border-b pb-1.5 mb-2 ${theme.id === 'dark' ? 'border-purple-500/10' : 'border-purple-200/30'}`}>
+          <div className={`flex items-center justify-between border-b pb-1.5 mb-2 ${theme.id === 'dark' ? 'border-[#B4BBC5]/15' : 'border-[#B4BBC5]/25'}`}>
             <h4 className="text-[10px] font-bold uppercase tracking-wider font-mono">Map Layers</h4>
             <button onClick={() => setIsLayersOpen(false)} className="text-[10px] font-bold hover:text-white">✕</button>
           </div>
@@ -1340,7 +1340,7 @@ export default function CrimeMap({
                 <span className={val ? "text-inherit font-semibold" : "text-zinc-550"}>
                   {key.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())}
                 </span>
-                {val ? <Eye className="w-2.5 h-2.5 text-purple-500" /> : <EyeOff className="w-2.5 h-2.5 text-zinc-500" />}
+                {val ? <Eye className={`w-2.5 h-2.5 ${theme.id === 'dark' ? 'text-[#E8F0FE]' : 'text-[#1A182F]'}`} /> : <EyeOff className="w-2.5 h-2.5 text-zinc-500" />}
               </button>
             ))}
           </div>
@@ -1348,8 +1348,8 @@ export default function CrimeMap({
       )}
 
       <div className={`h-12 border-t flex items-center justify-between px-4 text-[9px] font-mono rounded-xl mt-4 ${theme.id === 'dark'
-        ? 'border-purple-500/10 bg-zinc-950/80 text-zinc-400'
-        : 'border-purple-200/50 bg-white/85 text-zinc-600 shadow-md'
+        ? 'border-[#B4BBC5]/15 bg-zinc-950/80 text-zinc-400'
+        : 'border-[#B4BBC5]/40 bg-white/85 text-zinc-600 shadow-md'
         }`}>
         <div className="flex items-center gap-5">
           <span className="flex items-center gap-1">
@@ -1363,7 +1363,7 @@ export default function CrimeMap({
             <span className="font-bold">10:35:24 AM, 15 May 2025</span>
           </span>
           <span className="border-l border-zinc-800 h-3 inline-block opacity-20" />
-          <span className={`flex items-center gap-1 ${theme.id === 'dark' ? 'text-purple-400' : 'text-purple-650'}`}>
+          <span className={`flex items-center gap-1 ${theme.id === 'dark' ? 'text-[#E8F0FE]' : 'text-[#1A182F]'}`}>
             <Shield className="w-3 h-3" />
             <span>AI ANALYSIS STATUS:</span>
             <span className="font-bold">ACTIVE</span>
