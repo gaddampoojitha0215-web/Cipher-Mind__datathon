@@ -546,8 +546,7 @@ function App() {
   };
 
   const handleLogout = () => {
-    setToken(null);
-    localStorage.removeItem("crime_token");
+    // login and logout are not required
   };
 
   interface ChatSession {
@@ -1737,7 +1736,7 @@ function App() {
     });
   };
 
-  if (!token) {
+  if (false && !token) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <div className="bg-slate-800 p-8 rounded-xl w-full max-w-md shadow-2xl border border-slate-700">
@@ -1887,18 +1886,18 @@ function App() {
 
             {/* Active Context Banner */}
             {(activeSuspect || selectedCase) && (
-              <div className={`p-4 rounded-xl border border-purple-500/25 bg-purple-950/10 backdrop-blur-sm flex items-center justify-between text-xs`}>
+              <div className={`p-4 rounded-xl border ${theme.id === 'dark' ? 'border-[#B4BBC5]/15 bg-zinc-950/40' : 'border-[#B4BBC5]/30 bg-slate-50'} backdrop-blur-sm flex items-center justify-between text-xs`}>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="flex h-2 w-2 relative">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${theme.id === 'dark' ? 'bg-[#E8F0FE]' : 'bg-[#1A182F]'} opacity-75`}></span>
+                    <span className={`relative inline-flex rounded-full h-2 w-2 ${theme.id === 'dark' ? 'bg-[#E8F0FE]' : 'bg-[#1A182F]'}`}></span>
                   </span>
                   <span className="font-semibold text-slate-400">Active Focus:</span>
                   {activeSuspect && (
-                    <span className="px-2 py-0.5 rounded bg-purple-500/15 text-purple-400 font-bold border border-purple-500/30">Suspect: {activeSuspect}</span>
+                    <span className={`px-2 py-0.5 rounded font-bold border ${theme.id === 'dark' ? 'bg-[#E8F0FE]/10 text-[#E8F0FE] border-[#E8F0FE]/30' : 'bg-[#1A182F]/10 text-[#1A182F] border-[#1A182F]/30'}`}>Suspect: {activeSuspect}</span>
                   )}
                   {selectedCase && (
-                    <span className="px-2 py-0.5 rounded bg-fuchsia-500/15 text-fuchsia-400 font-bold border border-fuchsia-500/30">Case: {selectedCase.fir_number}</span>
+                    <span className={`px-2 py-0.5 rounded font-bold border ${theme.id === 'dark' ? 'bg-[#E8F0FE]/10 text-[#E8F0FE] border-[#E8F0FE]/30' : 'bg-[#1A182F]/10 text-[#1A182F] border-[#1A182F]/30'}`}>Case: {selectedCase.fir_number}</span>
                   )}
                 </div>
                 <button
@@ -1906,7 +1905,7 @@ function App() {
                     setActiveSuspect(null);
                     setSelectedCase(null);
                   }}
-                  className="px-2 py-1 rounded bg-slate-500/10 hover:bg-slate-500/25 text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-200 transition-all cursor-pointer"
+                  className={`px-2 py-1 rounded bg-slate-500/10 hover:bg-slate-500/25 text-[10px] font-bold uppercase tracking-wider ${theme.id === 'dark' ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-800'} transition-all cursor-pointer`}
                 >
                   Clear Focus
                 </button>
@@ -2202,8 +2201,8 @@ function App() {
                   <span className="text-xs font-mono uppercase tracking-wider">Session Console</span>
                 </div>
                 {(activeSuspect || selectedCase) && (
-                  <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-wider font-semibold font-mono bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded border border-purple-500/20">
-                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-pulse"></span>
+                  <div className={`flex items-center gap-1.5 text-[9px] uppercase tracking-wider font-semibold font-mono px-2 py-0.5 rounded border ${theme.id === 'dark' ? 'bg-[#E8F0FE]/10 text-[#E8F0FE] border-[#E8F0FE]/20' : 'bg-[#1A182F]/10 text-[#1A182F] border-[#1A182F]/20'}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${theme.id === 'dark' ? 'bg-[#E8F0FE]' : 'bg-[#1A182F]'}`}></span>
                     Focus: {activeSuspect || selectedCase?.fir_number}
                   </div>
                 )}
@@ -2512,10 +2511,10 @@ function App() {
                       }}
                     >
                       <div className="flex flex-col gap-0.5">
-                        <span className={`font-mono text-[11px] ${theme.id === 'dark' ? 'text-purple-300' : 'text-purple-700'} font-bold`}>{c.fir_number}</span>
+                        <span className={`font-mono text-[11px] ${theme.id === 'dark' ? 'text-purple-300' : 'text-[#1A182F]'} font-bold`}>{c.fir_number}</span>
                         <span className="text-[10px] text-zinc-500">{c.police_station}</span>
                       </div>
-                      <span className={`text-[10px] ${theme.id === 'dark' ? 'text-zinc-400' : 'text-zinc-600'} truncate max-w-[110px] ml-2 text-right`}>{c.crime_head}</span>
+                      <span className={`text-[10px] ${theme.id === 'dark' ? 'text-zinc-400' : 'text-zinc-650'} truncate max-w-[110px] ml-2 text-right`}>{c.crime_head}</span>
                     </div>
                   ))}
                 </div>
@@ -2728,13 +2727,16 @@ function App() {
                     ], [
                       graphCases[0]?.vehicles?.length || 0, "Vehicles", "text-cyan-400", "border-cyan-500/20", "vehicle"
                     ], [
-                      graphCases[0]?.bank_accounts?.length || 0, "Banks", "text-purple-400", "border-purple-500/20", "bank_account"
+                      graphCases[0]?.bank_accounts?.length || 0, "Banks", theme.id === 'dark' ? "text-[#E8F0FE]" : "text-[#1A182F]", theme.id === 'dark' ? "border-[#E8F0FE]/20" : "border-[#1A182F]/20", "bank_account"
                     ]].map(([cnt, lbl, clr, brd, key]) => (
                       <button
                         key={key as string}
                         onClick={() => setActiveEntityFilter(prev => prev === key ? null : key as string)}
-                        className={`p-2 rounded-xl bg-slate-500/5 border transition-all text-center cursor-pointer hover:bg-slate-500/10 ${activeEntityFilter === key ? "border-purple-500/50 bg-purple-500/10" : brd as string
-                          }`}
+                        className={`p-2 rounded-xl bg-slate-500/5 border transition-all text-center cursor-pointer hover:bg-slate-500/10 ${
+                          activeEntityFilter === key
+                            ? (theme.id === 'dark' ? "border-[#E8F0FE]/50 bg-[#E8F0FE]/10" : "border-[#1A182F]/50 bg-[#1A182F]/10")
+                            : brd as string
+                        }`}
                       >
                         <div className={`text-sm font-bold font-mono ${clr as string}`}>{cnt as number}</div>
                         <div className="text-[8px] font-bold text-zinc-500 font-sans uppercase">{lbl as string}</div>
@@ -2768,7 +2770,7 @@ function App() {
                       const c = graphCases[0];
                       if (c) { setSelectedCase(c); setActiveTab("cases"); }
                     }}
-                    className={`flex-1 py-2.5 rounded-xl border ${theme.id === 'dark' ? 'border-purple-500/25 hover:bg-purple-500/10 text-zinc-200' : 'border-purple-300 hover:bg-purple-500/5 text-purple-950'} text-[10px] font-bold uppercase transition-all text-center flex items-center justify-center gap-1.5`}
+                    className={`flex-1 py-2.5 rounded-xl border ${theme.id === 'dark' ? 'border-[#B4BBC5]/25 hover:bg-[#E8F0FE]/10 text-zinc-200 hover:text-[#E8F0FE]' : 'border-[#B4BBC5] hover:bg-[#E8F0FE]/20 text-[#1A182F]'} text-[10px] font-bold uppercase transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer`}
                   >
                     Open Sheet <ArrowUpRight className="w-3 h-3" />
                   </button>
@@ -2787,7 +2789,7 @@ function App() {
                         }
                       }, 200);
                     }}
-                    className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-bold uppercase transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+                    className="flex-1 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-[#090C10] font-bold text-[10px] uppercase transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer shadow-md hover:shadow-[0_0_15px_rgba(232,240,254,0.55)]"
                   >
                     Locate Map <MapPin className="w-3.5 h-3.5" />
                   </button>
@@ -2909,8 +2911,8 @@ function App() {
                       <span className="text-xs text-slate-500 font-mono">{selectedCase.police_station}</span>
                     </div>
                     <h2 className="text-lg font-bold">{selectedCase.crime_head}</h2>
-                    <div className="text-[10px] text-purple-400 font-bold uppercase tracking-wider mt-2">
-                      Investigating Officer: <span className="font-mono text-zinc-100">{selectedCase.officer}</span>
+                    <div className={`text-[10px] ${theme.id === 'dark' ? 'text-[#E8F0FE]' : 'text-[#1A182F]'} font-bold uppercase tracking-wider mt-2`}>
+                      Investigating Officer: <span className={`font-mono ${theme.id === 'dark' ? 'text-zinc-100' : 'text-zinc-850'}`}>{selectedCase.officer}</span>
                     </div>
                   </div>
 
@@ -2932,7 +2934,7 @@ function App() {
                     >
                       <div className="text-[10px] text-slate-400 font-bold uppercase">Accused Suspects</div>
                       <div className="flex items-center gap-2">
-                        <User className="w-3.5 h-3.5 text-purple-500" />
+                        <User className={`w-3.5 h-3.5 ${theme.id === 'dark' ? 'text-[#E8F0FE]' : 'text-[#1A182F]'}`} />
                         <span className="text-xs font-mono">{selectedCase.accused.join(", ")}</span>
                       </div>
                     </div>
@@ -2949,7 +2951,7 @@ function App() {
                     >
                       <div className="text-[10px] text-slate-400 font-bold uppercase">Linked Phone Nodes</div>
                       <div className="flex items-center gap-2">
-                        <Phone className="w-3.5 h-3.5 text-fuchsia-500" />
+                        <Phone className={`w-3.5 h-3.5 ${theme.id === 'dark' ? 'text-[#E8F0FE]' : 'text-[#1A182F]'}`} />
                         <span className="text-xs font-mono">{selectedCase.phone_numbers.join(", ") || "None"}</span>
                       </div>
                     </div>
@@ -2966,7 +2968,7 @@ function App() {
                     >
                       <div className="text-[10px] text-slate-400 font-bold uppercase">Vehicles Involved</div>
                       <div className="flex items-center gap-2">
-                        <Car className="w-3.5 h-3.5 text-pink-500" />
+                        <Car className={`w-3.5 h-3.5 ${theme.id === 'dark' ? 'text-[#E8F0FE]' : 'text-[#1A182F]'}`} />
                         <span className="text-xs font-mono">{selectedCase.vehicles.join(", ") || "None"}</span>
                       </div>
                     </div>
@@ -2983,7 +2985,7 @@ function App() {
                     >
                       <div className="text-[10px] text-slate-400 font-bold uppercase">Bank Accounts</div>
                       <div className="flex items-center gap-2">
-                        <Briefcase className="w-3.5 h-3.5 text-purple-600" />
+                        <Briefcase className={`w-3.5 h-3.5 ${theme.id === 'dark' ? 'text-[#E8F0FE]' : 'text-[#1A182F]'}`} />
                         <span className="text-xs font-mono">{selectedCase.bank_accounts.join(", ") || "None"}</span>
                       </div>
                     </div>
@@ -2994,12 +2996,12 @@ function App() {
                     <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Investigation Timeline</h3>
                     <div className="relative pl-4 border-l border-zinc-750 dark:border-zinc-300 space-y-4 font-sans">
                       <div className="relative">
-                        <div className="absolute -left-[21px] top-1 bg-purple-500 h-2 w-2 rounded-full border border-slate-900"></div>
+                        <div className={`absolute -left-[21px] top-1 ${theme.id === 'dark' ? 'bg-[#E8F0FE]' : 'bg-[#1A182F]'} h-2 w-2 rounded-full border border-slate-900`}></div>
                         <div className="text-[10px] text-slate-400 font-mono">{selectedCase.date_of_offence.slice(0, 10)} | {selectedCase.date_of_offence.slice(11, 16)}</div>
                         <div className="text-xs font-semibold">Incident Occurred</div>
                       </div>
                       <div className="relative">
-                        <div className="absolute -left-[21px] top-1 bg-fuchsia-500 h-2 w-2 rounded-full border border-slate-900"></div>
+                        <div className={`absolute -left-[21px] top-1 ${theme.id === 'dark' ? 'bg-[#E8F0FE]' : 'bg-[#1A182F]'} h-2 w-2 rounded-full border border-slate-900`}></div>
                         <div className="text-[10px] text-slate-400 font-mono">{selectedCase.date_of_registration.slice(0, 10)} | {selectedCase.date_of_registration.slice(11, 16)}</div>
                         <div className="text-xs font-semibold">FIR Registered at {selectedCase.police_station}</div>
                       </div>
@@ -3021,7 +3023,7 @@ function App() {
                         setActiveTab("chat");
                         submitChat(undefined, `Show me details and leads for ${selectedCase.fir_number}`);
                       }}
-                      className={`bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-center flex items-center justify-center gap-2 cursor-pointer shadow-sm`}
+                      className={`bg-gradient-to-r ${theme.id === 'dark' ? 'from-[#E8F0FE] to-[#a9c6f5] hover:from-white hover:to-[#E8F0FE] text-[#090C10] shadow-[0_0_12px_rgba(232,240,254,0.4)] font-bold' : 'from-[#1A182F] to-[#2D2A4A] hover:from-black hover:to-[#1A182F] text-white'} flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-center flex items-center justify-center gap-2 cursor-pointer shadow-sm`}
                     >
                       <MessageSquare className="w-3.5 h-3.5" /> AI Inquiry
                     </button>
