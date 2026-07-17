@@ -122,6 +122,39 @@ def login(payload: LoginRequest):
 @app.post("/api/v1/chat/query")
 def chat_query(payload: ChatQuery):
     msg = payload.message.strip().lower()
+    
+    # 1. Grounding Phase: Retrieve relevant cases
+    query_lower = payload.message.lower()
+    exact_matches = []
+    
+    # Match patterns like: "fir-10008/2020", "10008/2020", "fir-10008", or "fir 10008"
+    import re
+    fir_patterns = re.findall(r'(?:fir[- ]?)?\\d+/\\d+|(?:fir[- ]?)\\d+', query_lower)
+    
+    for c in CASES_DB:
+        fir_no = c.get("fir_number", "").lower()
+        if fir_no in query_lower:
+            exact_matches.append(c)
+        else:
+            for pattern in fir_patterns:
+                clean_pattern = pattern.replace("fir", "").replace("-", "").replace(" ", "").strip()
+                if clean_pattern and clean_pattern in fir_no:
+                    exact_matches.append(c)
+                    break
+                    
+    if exact_matches:
+        # Keep unique exact match cases
+        seen = set()
+        retrieved_cases = []
+        for em in exact_matches:
+            if em["fir_number"] not in seen:
+                seen.add(em["fir_number"])
+                retrieved_cases.append(em)
+    else:
+        # Simple retrieval since retrieve_relevant_cases is only in backend
+        retrieved_cases = [c for c in CASES_DB if any(w in c["description"].lower() or w in c["crime_head"].lower() or w in c["location"].lower() for w in query_lower.split() if len(w) > 3)]
+        if not retrieved_cases:
+            retrieved_cases = CASES_DB[:5]
 
     response_msg = ""
     graph_nodes = []
@@ -137,8 +170,9 @@ def chat_query(payload: ChatQuery):
                 "You are talking to Inspector Gowda.\n\n"
                 "Here is the database of cases (in JSON format):\n"
                 f"{json.dumps(CASES_DB, indent=2)}\n\n"
-                "Your task is to answer the user's query professionally, drawing connections, identifying matching Modus Operandi (MO), "
-                "and finding links between suspects, phone numbers, vehicles, and bank accounts.\n"
+                "Your task is to answer the user's query professionally.\n"
+                "CRITICAL INSTRUCTION: You MUST answer ONLY the specific question asked by the user. Do NOT include any unrequested, extra, or unneeded details or analysis. Focus strictly on answering the user's query. If the user asks about a specific case or FIR number, respond ONLY with information regarding that case/FIR and do NOT describe, mention, or link other cases unless explicitly asked to do so.\n"
+                "If the user asks a specific question (such as asking for suspects, date, status, location, officer, etc.), answer ONLY that specific question directly and concisely. Do NOT include any structured list of all metadata fields unless the user explicitly requests 'details', 'full details', 'case card', or the complete case file/record.\n"
                 f"The user's query is: '{payload.message}'\n"
                 f"The response language must be: '{payload.language}' (en=English, kn=Kannada, hi=Hindi, te=Telugu, ta=Tamil).\n\n"
                 "You MUST respond ONLY with a valid JSON object matching this structure (do not include markdown block syntax or extra text):\n"
@@ -209,7 +243,7 @@ def chat_query(payload: ChatQuery):
         import re
         clean_msg = re.sub(r'\[target suspect:.*?\]', '', msg)
         clean_msg = re.sub(r'\[target case:.*?\]', '', clean_msg)
-        clean_msg_stripped = re.sub(r'[.,;:!?()-"\'/]', '', clean_msg.strip().lower())
+        clean_msg_stripped = re.sub(r'[.,;:!?()"\-\'/]', '', clean_msg.strip().lower())
         words = clean_msg_stripped.split()
         
         is_greeting = len(words) >= 1 and all(w in greetings for w in words)
@@ -223,7 +257,7 @@ def chat_query(payload: ChatQuery):
             if payload.language == "kn":
                 response_msg = "ನಮಸ್ಕಾರ! ನಾನು ಕ್ರೈಮ್‌ಮೈಂಡ್ ಎಐ ಸಹಾಯಕಿ. ಪ್ರಕರಣಗಳ ವಿಶ್ಲೇಷಣೆ, ಶಂಕಿತರ ವಿವರ ಅಥವಾ ತನಿಖಾ ವಿಚಾರಣೆಗಳ ಬಗ್ಗೆ ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ?"
             elif payload.language == "hi":
-                response_msg = "नमस्ते! मैं क्राइममाइंड एಐ सहायक हूँ। मामलों के विश्लेषण, संदिग्धों के विवरण या जांच से जुड़े प्रश्नों में आज मैं आपकी क्या सहायता कर सकता हूँ?"
+                response_msg = "नमस्ते! मैं क्राइममाइंड एआई सहायक हूँ। मामलों के विश्लेषण, संदिग्धों के विवरण या जांच से जुड़े प्रश्नों में आज मैं आपकी क्या सहायता कर सकता हूँ?"
             elif payload.language == "te":
                 response_msg = "నమస్కారం! నేను క్రైమ్‌మైండ్ AI అసిస్టెంట్‌ని. ఈ రోజు కేసుల విశ్లేషణ లేదా అనుమానితుల వివరాల గురించి నేను మీకు ఎలా సహాయపడగలను?"
             elif payload.language == "ta":
@@ -231,77 +265,179 @@ def chat_query(payload: ChatQuery):
             sources = []
             confidence = -1
             evidence = []
-        elif "burglary" in msg or "ಕಳ್ಳತನ" in msg:
-            matching_cases = [c for c in CASES_DB if c["crime_head"] == "Burglary"][:3]
-            sources = [c["fir_number"] for c in matching_cases]
-            evidence = ["Matched Modus Operandi: Residential lock bypass & entry through window."]
-            response_msg = (
-                f"Found {len(matching_cases)} recent Burglary cases. "
-                f"Prime targets were residential buildings in Bengaluru with stolen gold. "
-                f"Details: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
-            )
-            if payload.language == "kn":
-                response_msg = (
-                    f"ಇತ್ತೀಚಿನ {len(matching_cases)} ಕಳ್ಳತನ ಪ್ರಕರಣಗಳು ಪತ್ತೆಯಾಗಿವೆ. "
-                    f"ಚಿನ್ನಾಭರಣಗಳನ್ನು ಕಳವು ಮಾಡಲಾಗಿದೆ. "
-                    f"ವಿವರಗಳು: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
-                )
-            elif payload.language == "hi":
-                response_msg = (
-                    f"हाल ही के {len(matching_cases)} चोरी के मामले मिले हैं। "
-                    f"सोने के गहने चोरी हुए हैं। "
-                    f"विवरण: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
-                )
-            elif payload.language == "te":
-                response_msg = (
-                    f"ఇటీవలి {len(matching_cases)} దొంగతనం కేసులు కనుగొనబడ్డాయి. "
-                    f"బంగారు ఆభరణాలు చోరీకి గురయ్యాయి. "
-                    f"వివరాలు: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
-                )
-            elif payload.language == "ta":
-                response_msg = (
-                    f"சமீபத்திய {len(matching_cases)} திருட்டு வழக்குகள் கண்டுபிடிக்கப்பட்டுள்ளன. "
-                    f"தங்க நகைகள் திருடப்பட்டுள்ளன. "
-                    f"விவரங்கள்: {', '.join([c['fir_number'] + ' (' + c['police_station'] + ')' for c in matching_cases])}."
-                )
-        elif "phone" in msg or "ಮೊಬೈಲ್" in msg or any(x.isdigit() for x in msg.split()):
-            digits = [x for x in msg.split() if x.isdigit()]
-            target_phone = digits[0] if digits else "9876543211"
-            connected_accused = []
-            if target_phone in G:
-                for nbr in G.neighbors(target_phone):
-                    if G.nodes[nbr].get("type") == "accused":
-                        connected_accused.append(nbr)
-
-            sources = [c["fir_number"] for c in CASES_DB if target_phone in c["phone_numbers"]][:3]
-            evidence = [f"Interlinked node mapping for phone number: {target_phone}."]
-
-            if connected_accused:
-                response_msg = f"Phone {target_phone} is linked to suspect(s): {', '.join(connected_accused)}."
-            else:
-                response_msg = f"Phone number {target_phone} was queried, but no matching active suspects were found directly linked. Showing generic association layout."
-
-            if payload.language == "kn":
-                response_msg = f"ಫೋನ್ {target_phone} ಆರೋಪಿಗಳೊಂದಿಗೆ ಲಿಂಕ್ ಹೊಂದಿದೆ: {', '.join(connected_accused) if connected_accused else 'ಯಾರೂ ಇಲ್ಲ'}."
-            elif payload.language == "hi":
-                response_msg = f"फ़ोन {target_phone} संदिग्ध(ों) से जुड़ा है: {', '.join(connected_accused) if connected_accused else 'कोई नहीं'}."
-            elif payload.language == "te":
-                response_msg = f"ఫోన్ {target_phone} అనుమానితులతో లింక్ చేయబడింది: {', '.join(connected_accused) if connected_accused else 'ఎవరూ లేరు'}."
-            elif payload.language == "ta":
-                response_msg = f"போன் {target_phone} சந்தேக நபர்களுடன் இணைக்கப்பட்டுள்ளது: {', '.join(connected_accused) if connected_accused else 'யாரும் இல்லை'}."
         else:
-            response_msg = (
-                "Welcome to KSP CrimeMind AI. I can assist you with case summaries, "
-                "modus operandi matching, or relationship network visualization."
-            )
-            if payload.language == "kn":
-                response_msg = "CrimeMind AI ಗೆ ಸುಸ್ವಾಗತ. ಪ್ರಕರಣದ ಸಾರಾಂಶಗಳು, ಅಥವಾ ಅಪರಾಧ ಜಾಲದ ದೃಶ್ಯೀಕರಣದಲ್ಲಿ ನಾನು ನಿಮಗೆ ಸಹಾಯ ಮಾಡಬಲ್ಲೆ."
-            elif payload.language == "hi":
-                response_msg = "CrimeMind AI में आपका स्वागत है। मैं मामले के सारांश, और नेटवर्क विज़ुअलाइज़ेशन में आपकी सहायता कर सकता हूँ।"
-            elif payload.language == "te":
-                response_msg = "CrimeMind AI కు స్వాగతం. కేసు సారాంశాలు మరియు నెట్‌వర్క్ విజువలైజేషన్‌లో నేను మీకు సహాయం చేయగలను."
-            elif payload.language == "ta":
-                response_msg = "CrimeMind AI க்கு வரவேற்கிறோம். வழக்கு சுருக்கங்கள் அல்லது நெட்வொர்க் காட்சிப்படுத்தலில் நான் உங்களுக்கு உதவ முடியும்."
+            if retrieved_cases:
+                sources = [c["fir_number"] for c in retrieved_cases]
+                evidence = [f"Retrieved {len(retrieved_cases)} cases matching query terms."]
+                confidence = 0.94
+                
+                # Check if the query is asking for a specific field of the case to answer precisely
+                q_clean = clean_msg.lower()
+                templates = {
+                    "en": {
+                        "suspects": "The suspect(s) for case {fir}: {val}.",
+                        "officer": "The investigating officer for case {fir}: {val}.",
+                        "station": "The police station for case {fir}: {val}.",
+                        "district": "The district for case {fir}: {val}.",
+                        "date": "The registration date for case {fir}: {val}.",
+                        "status": "The case status for case {fir}: {val}.",
+                        "crime": "The crime type for case {fir}: {val}.",
+                        "location": "The location for case {fir}: {val}.",
+                        "phone": "The phone number(s) linked to case {fir}: {val}.",
+                        "vehicle": "The vehicle(s) linked to case {fir}: {val}.",
+                        "bank": "The bank account(s) linked to case {fir}: {val}.",
+                        "summary": "The summary for case {fir}: {val}.",
+                        "header": "CrimeMind AI: Found the following relevant case records in the database:"
+                    },
+                    "kn": {
+                        "suspects": "ಪ್ರಕರಣ {fir} ರ ಆರೋಪಿ(ಗಳು): {val}.",
+                        "officer": "ಪ್ರಕರಣ {fir} ರ ತನಿಖಾಧಿಕಾರಿ: {val}.",
+                        "station": "ಪ್ರಕರಣ {fir} ರ ಪೊಲೀಸ್ ಠಾಣೆ: {val}.",
+                        "district": "ಪ್ರಕರಣ {fir} ರ ಜಿಲ್ಲೆ: {val}.",
+                        "date": "ಪ್ರಕರಣ {fir} ರ ನೋಂದಣಿ ದಿನಾಂಕ: {val}.",
+                        "status": "ಪ್ರಕರಣ {fir} ರ ಸ್ಥಿತಿ: {val}.",
+                        "crime": "ಪ್ರಕರಣ {fir} ರ ಅಪರಾಧ ಪ್ರಕಾರ: {val}.",
+                        "location": "ಪ್ರಕರಣ {fir} ರ ಘಟನಾ ಸ್ಥಳ: {val}.",
+                        "phone": "ಪ್ರಕರಣ {fir} ಗೆ ಲಿಂಕ್ ಮಾಡಲಾದ ಫೋನ್ ಸಂಖ್ಯೆ(ಗಳು): {val}.",
+                        "vehicle": "ಪ್ರಕರಣ {fir} ಗೆ ಲಿಂಕ್ ಮಾಡಲಾದ ವಾಹನ(ಗಳು): {val}.",
+                        "bank": "ಪ್ರಕರಣ {fir} ಗೆ ಲಿಂಕ್ ಮಾಡಲಾದ ಬ್ಯಾಂಕ್ ಖಾತೆ(ಗಳು): {val}.",
+                        "summary": "ಪ್ರಕರಣ {fir} ರ ಸಾರಾಂಶ: {val}.",
+                        "header": "CrimeMind AI: ಡೇಟಾಬೇಸ್‌ನಲ್ಲಿ ಈ ಕೆಳಗಿನ ಪ್ರಸ್ತುತ ಪ್ರಕರಣ ದಾಖಲೆಗಳು ಕಂಡುಬಂದಿವೆ:"
+                    },
+                    "hi": {
+                        "suspects": "मामला {fir} के संदिग्ध: {val}.",
+                        "officer": "मामला {fir} के जांच अधिकारी: {val}.",
+                        "station": "मामला {fir} का पुलिस स्टेशन: {val}.",
+                        "district": "मामला {fir} का जिला: {val}.",
+                        "date": "मामला {fir} की पंजीकरण तिथि: {val}.",
+                        "status": "मामला {fir} की स्थिति: {val}.",
+                        "crime": "मामला {fir} का अपराध प्रकार: {val}.",
+                        "location": "मामला {fir} का घटना स्थल: {val}.",
+                        "phone": "मामला {fir} से जुड़े phone number: {val}.",
+                        "vehicle": "मामला {fir} से जुड़े वाहन: {val}.",
+                        "bank": "मामला {fir} से जुड़े बैंक खाते: {val}.",
+                        "summary": "मामला {fir} का विवरण: {val}.",
+                        "header": "CrimeMind AI: डेटाबेस में निम्नलिखित प्रासंगिक मामले के रिकॉर्ड मिले:"
+                    },
+                    "te": {
+                        "suspects": "కేసు {fir} యొక్క నిందితులు: {val}.",
+                        "officer": "కేసు {fir} యొక్క దర్యాప్తు అధికారి: {val}.",
+                        "station": "కేసు {fir} యొక్క పోలీస్ స్టేషన్: {val}.",
+                        "district": "కేసు {fir} యొక్క జిల్లా: {val}.",
+                        "date": "కేసు {fir} యొక్క నమోదు తేదీ: {val}.",
+                        "status": "కేసు {fir} యొక్క స్థితి: {val}.",
+                        "crime": "కేసు {fir} యొక్క నేరం రకం: {val}.",
+                        "location": "కేసు {fir} యొక్క ఘటన స్థలం: {val}.",
+                        "phone": "కేసు {fir} తో అనుసంధానించబడిన ఫోన్ నంబర్లు: {val}.",
+                        "vehicle": "కేసు {fir} తో అనుసంధానించబడిన వాహనాలు: {val}.",
+                        "bank": "కేసు {fir} తో అనుసంధానించబడిన బ్యాంక్ ఖాతాలు: {val}.",
+                        "summary": "కేసు {fir} యొక్క సారాంశం: {val}.",
+                        "header": "CrimeMind AI: డేటాబేస్లో క్రింది సంబంధిత కేస్ రికార్డులు కనుగొనబడ్డాయి:"
+                    },
+                    "ta": {
+                        "suspects": "வழக்கு {fir}-இன் சந்தேக நபர்கள்: {val}.",
+                        "officer": "வழக்கு {fir}-இன் விசாரணை அதிகாரி: {val}.",
+                        "station": "வழக்கு {fir}-இன் காவல் நிலையம்: {val}.",
+                        "district": "வழக்கு {fir}-இன் மாவட்டம்: {val}.",
+                        "date": "வழக்கு {fir}-இன் பதிவு தேதி: {val}.",
+                        "status": "வழக்கு {fir}-இன் நிலை: {val}.",
+                        "crime": "வழக்கு {fir}-இன் குற்ற வகை: {val}.",
+                        "location": "வழக்கு {fir} நடந்த இடம்: {val}.",
+                        "phone": "வழக்கு {fir}-உடன் தொடர்புடைய தொலைபேசி எண்கள்: {val}.",
+                        "vehicle": "வழக்கு {fir}-உடன் தொடர்புடைய வாகனங்கள்: {val}.",
+                        "bank": "வழக்கு {fir}-உடன் தொடர்புடைய வங்கி கணக்குகள்: {val}.",
+                        "summary": "வழக்கு {fir}-இன் சுருக்கம்: {val}.",
+                        "header": "CrimeMind AI: தரவுத்தளத்தில் பின்வரும் தொடர்புடைய வழக்கு பதிவுகள் கண்டறியப்பட்டன:"
+                    }
+                }
+                
+                lang = payload.language if payload.language in templates else "en"
+                
+                # Check for specific attribute requests
+                matched_field = None
+                if any(k in q_clean for k in ["suspect", "accused", "who is the accused", "who committed"]):
+                    matched_field = "suspects"
+                elif any(k in q_clean for k in ["officer", "investigator", "who is the officer", "who is investigating"]):
+                    matched_field = "officer"
+                elif any(k in q_clean for k in ["police station", "station"]):
+                    matched_field = "station"
+                elif "district" in q_clean:
+                    matched_field = "district"
+                elif any(k in q_clean for k in ["date", "when"]):
+                    matched_field = "date"
+                elif "status" in q_clean:
+                    matched_field = "status"
+                elif any(k in q_clean for k in ["crime type", "crime head", "type of crime"]):
+                    matched_field = "crime"
+                elif any(k in q_clean for k in ["location", "place", "where did it occur"]):
+                    matched_field = "location"
+                elif any(k in q_clean for k in ["phone", "mobile", "number"]):
+                    matched_field = "phone"
+                elif any(k in q_clean for k in ["vehicle", "car", "bike", "plate"]):
+                    matched_field = "vehicle"
+                elif any(k in q_clean for k in ["bank", "account"]):
+                    matched_field = "bank"
+                elif any(k in q_clean for k in ["summary", "description"]):
+                    matched_field = "summary"
+                
+                if matched_field and not any(k in q_clean for k in ["details", "full details", "case card", "complete file", "complete record"]):
+                    response_msg = ""
+                    for c in retrieved_cases:
+                        fir = c["fir_number"]
+                        if matched_field == "suspects":
+                            val = ", ".join(c["accused"])
+                        elif matched_field == "officer":
+                            val = "Officer Gowda"  # mock default
+                        elif matched_field == "station":
+                            val = c["police_station"]
+                        elif matched_field == "district":
+                            val = c["district"]
+                        elif matched_field == "date":
+                            val = c["date_of_registration"][:10]
+                        elif matched_field == "status":
+                            val = c["status"]
+                        elif matched_field == "crime":
+                            val = c["crime_head"]
+                        elif matched_field == "location":
+                            val = c["location"]
+                        elif matched_field == "phone":
+                            val = ", ".join(c.get("phone_numbers", [])) if c.get("phone_numbers") else "None"
+                        elif matched_field == "vehicle":
+                            val = ", ".join(c.get("vehicles", [])) if c.get("vehicles") else "None"
+                        elif matched_field == "bank":
+                            val = ", ".join(c.get("bank_accounts", [])) if c.get("bank_accounts") else "None"
+                        elif matched_field == "summary":
+                            val = c["description"]
+                        
+                        response_msg += templates[lang][matched_field].format(fir=fir, val=val) + "\n"
+                    response_msg = response_msg.strip()
+                else:
+                    header_msg = templates[lang]["header"] + "\n\n"
+                    response_msg = header_msg
+                    for c in retrieved_cases:
+                        response_msg += (
+                            f"### Case Card: {c['fir_number']}\n"
+                            f"- **FIR Number**: {c['fir_number']}\n"
+                            f"- **Police Station**: {c['police_station']}\n"
+                            f"- **District**: {c['district']}\n"
+                            f"- **Date**: {c['date_of_registration'][:10]}\n"
+                            f"- **Crime Type**: {c['crime_head']}\n"
+                            f"- **Case Status**: {c['status']}\n"
+                            f"- **Suspects**: {', '.join(c['accused'])}\n"
+                            f"- **Summary**: {c['description']}\n\n"
+                        )
+            else:
+                response_msg = "Welcome to KSP CrimeMind AI. I can assist you with case summaries, modus operandi matching, or relationship network visualization. Please specify an FIR number, suspect, or crime location."
+                if payload.language == "kn":
+                    response_msg = "CrimeMind AI ಗೆ ಸುಸ್ವಾಗತ. ಪ್ರಕರಣದ ಸಾರಾಂಶಗಳು, ಅಥವಾ ಅಪರಾಧ ಜಾಲದ ದೃಶ್ಯೀಕರಣದಲ್ಲಿ ನಾನು ನಿಮಗೆ ಸಹಾಯ ಮಾಡಬಲ್ಲೆ. ದಯವಿಟ್ಟು FIR ಸಂಖ್ಯೆ ಅಥವಾ ಶಂಕಿತರ ಹೆಸರನ್ನು ನಮೂದಿಸಿ."
+                elif payload.language == "hi":
+                    response_msg = "CrimeMind AI में आपका स्वागत है। मैं मामले के सारांश, और नेटवर्क विज़ुअलाइज़ेशन में आपकी सहायता कर सकता हूँ। कृपया FIR संख्या या संदिग्ध का उल्लेख करें।"
+                elif payload.language == "te":
+                    response_msg = "CrimeMind AI కు స్వాగతం. కేసు సారాంశాలు మరియు నెట్‌వర్క్ విజువలైజేషన్‌లో నేను మీకు సహాయం చేయగలను. దయచేసి FIR సంఖ్య లేదా అనుమానితుడిని పేర్కొనండి."
+                elif payload.language == "ta":
+                    response_msg = "CrimeMind AI க்கு வரவேற்கிறோம். வழக்கு சுருக்கங்கள் அல்லது நெட்வொர்க் காட்சிப்படுத்தலில் நான் உங்களுக்கு உதவ முடியும். தயவுசெய்து FIR எண் அல்லது சந்தேக நபரை குறிப்பிடவும்."
+                sources = []
+                evidence = ["No matching cases found in database."]
 
     subgraph_nodes = set()
     for src in sources:
