@@ -58,6 +58,14 @@ export interface Case {
   officer: string;
 }
 
+const cleanDistrictName = (district: string) => {
+  let name = district.replace(" District", "").replace(" City", "").trim().toLowerCase();
+  if (name === "bengaluru" || name === "bangalore") {
+    return "bengaluru urban";
+  }
+  return name;
+};
+
 interface CrimeMapProps {
   theme: any;
   cases: Case[];
@@ -166,7 +174,7 @@ export default function CrimeMap({
   // Map cases to their estimated coordinates dynamically
   const mappedCases = useMemo(() => {
     return cases.map((c, idx) => {
-      const distName = c.district.replace(" District", "").replace(" City", "").trim().toLowerCase();
+      const distName = cleanDistrictName(c.district);
       const district = KARNATAKA_DISTRICTS.find(d => d.name.toLowerCase() === distName) || KARNATAKA_DISTRICTS[25]; // Default to Bangalore
 
       // Compute deterministic scattered coordinates based on case ID
@@ -195,7 +203,7 @@ export default function CrimeMap({
     });
 
     mappedCases.forEach(c => {
-      const distName = c.district.replace(" District", "").replace(" City", "").trim().toLowerCase();
+      const distName = cleanDistrictName(c.district);
       const district = KARNATAKA_DISTRICTS.find(d => d.name.toLowerCase() === distName);
       if (district) {
         const dStat = stats[district.id];
@@ -256,7 +264,7 @@ export default function CrimeMap({
     if (mapControlRef) {
       mapControlRef.current = {
         focusDistrict: (distName: string) => {
-          const name = distName.replace(" District", "").replace(" City", "").trim().toLowerCase();
+          const name = cleanDistrictName(distName);
           const district = KARNATAKA_DISTRICTS.find(d => d.name.toLowerCase() === name);
           if (district) {
             setSelectedDistrict(district);
@@ -912,7 +920,7 @@ export default function CrimeMap({
                     {(() => {
                       const c = mappedCases.find(mc => mc.id === selectedCase.id);
                       if (!c) return null;
-                      const distName = c.district.replace(" District", "").replace(" City", "").trim().toLowerCase();
+                      const distName = cleanDistrictName(c.district);
                       const district = KARNATAKA_DISTRICTS.find(d => d.name.toLowerCase() === distName) || KARNATAKA_DISTRICTS[25];
                       const hqCoords = latLonToSvg(district.lat, district.lon);
                       return (

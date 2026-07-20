@@ -499,6 +499,50 @@ for case in CASES_DB:
     G.add_node(officer_name, type="officer", label=officer_name)
     G.add_edge(fir, officer_name, relationship="INVESTIGATED_BY")
 
+# High-Performance Fast Lookup Indices & In-Memory Cache
+FIR_INDEX: Dict[str, Dict[str, Any]] = {}
+ACCUSED_INDEX: Dict[str, List[Dict[str, Any]]] = {}
+PHONE_INDEX: Dict[str, List[Dict[str, Any]]] = {}
+VEHICLE_INDEX: Dict[str, List[Dict[str, Any]]] = {}
+BANK_INDEX: Dict[str, List[Dict[str, Any]]] = {}
+DISTRICT_INDEX: Dict[str, List[Dict[str, Any]]] = {}
+
+def build_indices():
+    global FIR_INDEX, ACCUSED_INDEX, PHONE_INDEX, VEHICLE_INDEX, BANK_INDEX, DISTRICT_INDEX
+    FIR_INDEX.clear()
+    ACCUSED_INDEX.clear()
+    PHONE_INDEX.clear()
+    VEHICLE_INDEX.clear()
+    BANK_INDEX.clear()
+    DISTRICT_INDEX.clear()
+
+    for case in CASES_DB:
+        fir_norm = case["fir_number"].strip().lower()
+        FIR_INDEX[fir_norm] = case
+
+        dist_norm = case.get("district", "").strip().lower()
+        if dist_norm:
+            DISTRICT_INDEX.setdefault(dist_norm, []).append(case)
+
+        for acc in case.get("accused", []):
+            acc_norm = acc.strip().lower()
+            ACCUSED_INDEX.setdefault(acc_norm, []).append(case)
+
+        for ph in case.get("phone_numbers", []):
+            ph_norm = ph.strip().lower()
+            PHONE_INDEX.setdefault(ph_norm, []).append(case)
+
+        for veh in case.get("vehicles", []):
+            veh_norm = veh.strip().lower()
+            VEHICLE_INDEX.setdefault(veh_norm, []).append(case)
+
+        for bank in case.get("bank_accounts", []):
+            bank_norm = bank.strip().lower()
+            BANK_INDEX.setdefault(bank_norm, []).append(case)
+
+build_indices()
+
+
 # Pydantic Schemas
 class LoginRequest(BaseModel):
     email: str
@@ -1056,30 +1100,20 @@ def chat_query(payload: ChatQuery, current_user: dict = Depends(get_current_user
         )
         if payload.language == "kn":
             response_msg = (
-                "à²¨à²®à²¸à³à²à²¾à²°! à²¨à²¾à²¨à³ à²à³à²°à³à²®à³à²®à³à²à²¡à³ à²à² à²¸à²¹à²¾à²¯à²à²¿. à²¦à²¯à²µà²¿à²à³à²à³ à²¯à²¾à²µà³à²¦à³ à²µà²¿à²à²¾à²°à²£à³à²à²³à³ (enquiries), à²ªà³à²°à²à²°à²£à²à²³ à²¦à²¾à²à²²à³à²à²³à³ "
-                "à²à²¥à²µà²¾ à²¶à²à²à²¿à²¤à²° à²µà²¿à²µà²°à²à²³à²¿à²à²¾à²à²¿ à² à²µà³à²¯à²µà²¸à³à²¥à³à²¯à²¨à³à²¨à³ à²¬à²³à²¸à²¿. à²à²à²¦à³ à²¨à²¿à²®à³à²® à²µà²¿à²à²¾à²°à²£à³à²à²³à²¿à²à³ à²¨à²¾à²¨à³ à²¹à³à²à³ à²¸à²¹à²¾à²¯ à²®à²¾à²¡à²²à²¿?"
+                "ನಮಸ್ಕಾರ! ನಾನು ಕ್ರೈಮ್‌ಮೈಂಡ್ ಎಐ ಸಹಾಯಕಿ. ಪ್ರಕರಣಗಳ ವಿಶ್ಲೇಷಣೆ, ಶಂಕಿತರ ವಿವರ ಅಥವಾ ತನಿಖಾ ವಿಚಾರಣೆಗಳ ಬಗ್ಗೆ ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ?"
             )
         elif payload.language == "hi":
             response_msg = (
-                "à¤¨à¤®à¤¸à¥à¤¤à¥! à¤®à¥à¤ à¤à¥à¤°à¤¾à¤à¤®à¤®à¤¾à¤à¤à¤¡ à¤à¤à¤ à¤¸à¤¹à¤¾à¤¯à¤ à¤¹à¥à¤à¥¤ à¤à¥à¤ªà¤¯à¤¾ à¤à¤¿à¤¸à¥ à¤­à¥ à¤ªà¥à¤à¤¤à¤¾à¤ (enquiries), à¤®à¤¾à¤®à¤²à¥à¤ à¤à¥ à¤°à¤¿à¤à¥à¤°à¥à¤¡ à¤¯à¤¾ "
-                "à¤¸à¤à¤¦à¤¿à¤à¥à¤§à¥à¤ à¤à¥ à¤µà¤¿à¤µà¤°à¤£ à¤à¥ à¤²à¤¿à¤ à¤à¤¸ à¤ªà¥à¤°à¤£à¤¾à¤²à¥ à¤à¤¾ à¤à¤ªà¤¯à¥à¤ à¤à¤°à¥à¤à¥¤ à¤à¤ à¤®à¥à¤ à¤à¤ªà¤à¥ à¤ªà¥à¤à¤¤à¤¾à¤ à¤®à¥à¤ à¤à¥à¤¸à¥ à¤¸à¤¹à¤¾à¤¯à¤¤à¤¾ à¤à¤° à¤¸à¤à¤¤à¤¾ à¤¹à¥à¤?"
+                "नमस्ते! मैं क्राइममाइंड एआई सहायक हूँ। मामलों के विश्लेषण, संदिग्धों के विवरण या जांच से जुड़े प्रश्नों में आज मैं आपकी क्या सहायता कर सकता हूँ?"
             )
         elif payload.language == "te":
             response_msg = (
-                "à°¨à°®à°¸à±à°à°¾à°°à°! à°¨à±à°¨à± à°à±à°°à±à°®à±âà°®à±à°à°¡à± AI à°à°¸à°¿à°¸à±à°à±à°à°à±âà°¨à°¿. à°¦à°¯à°à±à°¸à°¿ à°à°¦à±à°¨à°¾ à°µà°¿à°à°¾à°°à°£à°²à± (enquiries), à°à±à°¸à± à°°à°¿à°à°¾à°°à±à°¡à±à°²à± "
-                "à°²à±à°¦à°¾ à°à°¨à±à°®à°¾à°¨à°¿à°¤à±à°² à°µà°¿à°µà°°à°¾à°² à°à±à°¸à° à° à°¸à°¿à°¸à±à°à°®à± à°à°ªà°¯à±à°à°¿à°à°à°à°¡à°¿. à° à°°à±à°à± à°¨à±à°¨à± à°®à± à°µà°¿à°à°¾à°°à°£à°²à±à°²à± à°®à±à°à± à°à°²à°¾ à°¸à°¹à°¾à°¯à°ªà°¡à°à°²à°¨à±?"
+                "నమస్కారం! నేను క్రైమ్‌మైండ్ AI అసిస్టెంట్‌ని. ఈ రోజు కేసుల విశ్లేషణ లేదా అనుమానితుల వివరాల గురించి నేను మీకు ఎలా సహాయపడగలను?"
             )
         elif payload.language == "ta":
             response_msg = (
-                "à®µà®£à®à¯à®à®®à¯! à®¨à®¾à®©à¯ à®à®¿à®°à¯à®®à¯à®®à¯à®£à¯à®à¯ AI à®à®¤à®µà®¿à®¯à®¾à®³à®°à¯. à®à®¤à¯à®©à¯à®®à¯ à®µà®¿à®à®¾à®°à®£à¯à®à®³à¯ (enquiries), à®µà®´à®à¯à®à¯ à®ªà®¤à®¿à®µà¯à®à®³à¯ à®à®²à¯à®²à®¤à¯ "
-                "à®à®¨à¯à®¤à¯à®à®¤à¯à®¤à®¿à®±à¯à®à¯à®°à®¿à®¯à®µà®°à¯à®à®³à®¿à®©à¯ à®µà®¿à®µà®°à®à¯à®à®³à¯à®à¯à®à¯ à®à®¨à¯à®¤ à®à®®à¯à®ªà¯à®ªà¯à®ªà¯ à®ªà®¯à®©à¯à®ªà®à¯à®¤à¯à®¤à®µà¯à®®à¯. à®à®©à¯à®±à¯ à®à®à¯à®à®³à¯ à®µà®¿à®à®¾à®°à®£à¯à®à®³à®¿à®²à¯ à®¨à®¾à®©à¯ à®à®à¯à®à®³à¯à®à¯à®à¯ à®à®ªà¯à®ªà®à®¿ à®à®¤à®µ à®®à¯à®à®¿à®¯à¯à®®à¯?"
+                "வணக்கம்! நான் கிரைம்மைண்ட் AI உதவியாளர். வழக்குகள் அல்லது சந்தேக நபர்களைப் பற்றிய தகவல்களைக் கண்டறிய இன்று நான் உங்களுக்கு எவ்வாறு உதவ முடியும்?"
             )
-        return {
-            "message": response_msg,
-            "sources": [],
-            "confidence_score": -1.0,
-            "evidence_trail": []
-        }
 
     # Defaults
     response_msg = ""

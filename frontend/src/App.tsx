@@ -364,38 +364,20 @@ function App() {
     }
   }, [availableCrimes, selectedCrimeFilter]);
 
-  // Dynamic scaling helper for case counts to ensure they are always above 5000
-  const getScaledCount = (filteredCount: number, cityFilter: string, crimeFilter: string) => {
-    if (cityFilter === "All" && crimeFilter === "All") {
-      return 104320; // Default high baseline matching the KSP yearly registry stats
-    }
-    let hash = 0;
-    const str = `${cityFilter}-${crimeFilter}`;
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash << 5) - hash + str.charCodeAt(i);
-      hash |= 0;
-    }
-    const val = 5000 + Math.abs(hash % 4500) + (filteredCount * 12);
-    return val;
-  };
-
+// Compute actual counts directly from filteredCases (no scaling/faking)
   const scaledTotal = React.useMemo(() => {
-    return getScaledCount(filteredCases.length, selectedCityFilter, selectedCrimeFilter);
-  }, [filteredCases.length, selectedCityFilter, selectedCrimeFilter]);
+    return filteredCases.length;
+  }, [filteredCases]);
 
   const scaledClosed = React.useMemo(() => {
-    const ratio = filteredCases.length
-      ? (filteredCases.filter(c => c.status === "Closed").length / filteredCases.length)
-      : 0.76;
-    const safeRatio = Math.max(0.4, Math.min(0.9, ratio));
-    return Math.round(scaledTotal * safeRatio);
-  }, [scaledTotal, filteredCases]);
+    return filteredCases.filter(c => c.status === "Closed").length;
+  }, [filteredCases]);
 
   const scaledActive = React.useMemo(() => {
-    return scaledTotal - scaledClosed;
-  }, [scaledTotal, scaledClosed]);
+    return filteredCases.filter(c => c.status !== "Closed").length;
+  }, [filteredCases]);
 
-  // Compute classifications based on active filters (dynamic) — always scaled above 5000
+  // Compute classifications based on active filters (dynamic)
   const activeClassifications = React.useMemo(() => {
     const counts: Record<string, number> = {};
     filteredCases.forEach(c => {
@@ -403,18 +385,11 @@ function App() {
       if (head) counts[head] = (counts[head] || 0) + 1;
     });
     return Object.entries(counts)
-      .map(([name, value]) => {
-        let hash = 0;
-        for (let i = 0; i < name.length; i++) {
-          hash = (hash << 5) - hash + name.charCodeAt(i);
-        }
-        const scaledVal = 5000 + Math.abs(hash % 3500) + (value * 25);
-        return { name, value: scaledVal };
-      })
+      .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
   }, [filteredCases]);
 
-  // Compute geographic distribution dynamically — always scaled above 5000
+  // Compute geographic distribution dynamically
   const activeCityDistribution = React.useMemo(() => {
     const counts: Record<string, number> = {};
     if (selectedCityFilter !== "All") {
@@ -429,59 +404,22 @@ function App() {
       });
     }
     return Object.entries(counts)
-      .map(([name, value]) => {
-        let hash = 0;
-        for (let i = 0; i < name.length; i++) {
-          hash = (hash << 5) - hash + name.charCodeAt(i);
-        }
-        const scaledVal = 5000 + Math.abs(hash % 3500) + (value * 25);
-        return { name, value: scaledVal };
-      })
+      .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
   }, [filteredCases, selectedCityFilter]);
 
-  // Generate simulated case registries based on the scaled total to show realistic FIR numbers!
+  // Render actual cases (no simulated padding)
   const displayedFilteredCases = React.useMemo(() => {
-    const list: Case[] = [...filteredCases];
-    const targetCount = Math.min(scaledTotal, 50); // limit to 50 for performance
+    return filteredCases;
+  }, [filteredCases]);
 
-    if (list.length < targetCount) {
-      let hash = 0;
-      const str = `${selectedCityFilter}-${selectedCrimeFilter}`;
-      for (let i = 0; i < str.length; i++) {
-        hash = (hash << 5) - hash + str.charCodeAt(i);
-        hash |= 0;
-      }
-
-      const citySeed = selectedCityFilter !== "All" ? selectedCityFilter : "Bengaluru";
-      const crimeSeed = selectedCrimeFilter !== "All" ? selectedCrimeFilter : "Robbery";
-
-      const padCount = targetCount - list.length;
-      for (let i = 0; i < padCount; i++) {
-        const simulatedId = 10000 + Math.abs((hash + i) % 89999);
-        const firNum = `FIR-${selectedCityFilter === "All" ? "KSP" : selectedCityFilter.slice(0, 3).toUpperCase()}-${simulatedId}/2026`;
-
-        list.push({
-          id: `sim-${simulatedId}`,
-          fir_number: firNum,
-          police_station: `${citySeed} Town PS`,
-          district: `${citySeed} District`,
-          crime_head: crimeSeed,
-          date_of_offence: new Date(Date.now() - (i + 1) * 3 * 3600 * 1000).toISOString(),
-          date_of_registration: new Date(Date.now() - (i + 1) * 3 * 3600 * 1000).toISOString(),
-          description: `Simulated crime record registered in the KSP database for ${crimeSeed} in ${citySeed}. Under active investigation.`,
-          status: (i % 3 === 0) ? "Closed" : "Under Investigation",
-          accused: [`Accused-${100 + i}`],
-          location: `${citySeed} Center`,
-          phone_numbers: [],
-          vehicles: [],
-          bank_accounts: [],
-          officer: "Officer KSP"
-        });
-      }
+  // Sync selectedCase to graphCases when selectedCase changes
+  useEffect(() => {
+    if (selectedCase) {
+      setGraphCases([selectedCase]);
+      setSelectedNode({ id: selectedCase.fir_number, label: `${selectedCase.fir_number} (${selectedCase.crime_head})`, type: "incident" });
     }
-    return list;
-  }, [filteredCases, scaledTotal, selectedCityFilter, selectedCrimeFilter]);
+  }, [selectedCase]);
 
   // Sync selectedCase and activeSuspect automatically to keep context aligned
   useEffect(() => {
@@ -755,6 +693,7 @@ function App() {
   const handleClearGraph = () => {
     setGraphCases([]);
     setSelectedNode(null);
+    setSelectedCase(null);
   };
 
   const handleResetZoom = () => {
@@ -1481,38 +1420,49 @@ function App() {
         }
       }
     } catch (err) {
-      // Local fallback simulator for offline/standalone execution
+      // Local fallback simulator for offline/standalone execution using actual React state cases
       setTimeout(() => {
         const greetings = ["hi", "hello", "hey", "hii", "heyy", "good morning", "good afternoon", "good evening", "namaste", "namaskara", "yo"];
         const cleanMsg = editingText.replace(/\[target suspect:.*?\]/i, '').replace(/\[target case:.*?\]/i, '').trim().toLowerCase().replace(/[.,;:!?()'"\-\/]/g, "");
         const words = cleanMsg.split(/\s+/);
         const isGreeting = (words.length >= 1 && words.every(w => greetings.includes(w))) || cleanMsg === "how are you" || cleanMsg === "who are you" || cleanMsg === "what can you do";
 
-        let text = `Simulated response: Analyzed databases for focus "${editingText}".`;
-        let sources: string[] | undefined = ["FIR-10234", "FIR-10237"];
-        let confidenceScore: number | undefined = 0.94;
-        let evidenceTrail: string[] | undefined = ["Pattern detected via Jayanagar police precinct reports."];
+        const q = cleanMsg.trim();
+        const matchedCase = cases.find(c => q.includes(c.fir_number.toLowerCase()) || c.fir_number.toLowerCase().includes(q));
+        const matchedSuspect = cases.find(c => c.accused.some(a => q.includes(a.toLowerCase())));
+
+        let text = "";
+        let sources: string[] | undefined = undefined;
+        let confidenceScore: number | undefined = 0.95;
+        let evidenceTrail: string[] | undefined = undefined;
 
         if (isGreeting) {
-          text = "Hello! I am CrimeMind AI, your digital intelligence assistant for the Karnataka State Police. How can I help you with your cases, suspect profiling, or analysis enquiries today?";
-          sources = undefined;
-          confidenceScore = undefined;
-          evidenceTrail = undefined;
-        } else if (activeSuspect) {
-          text = `Successfully retrieved connection trail for suspect **${activeSuspect}**. Suspect is linked to ${cases.filter(c => c.accused.some(a => a.toLowerCase() === activeSuspect.toLowerCase())).map(c => c.fir_number).join(", ") || "FIR-4012/2026"}. Mapped 2 active phones and 1 vehicle.`;
-        } else if (editingText.toLowerCase().includes("burglary")) {
-          text = "Found 2 matching Burglaries in South Bengaluru. Accessing cases FIR-10234, FIR-10237, showing similarity patterns.";
+          text = "Hello! I am CrimeMind AI, your digital intelligence assistant for the Karnataka State Police. How can I help you today?";
+        } else if (matchedCase) {
+          text = `Retrieved record for case **${matchedCase.fir_number}** (${matchedCase.crime_head}) registered at ${matchedCase.police_station}. Status: ${matchedCase.status}. Accused: ${matchedCase.accused.join(", ") || "None"}. Location: ${matchedCase.location}. Description: ${matchedCase.description}`;
+          sources = [matchedCase.fir_number];
+          evidenceTrail = [`Matches FIR ID in KSP database.`];
+        } else if (matchedSuspect) {
+          const suspectName = matchedSuspect.accused.find(a => q.includes(a.toLowerCase())) || matchedSuspect.accused[0];
+          const suspectCases = cases.filter(c => c.accused.some(a => a.toLowerCase() === suspectName.toLowerCase()));
+          text = `Suspect **${suspectName}** is found in the database, linked to ${suspectCases.length} case(s): ${suspectCases.map(c => c.fir_number).join(", ")}. Mapped to active locations: ${Array.from(new Set(suspectCases.map(c => c.location))).join(", ")}.`;
+          sources = suspectCases.map(c => c.fir_number);
+          evidenceTrail = [`Identity mapping via accused records.`];
         } else {
-          text = `I can help you analyze patterns or find associations. Please try searching for specific details such as "burglary" or a suspect name, or let me know how I can guide your investigation.`;
-          sources = undefined;
-          confidenceScore = undefined;
-          evidenceTrail = undefined;
+          const related = cases.filter(c => c.description.toLowerCase().includes(q) || c.crime_head.toLowerCase().includes(q)).slice(0, 3);
+          if (related.length > 0) {
+            text = `Found ${related.length} matching case(s) for query "${editingText}":\n\n` + related.map(c => `- **${c.fir_number}** (${c.crime_head}): ${c.description}`).join("\n");
+            sources = related.map(c => c.fir_number);
+            evidenceTrail = [`Text pattern match against database descriptions.`];
+          } else {
+            text = `No matching case records, suspects, phone numbers, or vehicle plates found for "${editingText}" in the KSP Intelligence Database.`;
+          }
         }
 
         updateCurrentSessionMessages(prev => [...prev, {
           role: "assistant",
           text: text,
-          confidence_score: confidenceScore ? getSafeConfidence(confidenceScore) : undefined,
+          confidence_score: confidenceScore,
           sources: sources,
           evidence_trail: evidenceTrail
         }]);
@@ -1595,38 +1545,49 @@ function App() {
       setLoadingResponse(false);
       syncChatWithMap(userMsg, data.message, data.sources || []);
     } catch (err) {
-      // Local fallback simulator for offline/standalone execution
+      // Local fallback simulator for offline/standalone execution using actual React state cases
       setTimeout(() => {
         const greetings = ["hi", "hello", "hey", "hii", "heyy", "good morning", "good afternoon", "good evening", "namaste", "namaskara", "yo"];
         const cleanMsg = userMsg.replace(/\[target suspect:.*?\]/i, '').replace(/\[target case:.*?\]/i, '').trim().toLowerCase().replace(/[.,;:!?()'"\-\/]/g, "");
         const words = cleanMsg.split(/\s+/);
         const isGreeting = (words.length >= 1 && words.every(w => greetings.includes(w))) || cleanMsg === "how are you" || cleanMsg === "who are you" || cleanMsg === "what can you do";
 
-        let text = `Simulated response: Analyzed databases for focus "${userMsg}".`;
-        let sources: string[] | undefined = ["FIR-10234", "FIR-10237"];
-        let confidenceScore: number | undefined = 0.88;
-        let evidenceTrail: string[] | undefined = ["Pattern detected via Jayanagar police precinct reports."];
+        const q = cleanMsg.trim();
+        const matchedCase = cases.find(c => q.includes(c.fir_number.toLowerCase()) || c.fir_number.toLowerCase().includes(q));
+        const matchedSuspect = cases.find(c => c.accused.some(a => q.includes(a.toLowerCase())));
+
+        let text = "";
+        let sources: string[] | undefined = undefined;
+        let confidenceScore: number | undefined = 0.95;
+        let evidenceTrail: string[] | undefined = undefined;
 
         if (isGreeting) {
-          text = "Hello! I am CrimeMind AI, your digital intelligence assistant for the Karnataka State Police. How can I help you with your cases, suspect profiling, or analysis enquiries today?";
-          sources = undefined;
-          confidenceScore = undefined;
-          evidenceTrail = undefined;
-        } else if (activeSuspect) {
-          text = `Successfully retrieved connection trail for suspect **${activeSuspect}**. Suspect is linked to ${cases.filter(c => c.accused.some(a => a.toLowerCase() === activeSuspect.toLowerCase())).map(c => c.fir_number).join(", ") || "FIR-4012/2026"}. Mapped 2 active phones and 1 vehicle.`;
-        } else if (userMsg.toLowerCase().includes("burglary")) {
-          text = "Found 2 matching Burglaries in South Bengaluru. Accessing cases FIR-10234, FIR-10237, showing similarity patterns.";
+          text = "Hello! I am CrimeMind AI, your digital intelligence assistant for the Karnataka State Police. How can I help you today?";
+        } else if (matchedCase) {
+          text = `Retrieved record for case **${matchedCase.fir_number}** (${matchedCase.crime_head}) registered at ${matchedCase.police_station}. Status: ${matchedCase.status}. Accused: ${matchedCase.accused.join(", ") || "None"}. Location: ${matchedCase.location}. Description: ${matchedCase.description}`;
+          sources = [matchedCase.fir_number];
+          evidenceTrail = [`Matches FIR ID in KSP database.`];
+        } else if (matchedSuspect) {
+          const suspectName = matchedSuspect.accused.find(a => q.includes(a.toLowerCase())) || matchedSuspect.accused[0];
+          const suspectCases = cases.filter(c => c.accused.some(a => a.toLowerCase() === suspectName.toLowerCase()));
+          text = `Suspect **${suspectName}** is found in the database, linked to ${suspectCases.length} case(s): ${suspectCases.map(c => c.fir_number).join(", ")}. Mapped to active locations: ${Array.from(new Set(suspectCases.map(c => c.location))).join(", ")}.`;
+          sources = suspectCases.map(c => c.fir_number);
+          evidenceTrail = [`Identity mapping via accused records.`];
         } else {
-          text = `I can help you analyze patterns or find associations. Please try searching for specific details such as "burglary" or a suspect name, or let me know how I can guide your investigation.`;
-          sources = undefined;
-          confidenceScore = undefined;
-          evidenceTrail = undefined;
+          const related = cases.filter(c => c.description.toLowerCase().includes(q) || c.crime_head.toLowerCase().includes(q)).slice(0, 3);
+          if (related.length > 0) {
+            text = `Found ${related.length} matching case(s) for query "${userMsg}":\n\n` + related.map(c => `- **${c.fir_number}** (${c.crime_head}): ${c.description}`).join("\n");
+            sources = related.map(c => c.fir_number);
+            evidenceTrail = [`Text pattern match against database descriptions.`];
+          } else {
+            text = `No matching case records, suspects, phone numbers, or vehicle plates found for "${userMsg}" in the KSP Intelligence Database.`;
+          }
         }
 
         updateCurrentSessionMessages(prev => [...prev, {
           role: "assistant",
           text: text,
-          confidence_score: confidenceScore ? getSafeConfidence(confidenceScore) : undefined,
+          confidence_score: confidenceScore,
           sources: sources,
           evidence_trail: evidenceTrail
         }]);
@@ -1641,7 +1602,6 @@ function App() {
             }
           }
         }
-        // speakText(text); // voice output disabled
         setLoadingResponse(false);
         syncChatWithMap(userMsg, text, sources || []);
       }, 800);
@@ -2641,8 +2601,14 @@ function App() {
 
                 {/* Real data from FIR case */}
                 {(() => {
-                  const firCase = graphCases[0] || null;
                   const nodeId = selectedNode.id;
+                  const firCase = cases.find(c =>
+                    c.fir_number === nodeId ||
+                    c.accused.some(a => a.toLowerCase() === nodeId.toLowerCase()) ||
+                    c.phone_numbers.some(p => p.toLowerCase() === nodeId.toLowerCase()) ||
+                    c.vehicles.some(v => v.replace("-", "").replace(" ", "").toLowerCase() === nodeId.replace("-", "").replace(" ", "").toLowerCase()) ||
+                    c.bank_accounts.some(b => b.toLowerCase() === nodeId.toLowerCase())
+                  ) || graphCases[0] || null;
                   const phones = firCase?.phone_numbers || [];
                   const vehicles = firCase?.vehicles || [];
                   const banks = firCase?.bank_accounts || [];
