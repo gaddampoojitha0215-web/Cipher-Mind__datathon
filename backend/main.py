@@ -4,7 +4,7 @@ import uuid
 import datetime
 import requests
 import json
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from xml.sax.saxutils import escape
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
