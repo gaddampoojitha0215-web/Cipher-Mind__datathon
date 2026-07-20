@@ -5,7 +5,7 @@ import {
   Phone, User, Car, Briefcase,
   Search, TrendingUp, AlertTriangle, HelpCircle, Sun, Moon,
   Copy, Check, Globe, ChevronDown, Paperclip, ZoomIn, ZoomOut, Maximize2, Trash2, ArrowUpRight,
-  Edit, MapPin, Bell, Settings, Shield, CheckCircle2
+  Edit, MapPin, Bell, Settings, Shield, CheckCircle2, FileText
 } from "lucide-react";
 import {
   ResponsiveContainer, XAxis, YAxis,
@@ -1673,32 +1673,81 @@ function App() {
     )
     : [];
 
+  const openCaseDetails = (firNum: string) => {
+    const matched = cases.find(c => c.fir_number.toLowerCase() === firNum.toLowerCase() || c.fir_number.toLowerCase().includes(firNum.toLowerCase()));
+    setSearchQuery(firNum);
+    if (matched) {
+      setSelectedCase(matched);
+    } else {
+      setSelectedCase(null);
+    }
+    setActiveTab("cases");
+  };
+
+  const openCaseOnMap = (firNum: string) => {
+    const matched = cases.find(c => c.fir_number.toLowerCase() === firNum.toLowerCase() || c.fir_number.toLowerCase().includes(firNum.toLowerCase()));
+    if (matched) {
+      setSelectedCase(matched);
+    }
+    setActiveTab("map");
+    if (mapControlRef.current) {
+      mapControlRef.current.focusCase(firNum);
+    }
+  };
+
+  const openCaseLinkAnalysis = (firNum: string) => {
+    const matched = cases.find(c => c.fir_number.toLowerCase() === firNum.toLowerCase() || c.fir_number.toLowerCase().includes(firNum.toLowerCase()));
+    if (matched) {
+      loadCaseGraph(matched);
+    }
+    setGraphSearchQuery(firNum);
+    setActiveTab("network");
+  };
+
   const renderMessageText = (text: string) => {
     const cleanText = text.replace(/\[Target Suspect:.*?\]\s*/g, "").replace(/\[Target Case:.*?\]\s*/g, "");
-    const firRegex = /(FIR-\d+(?:\/\d+)?)/g;
+    const firRegex = /(FIR-[A-Za-z0-9\/-]+)/gi;
     const parts = cleanText.split(firRegex);
     return parts.map((part, i) => {
       if (part.match(firRegex)) {
-        const matched = cases.find(c => c.fir_number.toLowerCase() === part.toLowerCase() || c.fir_number.toLowerCase().includes(part.toLowerCase()));
         return (
-          <button
-            key={i}
-            type="button"
-            onClick={() => {
-              if (matched) {
-                setSelectedCase(matched);
-                setActiveTab("cases");
-              } else {
-                setSearchQuery(part);
-                setActiveTab("cases");
-              }
-            }}
-            className="mx-1 px-1.5 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-100 dark:bg-zinc-200 dark:hover:bg-zinc-300 dark:text-zinc-950 border border-zinc-750 dark:border-zinc-350 font-bold font-mono text-[10px] cursor-pointer inline-flex items-center gap-0.5 transition-all hover:scale-105"
-            title="Inspect Case"
-          >
-            <Search className="w-2.5 h-2.5" />
-            {part}
-          </button>
+          <span key={i} className="inline-flex items-center gap-1 my-0.5 mx-1 p-0.5 rounded-lg bg-cyan-950/40 border border-cyan-500/30 text-cyan-200">
+            <button
+              type="button"
+              onClick={() => openCaseDetails(part)}
+              className="px-2 py-0.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 font-bold font-mono text-[10px] cursor-pointer inline-flex items-center gap-1 transition-all"
+              title="Click to open Case File & Full Details"
+            >
+              <FileText className="w-2.5 h-2.5 text-cyan-400" />
+              {part}
+            </button>
+            <div className="flex items-center gap-0.5 border-l border-cyan-500/30 pl-1 text-[9px] font-mono">
+              <button
+                type="button"
+                onClick={() => openCaseDetails(part)}
+                className="px-1 py-0.5 rounded hover:bg-cyan-500/30 text-cyan-300 transition-colors cursor-pointer"
+                title="View Case Info & Details"
+              >
+                📄 Info
+              </button>
+              <button
+                type="button"
+                onClick={() => openCaseOnMap(part)}
+                className="px-1 py-0.5 rounded hover:bg-emerald-500/30 text-emerald-300 transition-colors cursor-pointer"
+                title="Redirect to KSP Map"
+              >
+                🗺️ Map
+              </button>
+              <button
+                type="button"
+                onClick={() => openCaseLinkAnalysis(part)}
+                className="px-1 py-0.5 rounded hover:bg-purple-500/30 text-purple-300 transition-colors cursor-pointer"
+                title="Redirect to Link Analysis Graph"
+              >
+                🔗 Graph
+              </button>
+            </div>
+          </span>
         );
       }
       return part;
@@ -2285,31 +2334,51 @@ function App() {
                           </div>
 
                           {m.sources && m.sources.length > 0 && (
-                            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                              <span className="font-semibold text-zinc-500">VERIFIED FIR SOURCES:</span>
-                              {m.sources.map((src, sIdx) => {
-                                const matched = cases.find(c => c.fir_number.toLowerCase() === src.toLowerCase());
-                                return (
-                                  <button
-                                    key={sIdx}
-                                    type="button"
-                                    onClick={() => {
-                                      if (matched) {
-                                        setSelectedCase(matched);
-                                        setActiveTab("cases");
-                                      } else {
-                                        setSearchQuery(src);
-                                        setActiveTab("cases");
-                                      }
-                                    }}
-                                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 dark:bg-zinc-100 dark:hover:bg-zinc-200 dark:text-zinc-900 border border-zinc-750 dark:border-zinc-300 px-2 py-0.5 rounded text-[9px] font-bold cursor-pointer transition-all inline-flex items-center gap-1 hover:scale-105"
-                                    title="Click to view Case Details"
-                                  >
-                                    <ArrowUpRight className="w-2.5 h-2.5" />
-                                    {src}
-                                  </button>
-                                );
-                              })}
+                            <div className="flex flex-col gap-1.5 pt-1">
+                              <span className="font-semibold text-zinc-500 text-[10px] uppercase tracking-wider flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400" /> VERIFIED FIR SOURCES & INTELLIGENCE ROUTING:
+                              </span>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {m.sources.map((src, sIdx) => (
+                                  <div key={sIdx} className="flex items-center gap-1 p-1 rounded-xl bg-slate-900/60 dark:bg-slate-950/80 border border-cyan-500/30 shadow-sm">
+                                    <button
+                                      type="button"
+                                      onClick={() => openCaseDetails(src)}
+                                      className="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 font-bold font-mono text-[10px] cursor-pointer inline-flex items-center gap-1 transition-all"
+                                      title="Click to view Case Details"
+                                    >
+                                      <FileText className="w-3 h-3 text-cyan-400" />
+                                      {src}
+                                    </button>
+                                    <div className="flex items-center gap-1 border-l border-cyan-500/30 pl-1.5 text-[9.5px] font-mono">
+                                      <button
+                                        type="button"
+                                        onClick={() => openCaseDetails(src)}
+                                        className="px-1.5 py-0.5 rounded bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 font-semibold transition-colors cursor-pointer flex items-center gap-0.5"
+                                        title="View Case Information & Details"
+                                      >
+                                        📄 Info
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => openCaseOnMap(src)}
+                                        className="px-1.5 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-300 font-semibold transition-colors cursor-pointer flex items-center gap-0.5"
+                                        title="Redirect to KSP Intelligence Map"
+                                      >
+                                        🗺️ Map
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => openCaseLinkAnalysis(src)}
+                                        className="px-1.5 py-0.5 rounded bg-purple-500/20 hover:bg-purple-500/40 text-purple-300 font-semibold transition-colors cursor-pointer flex items-center gap-0.5"
+                                        title="Redirect to Link Analysis Network Graph"
+                                      >
+                                        🔗 Graph
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>
