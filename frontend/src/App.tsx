@@ -32,12 +32,21 @@ interface Case {
   officer: string;
 }
 
+interface EvidenceMetadata {
+  matched_by: string;
+  records_found: number;
+  data_source: string;
+  last_database_update: string;
+  confidence: string;
+}
+
 interface Message {
   role: "user" | "assistant";
   text: string;
   sources?: string[];
   confidence_score?: number;
   evidence_trail?: string[];
+  evidence_metadata?: EvidenceMetadata;
 }
 
 interface GraphNode {

@@ -1,6 +1,6 @@
 import React, { memo } from "react";
 import { Search, Globe, ChevronDown, Sun, Moon, Bell, Shield } from "lucide-react";
-import { Theme } from "../types";
+import type { Theme } from "../types";
 
 interface HeaderProps {
   currentTheme: Theme;

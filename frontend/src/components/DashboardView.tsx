@@ -1,5 +1,5 @@
 import React, { memo, useMemo } from "react";
-import { Case, Theme } from "../types";
+import type { Case, Theme } from "../types";
 import { Shield, AlertTriangle, CheckCircle, Clock, TrendingUp, ChevronRight } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 

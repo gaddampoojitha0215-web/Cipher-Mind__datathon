@@ -1,6 +1,6 @@
 import React, { memo } from "react";
 import { LayoutDashboard, MessageSquare, Map, Briefcase, Share2 } from "lucide-react";
-import { Theme } from "../types";
+import type { Theme } from "../types";
 
 export type TabType = "dashboard" | "ai-assistant" | "map" | "cases" | "link-analysis";
 
