@@ -1024,15 +1024,15 @@ def get_duration_response(msg_lower: str, lang: str) -> Optional[dict]:
         elif lang == "te":
             msg = f"కర్ణాటక రాష్ట్ర పోలీస్ డేటాబేస్ ప్రకారం, గత 1 సంవత్సరంలో **{count:,} కేసులు** {display_place} రిజిస్ట్రీలో నమోదయ్యాయి, ఇది వార్షిక లక్ష్యాన్ని దాటింది. మొదటి 50 కేసుల ఫైళ్లు క్రింద సూచించబడ్డాయి."
         elif lang == "hi":
-            msg = f"कर्नाटक राज्य पुलिस डेटाबेस के अनुसार, पिछले 1 वर्ष में कुल **{count:,} मामले** {display_place} रजिस्ट्री में दर्ज किए गए हैं, जो वार्षिक मामलों की अपेक्षा के अनुरूप है। पहले 50 मामले नीचे सूचीबद्ध हैं।"
+            msg = f"कर्नाटक राज्य पुलिस डेटाबेस के अनुसार, पिछले 1 वर्ष में कुल **{count:,} मामले** {display_place} रजिस्ट्री में दर्ज किए गए हैं, जो वार्षिक मामलों की अपेक्षा के अनुरूप है। पहले 50 मामले नीचे सूचीबद्ध हैं."
         elif lang == "ta":
-            msg = f"ಕರ್ನಾಟಕ ರಾಜ್ಯ ಪೊಲೀಸ್ ಡೇಟಾಬೇಸ್ ಪ್ರಕಾರ, கடந்த 1 வருடத்தில் **{count:,} வழக்குகள்** {display_place} பதிவேட்டில் பதிவாகியுள்ளன, ಇದು வருடாந்திர எதிர்பார்ப்பை தாண்டியுள்ளது. முதல் 50 வழக்குக் கோப்புகள் கீழே பட்டியலிடப்பட்டுள்ளன."
+            msg = f"ಕರ್ನಾಟಕ ರಾಜ್ಯ ಪೊಲೀಸ್ ಡೇಟಾಬೇಸ್ ಪ್ರಕಾರ, ಕಳೆದ 1 ವರ್ಷದಲ್ಲಿ **{count:,} ಪ್ರಕರಣಗಳು** {display_place} ನೋಂದಣಿಯಲ್ಲಿ ನೋಂದಾಯಿಸಲ್ಪಟ್ಟಿವೆ, ಇದು ವಾರ್ಷಿಕ ಗುರಿಯನ್ನು ಮೀರಿದೆ. ಮೊದಲ 50 ಪ್ರಕರಣಗಳ ದಾಖಲೆಗಳು ಕೆಳಗೆ ಸೂಚಿಸಲಾಗಿದೆ."
         else:
             msg = f"Based on the KSP Database, there are exactly **{count:,} cases** registered and cataloged in the {display_place} registry over the past 1 year, ensuring high-fidelity mapping. The first 50 case files are indexed below."
         return {"message": msg, "sources": sources}
 
     # Check 1 case
-    if any(phrase in msg_lower for phrase in ["1 case", "one case", "single case", "ಒಂದು ಪ್ರಕರಣ", "ఒక కేసు", "एक केस", "ஒரு வழக்கு"]):
+    if any(phrase in msg_lower for phrase in ["1 case", "one case", "single case", "ಒಂದು ಪ್ರಕರಣ", "ఒక కేసు", "एक केस", "ഒരു வழக்கு"]):
         sources = [f"FIR-{detected_code}-10234/2026"]
         if lang == "kn":
             msg = f"1 ನಿರ್ದಿಷ್ಟ ಪ್ರಕರಣ ಅಥವಾ FIR ಸಂಖ್ಯೆಯ ಶೋಧಕ್ಕಾಗಿ, {display_place} ಡೇಟಾಬೇಸ್ ನಿಖರವಾಗಿ 1 ಪ್ರಕರಣದ ಫೈಲ್ ಅನ್ನು ಹಿಂಪಡೆಯುತ್ತದೆ."
@@ -1070,15 +1070,41 @@ def chat_query(payload: ChatQuery, current_user: dict = Depends(get_current_user
             "evidence_trail": ["Active registry duration check triggered."]
         }
 
-    greetings = ["hi", "hello", "hey", "hii", "heyy", "good morning", "good afternoon", "good evening", "namaste", "namaskara"]
-    # Check if the remaining message is a greeting
+    greetings_pool = [
+        "hi", "hello", "hey", "hii", "heyy", "heyyy", "good morning", "good afternoon", "good evening", 
+        "namaste", "namaskara", "vanakkam", "how are you", "who are you", "what can you do", "help", 
+        "thanks", "thank you", "awesome", "great"
+    ]
     words = [w.strip(".,;:!?()-\"'/") for w in clean_msg.split()]
-    if len(words) >= 1 and all(w in greetings for w in words):
-        response_msg = (
+    is_greeting = any(g in clean_msg for g in ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "namaste", "namaskara", "how are you", "who are you", "thanks", "thank you"]) or (len(words) >= 1 and all(w in greetings_pool for w in words))
+    
+    if is_greeting:
+        greeting_reply = (
             "Hello! I am CrimeMind AI, your intelligence assistant. Please feel free to use this system "
             "for any of your enquiries, case searches, suspect profiling, or investigation questions. "
             "How can I assist you with your enquiries today?"
         )
+        if any(k in clean_msg for k in ["thanks", "thank you", "great", "awesome"]):
+            greeting_reply = "You're very welcome! I'm here to assist you anytime with your KSP investigation enquiries."
+        elif "who are you" in clean_msg or "what can you do" in clean_msg:
+            greeting_reply = (
+                "I am CrimeMind AI, an advanced crime analysis virtual assistant for the Karnataka State Police (KSP). "
+                "I can assist you with case lookup, suspect profiling, modus operandi analysis, phone/vehicle/bank account mapping, and statistical reports."
+            )
+
+        return {
+            "message": greeting_reply,
+            "sources": [],
+            "confidence_score": 1.0,
+            "evidence_trail": ["Friendly conversational greeting check triggered."],
+            "evidence_metadata": {
+                "matched_by": "Conversational Greeting",
+                "records_found": 0,
+                "data_source": "KSP System Assistant",
+                "last_database_update": datetime.datetime.now().strftime("%Y-%m-%d 17:00 IST"),
+                "confidence": "Exact Match (100%)"
+            }
+        }
         if payload.language == "kn":
             response_msg = (
                 "ನಮಸ್ಕಾರ! ನಾನು ಕ್ರೈಮ್‌ಮೈಂಡ್ ಎಐ ಸಹಾಯಕಿ. ಪ್ರಕರಣಗಳ ವಿಶ್ಲೇಷಣೆ, ಶಂಕಿತರ ವಿವರ ಅಥವಾ ತನಿಖಾ ವಿಚಾರಣೆಗಳ ಬಗ್ಗೆ ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ?"

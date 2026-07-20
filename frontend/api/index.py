@@ -479,36 +479,40 @@ def chat_query(payload: ChatQuery):
     clean_msg = re.sub(r'\[target case:.*?\]', '', clean_msg)
     clean_msg = clean_msg.strip()
 
-    greetings = ["hi", "hello", "hey", "hii", "heyy", "good morning", "good afternoon", "good evening", "namaste", "namaskara"]
-    # Check if the remaining message is a greeting
+    greetings_pool = [
+        "hi", "hello", "hey", "hii", "heyy", "heyyy", "good morning", "good afternoon", "good evening", 
+        "namaste", "namaskara", "vanakkam", "how are you", "who are you", "what can you do", "help", 
+        "thanks", "thank you", "awesome", "great"
+    ]
     words = [w.strip(".,;:!?()-\"'/") for w in clean_msg.split()]
-    if len(words) >= 1 and all(w in greetings for w in words):
+    is_greeting = any(g in clean_msg for g in ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "namaste", "namaskara", "how are you", "who are you", "thanks", "thank you"]) or (len(words) >= 1 and all(w in greetings_pool for w in words))
+    
+    if is_greeting:
         response_msg = (
             "Hello! I am CrimeMind AI, your intelligence assistant. Please feel free to use this system "
             "for any of your enquiries, case searches, suspect profiling, or investigation questions. "
             "How can I assist you with your enquiries today?"
         )
-        if payload.language == "kn":
+        if any(k in clean_msg for k in ["thanks", "thank you", "great", "awesome"]):
+            response_msg = "You're very welcome! I'm here to assist you anytime with your KSP investigation enquiries."
+        elif "who are you" in clean_msg or "what can you do" in clean_msg:
             response_msg = (
-                "ನಮಸ್ಕಾರ! ನಾನು ಕ್ರೈಮ್‌ಮೈಂಡ್ ಎಐ ಸಹಾಯಕಿ. ಪ್ರಕರಣಗಳ ವಿಶ್ಲೇಷಣೆ, ಶಂಕಿತರ ವಿವರ ಅಥವಾ ತನಿಖಾ ವಿಚಾರಣೆಗಳ ಬಗ್ಗೆ ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ?"
+                "I am CrimeMind AI, an advanced crime analysis virtual assistant for the Karnataka State Police (KSP). "
+                "I can assist you with case lookup, suspect profiling, modus operandi analysis, phone/vehicle/bank account mapping, and statistical reports."
             )
-        elif payload.language == "hi":
-            response_msg = (
-                "नमस्ते! मैं क्राइममाइंड एआई सहायक हूँ। मामलों के विश्लेषण, संदिग्धों के विवरण या जांच से जुड़े प्रश्नों में आज मैं आपकी क्या सहायता कर सकता हूँ?"
-            )
-        elif payload.language == "te":
-            response_msg = (
-                "నమస్కారం! నేను క్రైమ్‌మైండ్ AI అసిస్టెంట్‌ని. ఈ రోజు కేసుల విశ్లేషణ లేదా అనుమానితుల వివరాల గురించి నేను మీకు ఎలా సహాయపడగలను?"
-            )
-        elif payload.language == "ta":
-            response_msg = (
-                "வணக்கம்! நான் கிரைம்மைண்ட் AI உதவியாளர். வழக்குகள் அல்லது சந்தேக நபர்களைப் பற்றிய தகவல்களைக் கண்டறிய இன்று நான் உங்களுக்கு எவ்வாறு உதவ முடியும்?"
-            )
+            
         return {
             "message": response_msg,
             "sources": [],
-            "confidence_score": -1.0,
-            "evidence_trail": []
+            "confidence_score": 1.0,
+            "evidence_trail": ["Friendly conversational greeting check triggered."],
+            "evidence_metadata": {
+                "matched_by": "Conversational Greeting",
+                "records_found": 0,
+                "data_source": "KSP System Assistant",
+                "last_database_update": "Live Active Registry",
+                "confidence": "Exact Match (100%)"
+            }
         }
     
     # 1. Grounding Phase: Retrieve relevant cases
