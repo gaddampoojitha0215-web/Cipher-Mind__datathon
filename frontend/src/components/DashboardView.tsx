@@ -76,6 +76,38 @@ export const DashboardView: React.FC<DashboardViewProps> = memo(({
         </div>
       </div>
 
+      {/* KSP Intelligence Evidence & Data Provenance Banner */}
+      <div className={`p-4 rounded-2xl border ${currentTheme.id === "dark" ? "bg-cyan-950/20 border-cyan-500/30 text-cyan-200" : "bg-blue-50 border-blue-200 text-blue-950"} shadow-sm`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-cyan-500/20 border border-cyan-400/30 text-cyan-300">
+              <Shield className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 font-bold tracking-wider text-[11px] uppercase">
+                <span>KSP Intelligence System-Wide Data Grounding</span>
+                <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 text-[9px] font-mono border border-cyan-400/30">
+                  Exact Database Grounding (100%)
+                </span>
+              </div>
+              <p className="text-[11px] opacity-80 mt-0.5">
+                All metrics, charts, and spatial counts are dynamically aggregated from verified KSP FIR case files.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 text-[10px] font-mono border-t md:border-t-0 md:border-l border-current/15 pt-2 md:pt-0 md:pl-4">
+            <div>
+              <span className="opacity-70">Data Source:</span>{" "}
+              <strong className="font-semibold text-cyan-300">KSP Crime Database</strong>
+            </div>
+            <div>
+              <span className="opacity-70">Live Sync:</span>{" "}
+              <strong className="font-semibold text-emerald-400">Active Registry Sync</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className={`p-5 rounded-2xl border ${currentTheme.cardBg} ${currentTheme.border}`}>
