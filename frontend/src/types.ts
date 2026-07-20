@@ -16,12 +16,21 @@ export interface Case {
   officer: string;
 }
 
+export interface EvidenceMetadata {
+  matched_by: string;
+  records_found: number;
+  data_source: string;
+  last_database_update: string;
+  confidence: string;
+}
+
 export interface Message {
   role: "user" | "assistant";
   text: string;
   sources?: string[];
   confidence_score?: number;
   evidence_trail?: string[];
+  evidence_metadata?: EvidenceMetadata;
 }
 
 export interface GraphNode {

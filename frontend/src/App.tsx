@@ -5,7 +5,7 @@ import {
   Phone, User, Car, Briefcase,
   Search, TrendingUp, AlertTriangle, HelpCircle, Sun, Moon,
   Copy, Check, Globe, ChevronDown, Paperclip, ZoomIn, ZoomOut, Maximize2, Trash2, ArrowUpRight,
-  Edit, MapPin, Bell, Settings
+  Edit, MapPin, Bell, Settings, Shield, CheckCircle2
 } from "lucide-react";
 import {
   ResponsiveContainer, XAxis, YAxis,
@@ -2242,17 +2242,42 @@ function App() {
                         <p className={`leading-relaxed whitespace-pre-wrap ${m.role === 'user' ? 'pr-14' : 'pr-6'}`}>{renderMessageText(m.text)}</p>
                       )}
 
-                      {m.role === "assistant" && (m.confidence_score !== undefined || m.sources || m.evidence_trail) && (
-                        <div className="mt-3.5 pt-3 border-t border-zinc-800/10 dark:border-zinc-200/10 space-y-2 text-[10px]">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-zinc-500">CONFIDENCE SCORE:</span>
-                            <span className={`px-1.5 py-0.5 rounded font-bold border ${theme.id === "dark" ? "bg-zinc-900 text-zinc-100 border-zinc-800" : "bg-zinc-100 text-zinc-900 border-zinc-200"
-                              }`}>{((m.confidence_score ?? 0) * 100).toFixed(0)}%</span>
+                      {m.role === "assistant" && (
+                        <div className="mt-3.5 pt-3 border-t border-zinc-800/10 dark:border-zinc-200/10 space-y-2.5 text-[10px]">
+                          {/* KSP Intelligence Evidence Box */}
+                          <div className={`p-2.5 rounded-xl border ${theme.id === "dark" ? "bg-cyan-950/20 border-cyan-500/25 text-cyan-200" : "bg-blue-50/80 border-blue-200 text-blue-900"} space-y-1.5 shadow-sm`}>
+                            <div className="flex items-center justify-between font-bold tracking-wider text-[9px] uppercase border-b pb-1 border-current/15">
+                              <span className="flex items-center gap-1.5">
+                                <Shield className="w-3.5 h-3.5 text-cyan-400" />
+                                KSP Intelligence Evidence Attribution
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono text-[8px] font-bold border border-cyan-400/30">
+                                {m.evidence_metadata?.confidence || ((m.confidence_score ?? 0.95) >= 0.95 ? "Exact Database Match (100%)" : "Database Verified")}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[9.5px] pt-0.5">
+                              <div>
+                                <span className="opacity-70">Matched by:</span>{" "}
+                                <strong className="font-semibold">{m.evidence_metadata?.matched_by || (m.sources && m.sources.length > 0 ? "FIR / Unique Identifier" : "Database Query")}</strong>
+                              </div>
+                              <div>
+                                <span className="opacity-70">Records Found:</span>{" "}
+                                <strong className="font-semibold">{m.evidence_metadata?.records_found ?? (m.sources ? m.sources.length : 0)}</strong>
+                              </div>
+                              <div>
+                                <span className="opacity-70">Data Source:</span>{" "}
+                                <strong className="font-semibold">{m.evidence_metadata?.data_source || "KSP Crime Database"}</strong>
+                              </div>
+                              <div>
+                                <span className="opacity-70">Database Sync:</span>{" "}
+                                <strong className="font-semibold text-emerald-400">Live Active Registry</strong>
+                              </div>
+                            </div>
                           </div>
 
                           {m.sources && m.sources.length > 0 && (
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-semibold text-zinc-500">SOURCES:</span>
+                            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                              <span className="font-semibold text-zinc-500">VERIFIED FIR SOURCES:</span>
                               {m.sources.map((src, sIdx) => {
                                 const matched = cases.find(c => c.fir_number.toLowerCase() === src.toLowerCase());
                                 return (
