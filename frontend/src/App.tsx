@@ -12,6 +12,7 @@ import {
   Tooltip, Cell, CartesianGrid, BarChart, Bar
 } from "recharts";
 import CrimeMap from "./CrimeMap";
+import logoImg from "./assets/logo.png";
 
 // Interfaces
 interface Case {
@@ -1785,7 +1786,7 @@ function App() {
       <header className={`border-b ${theme.border} bg-white/80 dark:bg-black/80 px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50 ${theme.textMain}`}>
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-xl bg-gradient-to-br ${theme.id === "dark" ? "from-purple-500/10 to-fuchsia-500/20 border border-purple-500/30" : "from-purple-100 to-fuchsia-100 border border-purple-200/60"}`}>
-            <img src="./logo.png" className="w-5 h-5 object-contain" alt="CrimeMind Logo" />
+            <img src={logoImg} className="w-5 h-5 object-contain" alt="CrimeMind Logo" />
           </div>
           <div>
             <h1 className="text-sm font-bold tracking-tight font-sans">
@@ -1871,7 +1872,7 @@ function App() {
 
               {/* KSP Emblem Logo */}
               <div className={`w-8 h-8 rounded-full overflow-hidden border ${theme.border} bg-purple-950/10 dark:bg-white/5 flex items-center justify-center p-1`}>
-                <img src="./logo.png" className="w-full h-full object-contain" alt="KSP Emblem" />
+                <img src={logoImg} className="w-full h-full object-contain" alt="KSP Emblem" />
               </div>
             </div>
           </div>
@@ -3201,7 +3202,7 @@ function App() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center text-center py-20 text-slate-500">
-                  <img src="./logo.png" className="w-12 h-12 mb-3.5 object-contain opacity-80 animate-pulse" alt="CrimeMind Logo" />
+                  <img src={logoImg} className="w-12 h-12 mb-3.5 object-contain opacity-80 animate-pulse" alt="CrimeMind Logo" />
                   <p className={`text-xs font-semibold ${theme.id === 'dark' ? 'text-zinc-400' : 'text-zinc-650'}`}>Select a case file from the registry to inspect records.</p>
                 </div>
               )}

@@ -5,6 +5,7 @@ import {
   CheckCircle, Video, Compass, Navigation, Shield, Database, BarChart3, Clock, User
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import logoImg from "./assets/logo.png";
 import {
   KARNATAKA_DISTRICTS,
   MAP_LOCATION_FEATURES,
@@ -1430,7 +1431,7 @@ export default function CrimeMap({
           </span>
         </div>
         <div className="flex items-center gap-2 border-l border-zinc-800 pl-4 h-full opacity-90">
-          <img src="./logo.png" className="w-4 h-4 object-contain" alt="KSP Logo" />
+          <img src={logoImg} className="w-4 h-4 object-contain" alt="KSP Logo" />
           <span className="text-[8px] font-bold tracking-wider">KARNATAKA STATE POLICE // SEVA - SURAKSHA - SAMARPANE</span>
         </div>
       </div>
