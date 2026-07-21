@@ -1358,10 +1358,27 @@ function App() {
     setCurrentSessionId(newId);
   };
 
-  const handleDeleteSession = (idToDelete: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (sessions.length === 1) {
-      alert("Cannot delete the only remaining session.");
+  const handleDeleteSession = (idToDelete: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (sessions.length <= 1) {
+      const newId = uuidv4();
+      const newSession: ChatSession = {
+        id: newId,
+        name: "New Security Session",
+        messages: [
+          {
+            role: "assistant",
+            text: "CrimeMind AI Online. Authorized access granted to admin. System operates under security protocol KSP-A9.",
+            confidence_score: 1.0,
+            evidence_trail: ["System startup initialized with active database links."]
+          }
+        ]
+      };
+      setSessions([newSession]);
+      setCurrentSessionId(newId);
+      setEditingIndex(null);
+      setEditingText("");
+      setChatInput("");
       return;
     }
     const filtered = sessions.filter(s => s.id !== idToDelete);
@@ -1369,17 +1386,47 @@ function App() {
     if (currentSessionId === idToDelete) {
       setCurrentSessionId(filtered[0].id);
     }
+    setEditingIndex(null);
+    setEditingText("");
+    setChatInput("");
   };
 
-  const handleSaveEdit = async (idx: number) => {
-    if (!editingText.trim()) return;
+  const handleDeleteMessage = (idxToDelete: number) => {
+    updateCurrentSessionMessages(prev => prev.filter((_, idx) => idx !== idxToDelete));
+    if (editingIndex === idxToDelete) {
+      setEditingIndex(null);
+      setEditingText("");
+      setChatInput("");
+    } else if (editingIndex !== null && editingIndex > idxToDelete) {
+      setEditingIndex(editingIndex - 1);
+    }
+  };
+
+  const handleClearCurrentSession = () => {
+    updateCurrentSessionMessages([
+      {
+        role: "assistant",
+        text: "CrimeMind AI Online. Authorized access granted to admin. System operates under security protocol KSP-A9.",
+        confidence_score: 1.0,
+        evidence_trail: ["System startup initialized with active database links."]
+      }
+    ]);
+    setEditingIndex(null);
+    setEditingText("");
+    setChatInput("");
+  };
+
+  const handleSaveEdit = async (idx: number, customNewText?: string) => {
+    const textToSave = (customNewText !== undefined ? customNewText : editingText).trim();
+    if (!textToSave) return;
 
     // Update the message at idx, and truncate the message history after it
     const updatedMessages = messages.slice(0, idx + 1);
-    updatedMessages[idx] = { ...updatedMessages[idx], text: editingText };
+    updatedMessages[idx] = { ...updatedMessages[idx], text: textToSave };
     updateCurrentSessionMessages(updatedMessages);
     setEditingIndex(null);
     setEditingText("");
+    setChatInput("");
 
     setLoadingResponse(true);
 
@@ -1390,7 +1437,7 @@ function App() {
     if (selectedCase) {
       contextHeader += `[Target Case: ${selectedCase.fir_number}] `;
     }
-    const finalMsg = contextHeader + editingText;
+    const finalMsg = contextHeader + textToSave;
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/chat/query`, {
@@ -1433,7 +1480,7 @@ function App() {
       // Local fallback simulator for offline/standalone execution using actual React state cases
       setTimeout(() => {
         const greetings = ["hi", "hello", "hey", "hii", "heyy", "good morning", "good afternoon", "good evening", "namaste", "namaskara", "yo"];
-        const cleanMsg = editingText.replace(/\[target suspect:.*?\]/i, '').replace(/\[target case:.*?\]/i, '').trim().toLowerCase().replace(/[.,;:!?()'"\-\/]/g, "");
+        const cleanMsg = textToSave.replace(/\[target suspect:.*?\]/i, '').replace(/\[target case:.*?\]/i, '').trim().toLowerCase().replace(/[.,;:!?()'"\-\/]/g, "");
         const words = cleanMsg.split(/\s+/);
         const isGreeting = (words.length >= 1 && words.every(w => greetings.includes(w))) || cleanMsg === "how are you" || cleanMsg === "who are you" || cleanMsg === "what can you do";
 
@@ -1461,11 +1508,11 @@ function App() {
         } else {
           const related = cases.filter(c => c.description.toLowerCase().includes(q) || c.crime_head.toLowerCase().includes(q)).slice(0, 3);
           if (related.length > 0) {
-            text = `Found ${related.length} matching case(s) for query "${editingText}":\n\n` + related.map(c => `- **${c.fir_number}** (${c.crime_head}): ${c.description}`).join("\n");
+            text = `Found ${related.length} matching case(s) for query "${textToSave}":\n\n` + related.map(c => `- **${c.fir_number}** (${c.crime_head}): ${c.description}`).join("\n");
             sources = related.map(c => c.fir_number);
             evidenceTrail = [`Text pattern match against database descriptions.`];
           } else {
-            text = `No matching case records, suspects, phone numbers, or vehicle plates found for "${editingText}" in the KSP Intelligence Database.`;
+            text = `No matching case records, suspects, phone numbers, or vehicle plates found for "${textToSave}" in the KSP Intelligence Database.`;
           }
         }
 
@@ -2174,13 +2221,24 @@ function App() {
             <div className={`lg:col-span-1 flex flex-col border ${theme.border} ${theme.cardBg} rounded-2xl overflow-hidden h-full shadow-lg p-4 gap-4 ${theme.textMain}`}>
               <div className="flex items-center justify-between border-b pb-3 border-zinc-800/10 dark:border-white/10">
                 <span className="text-xs font-bold font-mono uppercase tracking-wider">Sessions</span>
-                <button
-                  onClick={handleNewSession}
-                  className={`flex items-center gap-1 text-[10px] px-2 py-1 font-bold uppercase tracking-wider rounded ${theme.accentBg} ${theme.accentText} cursor-pointer`}
-                  title="Start New Chat Session"
-                >
-                  + New
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteSession(currentSessionId)}
+                    className="flex items-center gap-1 text-[10px] px-2 py-1 font-bold uppercase tracking-wider rounded border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-all cursor-pointer"
+                    title="Delete Active Chat Session"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Delete</span>
+                  </button>
+                  <button
+                    onClick={handleNewSession}
+                    className={`flex items-center gap-1 text-[10px] px-2 py-1 font-bold uppercase tracking-wider rounded ${theme.accentBg} ${theme.accentText} cursor-pointer`}
+                    title="Start New Chat Session"
+                  >
+                    + New
+                  </button>
+                </div>
               </div>
               <div className="flex-1 overflow-y-auto space-y-2">
                 {sessions.map((s) => (
@@ -2190,6 +2248,7 @@ function App() {
                       setCurrentSessionId(s.id);
                       setEditingIndex(null);
                       setEditingText("");
+                      setChatInput("");
                     }}
                     className={`flex items-center justify-between p-3 rounded-xl border text-xs font-semibold cursor-pointer transition-all hover:bg-slate-500/10 ${currentSessionId === s.id
                       ? `${theme.border} bg-slate-500/10 shadow-sm border-blue-500/30`
@@ -2197,15 +2256,15 @@ function App() {
                       }`}
                   >
                     <span className="truncate pr-2 font-mono">{s.name}</span>
-                    {sessions.length > 1 && (
-                      <button
-                        onClick={(e) => handleDeleteSession(s.id, e)}
-                        className="text-rose-500 hover:text-rose-450 font-bold px-1.5 py-0.5 rounded hover:bg-rose-500/10 cursor-pointer"
-                        title="Delete session"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteSession(s.id, e)}
+                      className="flex items-center gap-1 text-rose-500 hover:text-rose-400 font-bold p-1 px-1.5 rounded hover:bg-rose-500/10 cursor-pointer transition-colors border border-rose-500/20 bg-rose-500/5"
+                      title="Delete session"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span className="text-[10px] uppercase font-mono">Delete</span>
+                    </button>
                   </div>
                 ))}
               </div>
@@ -2217,63 +2276,88 @@ function App() {
               <div className={`p-4 bg-transparent border-b ${theme.border} flex items-center justify-between`}>
                 <div className="flex items-center gap-2.5">
                   <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full glow-indicator-green"></div>
-                  <span className="text-xs font-mono uppercase tracking-wider">Session Console</span>
+                  <span className="text-xs font-mono uppercase tracking-wider font-bold">Session Console</span>
                 </div>
-                {(activeSuspect || selectedCase) && (
-                  <div className={`flex items-center gap-1.5 text-[9px] uppercase tracking-wider font-semibold font-mono px-2 py-0.5 rounded border ${theme.id === 'dark' ? 'bg-[#E8F0FE]/10 text-[#E8F0FE] border-[#E8F0FE]/20' : 'bg-[#1A182F]/10 text-[#1A182F] border-[#1A182F]/20'}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${theme.id === 'dark' ? 'bg-[#E8F0FE]' : 'bg-[#1A182F]'}`}></span>
-                    Focus: {activeSuspect || selectedCase?.fir_number}
-                  </div>
-                )}
+                <div className="flex items-center gap-2.5">
+                  {(activeSuspect || selectedCase) && (
+                    <div className={`flex items-center gap-1.5 text-[9px] uppercase tracking-wider font-semibold font-mono px-2 py-0.5 rounded border ${theme.id === 'dark' ? 'bg-[#E8F0FE]/10 text-[#E8F0FE] border-[#E8F0FE]/20' : 'bg-[#1A182F]/10 text-[#1A182F] border-[#1A182F]/20'}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${theme.id === 'dark' ? 'bg-[#E8F0FE]' : 'bg-[#1A182F]'}`}></span>
+                      Focus: {activeSuspect || selectedCase?.fir_number}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleClearCurrentSession}
+                    className="flex items-center gap-1 text-[10px] px-2 py-1 font-bold uppercase tracking-wider rounded border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-all cursor-pointer"
+                    title="Delete / Clear Chat"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    <span>Clear Chat</span>
+                  </button>
+                </div>
               </div>
 
               {/* Message History */}
               <div className="flex-1 p-6 overflow-y-auto space-y-4 font-mono text-xs">
                 {messages.map((m, idx) => (
                   <div key={idx} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[80%] rounded-2xl p-4 relative group transition-all duration-200 ${m.role === "user" ? theme.chatUser + ' rounded-tr-sm' : theme.chatAssistant + ' rounded-tl-sm'
+                    <div className={`max-w-[80%] rounded-2xl p-4 relative transition-all duration-200 ${m.role === "user" ? theme.chatUser + ' rounded-tr-sm' : theme.chatAssistant + ' rounded-tl-sm'
                       } shadow-sm hover:shadow-md`}>
 
-                      {m.role === "user" && editingIndex !== idx && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingIndex(idx);
-                            setEditingText(m.text);
-                          }}
-                          className={`absolute top-2.5 right-9 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer ${theme.id === "dark"
-                            ? "hover:bg-slate-800/80 text-slate-400 hover:text-slate-100"
-                            : "hover:bg-slate-100 text-slate-500 hover:text-slate-900"
-                            }`}
-                          title="Edit message"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-
                       {editingIndex !== idx && (
-                        <button
-                          type="button"
-                          onClick={() => handleCopyMessage(m.text, idx)}
-                          className={`absolute top-2.5 right-2.5 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer ${theme.id === "dark"
-                            ? "hover:bg-slate-800/80 text-slate-400 hover:text-slate-100"
-                            : "hover:bg-slate-100 text-slate-500 hover:text-slate-900"
-                            }`}
-                          title="Copy message"
-                        >
-                          {copiedIndex === idx ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-500" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5" />
+                        <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 opacity-100 transition-opacity duration-200 z-10">
+                          {m.role === "user" && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingIndex(idx);
+                                setEditingText(m.text);
+                                setChatInput(m.text);
+                              }}
+                              className="flex items-center gap-1 px-2 py-1 rounded-lg cursor-pointer bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 border border-blue-400/30 text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm"
+                              title="Edit prompt message"
+                            >
+                              <Edit className="w-3 h-3 text-blue-300" />
+                              <span>Edit</span>
+                            </button>
                           )}
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyMessage(m.text, idx)}
+                            className={`p-1.5 rounded-lg cursor-pointer ${theme.id === "dark"
+                              ? "hover:bg-slate-800/80 text-slate-400 hover:text-slate-100 bg-slate-900/60 border border-slate-700/50"
+                              : "hover:bg-slate-100 text-slate-500 hover:text-slate-900 bg-slate-100/80 border border-slate-200"
+                              }`}
+                            title="Copy message"
+                          >
+                            {copiedIndex === idx ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-500" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteMessage(idx)}
+                            className={`p-1.5 rounded-lg cursor-pointer ${theme.id === "dark"
+                              ? "hover:bg-rose-950/80 text-rose-400 hover:text-rose-200 bg-rose-950/40 border border-rose-800/40"
+                              : "hover:bg-rose-100 text-rose-500 hover:text-rose-700 bg-rose-50 border border-rose-200"
+                              }`}
+                            title="Delete message"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       )}
 
                       {editingIndex === idx ? (
                         <div className="flex flex-col gap-2.5 min-w-[200px] sm:min-w-[300px] pt-2">
                           <textarea
                             value={editingText}
-                            onChange={(e) => setEditingText(e.target.value)}
+                            onChange={(e) => {
+                              setEditingText(e.target.value);
+                              setChatInput(e.target.value);
+                            }}
                             className={`w-full bg-transparent border ${theme.border} rounded-xl p-3 text-xs focus:outline-none focus:ring-1 focus:ring-zinc-500 ${theme.textMain} placeholder-slate-500`}
                             rows={3}
                           />
@@ -2283,6 +2367,7 @@ function App() {
                               onClick={() => {
                                 setEditingIndex(null);
                                 setEditingText("");
+                                setChatInput("");
                               }}
                               className="px-2.5 py-1 text-[10px] uppercase font-bold tracking-wider rounded border border-zinc-700 text-zinc-400 hover:text-zinc-200 transition-colors cursor-pointer"
                             >
@@ -2290,7 +2375,7 @@ function App() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleSaveEdit(idx)}
+                              onClick={() => handleSaveEdit(idx, editingText)}
                               className="px-2.5 py-1 text-[10px] uppercase font-bold tracking-wider rounded bg-zinc-100 text-zinc-950 hover:bg-white transition-colors cursor-pointer"
                             >
                               Save
@@ -2298,7 +2383,7 @@ function App() {
                           </div>
                         </div>
                       ) : (
-                        <p className={`leading-relaxed whitespace-pre-wrap ${m.role === 'user' ? 'pr-14' : 'pr-6'}`}>{renderMessageText(m.text)}</p>
+                        <p className={`leading-relaxed whitespace-pre-wrap ${m.role === 'user' ? 'pr-20' : 'pr-14'}`}>{renderMessageText(m.text)}</p>
                       )}
 
                       {m.role === "assistant" && (
@@ -2399,64 +2484,129 @@ function App() {
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Chat Input */}
-              <form onSubmit={submitChat} className={`p-4 border-t ${theme.border} flex gap-3 bg-slate-500/5`}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.onchange = (e: any) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        alert(`File selected: ${file.name} (Mock upload successful)`);
-                      }
-                    };
-                    input.click();
-                  }}
-                  className={`p-3 rounded-xl border ${theme.border} text-slate-400 hover:text-slate-200 hover:bg-slate-500/10 transition-all cursor-pointer`}
-                  title="Attach file"
-                >
-                  <Paperclip className="w-4 h-4" />
-                </button>
-
-                <textarea
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      submitChat();
-                    }
-                  }}
-                  placeholder={
-                    language === "kn" ? "ಬೆಂಗಳೂರಿನಲ್ಲಿ ಇತ್ತೀಚಿನ ಕಳ್ಳತನ ಪ್ರಕರಣಗಳನ್ನು ತೋರಿಸಿ..." :
-                      language === "hi" ? "बेंगलुरु में चोरी के मामले दिखाएं..." :
-                        language === "te" ? "బెంగళూరులో దొంగతనం కేసులు చూపించు..." :
-                          language === "ta" ? "பெங்களூரில் திருட்டு வழக்குகளைக் காட்டு..." :
-                            "Show burglary cases in Bengaluru..."
+              {/* Chat Input / Messaging Area */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (editingIndex !== null) {
+                    handleSaveEdit(editingIndex, chatInput || editingText);
+                  } else {
+                    submitChat(e);
                   }
-                  rows={1}
-                  className={`flex-1 bg-transparent border ${theme.border} rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-zinc-500 ${theme.textMain} placeholder-slate-500 resize-none overflow-y-auto max-h-24 min-h-[38px]`}
-                />
+                }}
+                className={`p-4 border-t ${theme.border} flex flex-col gap-2 bg-slate-500/5`}
+              >
+                {editingIndex !== null && (
+                  <div className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[11px] font-mono">
+                    <div className="flex items-center gap-1.5">
+                      <Edit className="w-3.5 h-3.5 text-blue-400" />
+                      <span className="font-semibold">Editing Message #{editingIndex + 1}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingIndex(null);
+                        setEditingText("");
+                        setChatInput("");
+                      }}
+                      className="text-xs hover:text-zinc-200 cursor-pointer font-bold px-2 py-0.5 rounded hover:bg-blue-500/20 transition-colors"
+                    >
+                      ✕ Cancel
+                    </button>
+                  </div>
+                )}
 
+                <div className="flex gap-2.5 items-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const input = document.createElement("input");
+                      input.type = "file";
+                      input.onchange = (e: any) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          alert(`File selected: ${file.name} (Mock upload successful)`);
+                        }
+                      };
+                      input.click();
+                    }}
+                    className={`p-2.5 rounded-xl border ${theme.border} text-slate-400 hover:text-slate-200 hover:bg-slate-500/10 transition-all cursor-pointer`}
+                    title="Attach file"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </button>
 
+                  {editingIndex === null && messages.some(m => m.role === "user") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        let lastUserIdx = -1;
+                        for (let i = messages.length - 1; i >= 0; i--) {
+                          if (messages[i].role === "user") {
+                            lastUserIdx = i;
+                            break;
+                          }
+                        }
+                        if (lastUserIdx !== -1) {
+                          setEditingIndex(lastUserIdx);
+                          setEditingText(messages[lastUserIdx].text);
+                          setChatInput(messages[lastUserIdx].text);
+                        }
+                      }}
+                      className={`p-2.5 rounded-xl border ${theme.border} text-slate-400 hover:text-blue-400 hover:bg-slate-500/10 transition-all cursor-pointer flex items-center gap-1`}
+                      title="Edit last message in prompt box"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                  )}
 
-                <button
-                  type="submit"
-                  disabled={loadingResponse || !chatInput.trim()}
-                  className={`px-5 py-3 rounded-xl uppercase font-bold tracking-wider text-xs flex items-center gap-1.5 cursor-pointer transition-all duration-300 shadow-md ${
-                    loadingResponse || !chatInput.trim()
-                      ? (theme.id === "dark"
-                          ? "bg-[#E8F0FE]/10 border border-[#E8F0FE]/15 text-[#E8F0FE]/40 cursor-not-allowed shadow-none"
-                          : "bg-[#1A182F]/10 border border-[#1A182F]/10 text-[#1A182F]/40 cursor-not-allowed shadow-none")
-                      : (theme.id === "dark"
-                          ? "bg-[#E8F0FE] text-[#090C10] hover:bg-white hover:shadow-[0_0_20px_rgba(232,240,254,0.7)] shadow-[0_0_12px_rgba(232,240,254,0.4)] scale-102 font-bold"
-                          : "bg-[#1A182F] text-white hover:bg-black hover:shadow-[0_4px_15px_rgba(26,24,47,0.3)] scale-102")
-                  }`}
-                >
-                  Send
-                </button>
+                  <textarea
+                    value={chatInput}
+                    onChange={(e) => {
+                      setChatInput(e.target.value);
+                      if (editingIndex !== null) {
+                        setEditingText(e.target.value);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        if (editingIndex !== null) {
+                          handleSaveEdit(editingIndex, chatInput || editingText);
+                        } else {
+                          submitChat();
+                        }
+                      }
+                    }}
+                    placeholder={
+                      editingIndex !== null
+                        ? "Edit message and press Enter or click Save & Send..."
+                        : language === "kn" ? "ಬೆಂಗಳೂರಿನಲ್ಲಿ ಇತ್ತೀಚಿನ ಕಳ್ಳತನ ಪ್ರಕರಣಗಳನ್ನು ತೋರಿಸಿ..." :
+                          language === "hi" ? "बेंगलुरु में चोरी के मामले दिखाएं..." :
+                            language === "te" ? "బెంగళೂರುలో దೊಂಗತனம் కేసులు చూపించు..." :
+                              language === "ta" ? "பெங்களூரில் திருட்டு வழக்குகளைக் காட்டு..." :
+                                "Show burglary cases in Bengaluru..."
+                    }
+                    rows={1}
+                    className={`flex-1 bg-transparent border ${theme.border} rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:ring-1 focus:ring-zinc-500 ${theme.textMain} placeholder-slate-500 resize-none overflow-y-auto max-h-24 min-h-[38px]`}
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={loadingResponse || !chatInput.trim()}
+                    className={`px-5 py-3 rounded-xl uppercase font-bold tracking-wider text-xs flex items-center gap-1.5 cursor-pointer transition-all duration-300 shadow-md ${
+                      loadingResponse || !chatInput.trim()
+                        ? (theme.id === "dark"
+                            ? "bg-[#E8F0FE]/10 border border-[#E8F0FE]/15 text-[#E8F0FE]/40 cursor-not-allowed shadow-none"
+                            : "bg-[#1A182F]/10 border border-[#1A182F]/10 text-[#1A182F]/40 cursor-not-allowed shadow-none")
+                        : (theme.id === "dark"
+                            ? "bg-[#E8F0FE] text-[#090C10] hover:bg-white hover:shadow-[0_0_20px_rgba(232,240,254,0.7)] shadow-[0_0_12px_rgba(232,240,254,0.4)] scale-102 font-bold"
+                            : "bg-[#1A182F] text-white hover:bg-black hover:shadow-[0_4px_15px_rgba(26,24,47,0.3)] scale-102")
+                    }`}
+                  >
+                    {editingIndex !== null ? "Save & Send" : "Send"}
+                  </button>
+                </div>
               </form>
             </div>
 
