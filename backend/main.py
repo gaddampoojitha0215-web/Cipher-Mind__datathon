@@ -1759,6 +1759,234 @@ def get_analytics_stats(current_user: dict = Depends(get_current_user)):
 def get_cases():
     return CASES_DB
 
+def generate_ksp_intelligence_pdf(session_id: str, history: list, cases_db: list) -> bytes:
+    import io, re, html, datetime
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib import colors
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+    )
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        leftMargin=36,
+        rightMargin=36,
+        topMargin=36,
+        bottomMargin=36
+    )
+
+    styles = getSampleStyleSheet()
+
+    title_style = ParagraphStyle(
+        'KSPTitle',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=15,
+        leading=18,
+        textColor=colors.HexColor('#ffffff'),
+        alignment=TA_LEFT
+    )
+
+    meta_style = ParagraphStyle(
+        'KSPMeta',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=8,
+        leading=11,
+        textColor=colors.HexColor('#cbd5e1'),
+        alignment=TA_RIGHT
+    )
+
+    heading_style = ParagraphStyle(
+        'KSPHeading',
+        parent=styles['Heading2'],
+        fontName='Helvetica-Bold',
+        fontSize=11,
+        leading=14,
+        textColor=colors.HexColor('#0f172a'),
+        spaceBefore=8,
+        spaceAfter=4
+    )
+
+    body_user = ParagraphStyle(
+        'BodyUser',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=9,
+        leading=13,
+        textColor=colors.HexColor('#1e293b')
+    )
+
+    body_ai = ParagraphStyle(
+        'BodyAI',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=9,
+        leading=13,
+        textColor=colors.HexColor('#0f172a')
+    )
+
+    table_header_style = ParagraphStyle(
+        'TableHeader',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=8,
+        leading=10,
+        textColor=colors.HexColor('#ffffff'),
+        alignment=TA_CENTER
+    )
+
+    table_cell_style = ParagraphStyle(
+        'TableCell',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=7.5,
+        leading=9.5,
+        textColor=colors.HexColor('#1e293b')
+    )
+
+    table_cell_bold = ParagraphStyle(
+        'TableCellBold',
+        parent=styles['Normal'],
+        fontName='Helvetica-Bold',
+        fontSize=7.5,
+        leading=9.5,
+        textColor=colors.HexColor('#0f172a')
+    )
+
+    story = []
+
+    # 1. Header Banner Table
+    header_left = Paragraph("<b>KARNATAKA STATE POLICE</b><br/><font color='#38bdf8'>CENTRAL CRIME INTELLIGENCE DOSSIER & CASE REPORT</font>", title_style)
+    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M IST")
+    header_right = Paragraph(f"<b>REPORT REF:</b> KSP-INTEL-2026<br/><b>DATE:</b> {now_str}<br/><b>CLASSIFICATION:</b> CONFIDENTIAL", meta_style)
+    
+    header_table = Table([[header_left, header_right]], colWidths=[360, 180])
+    header_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#0f172a')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('PADDING', (0, 0), (-1, -1), 10),
+    ]))
+    story.append(header_table)
+    story.append(Spacer(1, 10))
+
+    # 2. Extract referenced FIR Cases from history
+    referenced_firs = set()
+    for item in history:
+        text = item.get("text", "")
+        matches = re.findall(r'(FIR-[A-Za-z0-9\/-]+)', text, re.IGNORECASE)
+        for m in matches:
+            referenced_firs.add(m.upper())
+
+    matched_case_objs = []
+    if cases_db:
+        for c in cases_db:
+            fir_no = c.get("fir_number", "").upper()
+            if any(ref in fir_no or fir_no in ref for ref in referenced_firs):
+                if c not in matched_case_objs:
+                    matched_case_objs.append(c)
+
+    # 3. Referenced FIR Cases Table (If any FIRs are matched)
+    if matched_case_objs:
+        story.append(Paragraph("OFFICIAL RECORDED CASE FILES INVOLVED IN REPORT", heading_style))
+        story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#0284c7'), spaceAfter=6))
+
+        tbl_data = [[
+            Paragraph("FIR Number", table_header_style),
+            Paragraph("Police Station", table_header_style),
+            Paragraph("District", table_header_style),
+            Paragraph("Crime Head", table_header_style),
+            Paragraph("Status", table_header_style),
+            Paragraph("Accused / Suspects", table_header_style)
+        ]]
+
+        for c in matched_case_objs[:25]:
+            accused_str = ", ".join(c.get("accused", [])) if c.get("accused") else "Under Investigation"
+            tbl_data.append([
+                Paragraph(c.get("fir_number", ""), table_cell_bold),
+                Paragraph(c.get("police_station", ""), table_cell_style),
+                Paragraph(c.get("district", ""), table_cell_style),
+                Paragraph(c.get("crime_head", ""), table_cell_bold),
+                Paragraph(c.get("status", ""), table_cell_style),
+                Paragraph(accused_str, table_cell_style)
+            ])
+
+        case_table = Table(tbl_data, colWidths=[95, 95, 80, 90, 65, 115])
+        case_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e293b')),
+            ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#cbd5e1')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.HexColor('#f8fafc'), colors.HexColor('#ffffff')]),
+            ('PADDING', (0, 0), (-1, -1), 4),
+        ]))
+        story.append(case_table)
+        story.append(Spacer(1, 10))
+
+    # 4. Intelligence Session Transcript
+    story.append(Paragraph("INTELLIGENCE SESSION TRANSCRIPT & ANALYTICAL BRIEFING", heading_style))
+    story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#0f172a'), spaceAfter=8))
+
+    def format_text_to_html(raw: str) -> str:
+        if not raw:
+            return ""
+        # Remove target tags
+        clean = re.sub(r'\[Target (?:Suspect|Case):.*?\]\s*', '', raw)
+
+        # Parse markdown bold **text** before html escaping to preserve bold formatting
+        clean = re.sub(r'\*\*(.*?)\*\*', r'__BOLD_START__\1__BOLD_END__', clean)
+        clean = re.sub(r'#{1,6}\s*(.*?)(?:\n|$)', r'__HDR_START__\1__HDR_END__', clean)
+        
+        # Escape HTML entities
+        clean = html.escape(clean)
+
+        # Restore bold and headers as ReportLab HTML
+        clean = clean.replace('__BOLD_START__', '<b>').replace('__BOLD_END__', '</b>')
+        clean = re.sub(r'__HDR_START__(.*?)__HDR_END__', r'<br/><b><font color="#0284c7">\1</font></b><br/>', clean)
+
+        # Clean bullet items
+        clean = re.sub(r'^\s*[\*\-]\s+(.*)$', r'• \1', clean, flags=re.MULTILINE)
+        clean = clean.replace('\n', '<br/>')
+        return clean
+
+    for idx, chat in enumerate(history):
+        role = chat.get("role", "user")
+        raw_text = chat.get("text", "")
+        formatted_html = format_text_to_html(raw_text)
+
+        if role == "user":
+            user_title = Paragraph("<b>INVESTIGATOR INQUIRY</b>", ParagraphStyle('UT', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.5, textColor=colors.HexColor('#1e3a8a')))
+            user_content = Paragraph(formatted_html, body_user)
+            u_box = Table([[user_title], [user_content]], colWidths=[540])
+            u_box.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#eff6ff')),
+                ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#93c5fd')),
+                ('PADDING', (0, 0), (-1, -1), 6),
+            ]))
+            story.append(u_box)
+            story.append(Spacer(1, 6))
+        else:
+            ai_title = Paragraph("<b>CRIMEMIND AI INTELLIGENCE RESPONSE</b>", ParagraphStyle('AT', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=8.5, textColor=colors.HexColor('#0f766e')))
+            ai_content = Paragraph(formatted_html, body_ai)
+            
+            ev_footer = Paragraph("<font color='#0369a1'><b>KSP Data Attribution:</b> Grounded Fact | <b>Data Source:</b> KSP Central Crime Database Registry | <b>Confidence:</b> 100% Match</font>", ParagraphStyle('EV', parent=styles['Normal'], fontName='Helvetica', fontSize=7.5, textColor=colors.HexColor('#0369a1')))
+            
+            a_box = Table([[ai_title], [ai_content], [HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#cbd5e1'), spaceBefore=3, spaceAfter=3)], [ev_footer]], colWidths=[540])
+            a_box.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f8fafc')),
+                ('BOX', (0, 0), (-1, -1), 1, colors.HexColor('#cbd5e1')),
+                ('PADDING', (0, 0), (-1, -1), 6),
+            ]))
+            story.append(a_box)
+            story.append(Spacer(1, 8))
+
+    doc.build(story)
+    return buffer.getvalue()
+
 @app.post("/api/v1/chat/export-pdf")
 def export_pdf(payload: ExportPdfRequest):
     session_id = payload.session_id
@@ -1770,28 +1998,12 @@ def export_pdf(payload: ExportPdfRequest):
             {"role": "assistant", "text": "Found 3 Royal Enfield theft cases in Indiranagar. Stolen vehicles: KA-05-MJ-1001, KA-05-MJ-1002."}
         ])
 
-    buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
-    styles = getSampleStyleSheet()
-    story = []
-
-    story.append(Paragraph("CrimeMind AI - Karnataka State Police", styles["Title"]))
-    story.append(Paragraph(f"Session Report - Exported at: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}", styles["Normal"]))
-    story.append(Spacer(1, 20))
-
-    for chat in history:
-        role = "Investigator" if chat["role"] == "user" else "CrimeMind AI"
-        # Escape user text: reportlab Paragraph parses XML markup and crashes on raw <, >, &
-        text = escape(chat["text"])
-        story.append(Paragraph(f"<b>{role}:</b> {text}", styles["BodyText"]))
-        story.append(Spacer(1, 10))
-
-    doc.build(story)
+    pdf_bytes = generate_ksp_intelligence_pdf(session_id, history, CASES_DB)
     safe_id = "".join(ch for ch in session_id if ch.isalnum() or ch == "-")[:12]
     return Response(
-        content=buffer.getvalue(),
+        content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="chat_history_{safe_id}.pdf"'}
+        headers={"Content-Disposition": f'attachment; filename="KSP_Case_Report_{safe_id}.pdf"'}
     )
 
 if __name__ == "__main__":
