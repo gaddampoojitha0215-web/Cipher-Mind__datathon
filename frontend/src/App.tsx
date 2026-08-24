@@ -14,6 +14,11 @@ import {
 import CrimeMap from "./CrimeMap";
 import logoImg from "./assets/logo.png";
 
+import { Sidebar, type TabType } from "./components/Sidebar";
+import { Header } from "./components/Header";
+import { AlertsIntelligence } from "./components/AlertsIntelligence";
+
+
 // Interfaces
 interface Case {
   id: string;
@@ -629,7 +634,7 @@ function App() {
       if (matchCase) {
         setSelectedCase(matchCase);
         setGraphCases([matchCase]);
-        setActiveTab("map");
+        setActiveTab("ksp-map");
         setTimeout(() => {
           if (mapControlRef.current) {
             mapControlRef.current.focusCase(matchCase.fir_number);
@@ -660,7 +665,7 @@ function App() {
 
     if (foundDistrict) {
       setSelectedCityFilter(foundDistrict);
-      setActiveTab("map");
+      setActiveTab("ksp-map");
       setTimeout(() => {
         if (mapControlRef.current) {
           mapControlRef.current.focusDistrict(foundDistrict);
@@ -672,7 +677,7 @@ function App() {
 
   // Auto scroll to bottom of chat area when messages, loadingResponse, or activeTab changes
   useEffect(() => {
-    if (activeTab === "chat") {
+    if (activeTab === "ai-assistant") {
       // Small timeout to ensure the DOM is fully rendered before scrolling
       const timer = setTimeout(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -811,7 +816,7 @@ function App() {
 
   // Re-run D3 simulation whenever graph cases or theme changes (NOT on node click)
   useEffect(() => {
-    if (!svgRef.current || activeTab !== "network") return;
+    if (!svgRef.current || activeTab !== "network-map") return;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -1174,7 +1179,7 @@ function App() {
 
   // ---- Entity filter highlight effect ----
   useEffect(() => {
-    if (!svgRef.current || activeTab !== "network") return;
+    if (!svgRef.current || activeTab !== "network-map") return;
     const svg = d3.select(svgRef.current);
     const allNodes = svg.selectAll(".graph-node");
     const allLinks = svg.selectAll(".graph-link");
@@ -1737,7 +1742,7 @@ function App() {
     if (matched) {
       setSelectedCase(matched);
     }
-    setActiveTab("map");
+    setActiveTab("ksp-map");
     if (mapControlRef.current) {
       mapControlRef.current.focusCase(firNum);
     }
@@ -1749,7 +1754,7 @@ function App() {
       loadCaseGraph(matched);
     }
     setGraphSearchQuery(firNum);
-    setActiveTab("network");
+    setActiveTab("network-map");
   };
 
   const renderMessageText = (text: string) => {
@@ -1828,105 +1833,22 @@ function App() {
   }
 
   return (
-    <div className={`h-screen overflow-hidden ${theme.bodyBg} ${theme.textMain} transition-colors duration-300 flex flex-col font-sans selection:${theme.id === "dark" ? "bg-purple-500 text-white" : "bg-purple-600 text-white"}`}>
-      {/* Header */}
-      <header className={`border-b ${theme.border} bg-white/80 dark:bg-black/80 px-6 py-4 flex items-center justify-between backdrop-blur-md sticky top-0 z-50 ${theme.textMain}`}>
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-xl bg-gradient-to-br ${theme.id === "dark" ? "from-purple-500/10 to-fuchsia-500/20 border border-purple-500/30" : "from-purple-100 to-fuchsia-100 border border-purple-200/60"}`}>
-            <img src={logoImg} className="w-5 h-5 object-contain" alt="CrimeMind Logo" />
-          </div>
-          <div>
-            <h1 className="text-sm font-bold tracking-tight font-sans">
-              CrimeMind AI
-            </h1>
-            <p className={`text-[9px] ${theme.textMuted} font-mono uppercase tracking-widest`}>KSP Intelligence Command Console</p>
-          </div>
-        </div>
+    <div className={`h-screen overflow-hidden ${theme.bodyBg} ${theme.textMain} transition-colors duration-300 flex flex-row font-sans selection:${theme.id === "dark" ? "bg-purple-500 text-white" : "bg-purple-600 text-white"}`}>
+      
+      <Sidebar activeTab={activeTab as TabType} onSelectTab={(t) => setActiveTab(t)} currentTheme={theme} />
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+        <Header 
+          currentTheme={theme}
+          onToggleTheme={() => setTheme(theme.id === "dark" ? THEMES[1] : THEMES[0])}
+          language={language}
+          onChangeLanguage={(l) => setLanguage(l)}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onSearchSubmit={(e) => { e.preventDefault(); }}
+        />
 
-        {/* Minimal Underlined Navigation Tabs */}
-        <nav className={`flex gap-1.5 bg-slate-500/10 dark:bg-white/5 p-1 rounded-full border ${theme.border}`}>
-          {(["dashboard", "chat", "network", "cases", "map"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-1.5 text-xs font-semibold uppercase tracking-wider transition-all rounded-full cursor-pointer relative ${activeTab === tab
-                ? `${theme.accentText} ${theme.accentBg}`
-                : `${theme.textMuted} hover:${theme.textMain}`
-                }`}
-            >
-              {tab === "chat" ? "AI Assistant" : tab === "network" ? "Link Analysis" : tab === "map" ? "KSP Intelligence Map" : tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
-        </nav>
 
-        {/* Actions & Theme Picker */}
-        <div className="flex items-center gap-6">
-          {/* Custom Language Selector Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border ${theme.border} bg-slate-500/5 dark:bg-white/5 hover:bg-slate-500/10 dark:hover:bg-white/10 transition-all text-xs font-medium cursor-pointer ${theme.textMain}`}
-              title="Select Language"
-            >
-              <Globe className="w-3.5 h-3.5 text-slate-400" />
-              <span>{languagesList.find(l => l.code === language)?.native || "EN"}</span>
-              <ChevronDown className="w-3 h-3 text-slate-400 font-bold" />
-            </button>
-
-            {isLangDropdownOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setIsLangDropdownOpen(false)}
-                />
-                <div className={`absolute right-0 mt-2 w-36 rounded-xl border ${theme.border} ${theme.id === 'dark' ? 'bg-black/95' : 'bg-white/95'} backdrop-blur-md shadow-xl py-1.5 z-20`}>
-                  {languagesList.map((lang) => (
-                    <button
-                      key={lang.code}
-                      onClick={() => {
-                        setLanguage(lang.code);
-                        setIsLangDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-2 text-xs transition-colors flex items-center justify-between cursor-pointer ${language === lang.code
-                        ? (theme.id === "dark" ? "bg-zinc-800 text-zinc-100 font-semibold" : "bg-zinc-100 text-zinc-900 font-semibold")
-                        : (theme.id === "dark" ? "text-zinc-400 hover:bg-zinc-850 hover:text-zinc-200" : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900")
-                        }`}
-                    >
-                      <span>{lang.label}</span>
-                      <span className="text-[10px] text-zinc-500 font-normal">{lang.native}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Theme, Notification, Settings, and User Info */}
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setTheme(theme.id === "dark" ? THEMES[1] : THEMES[0])}
-              className={`p-2 rounded-xl border ${theme.border} bg-slate-500/5 dark:bg-white/5 hover:bg-slate-500/10 dark:hover:bg-white/10 transition-all cursor-pointer flex items-center justify-center ${theme.textMain}`}
-              title="Switch Theme"
-            >
-              {theme.id === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-500" />}
-            </button>
-
-            {/* Admin Profile */}
-            <div className={`flex items-center gap-3 border-l ${theme.border} pl-4`}>
-              <div className="text-right">
-                <div className={`text-xs font-bold ${theme.textMain}`}>KSP Admin</div>
-              </div>
-
-              {/* KSP Emblem Logo */}
-              <div className={`w-8 h-8 rounded-full overflow-hidden border ${theme.border} bg-purple-950/10 dark:bg-white/5 flex items-center justify-center p-1`}>
-                <img src={logoImg} className="w-full h-full object-contain" alt="KSP Emblem" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className={`flex-1 min-h-0 w-full relative ${activeTab === "network" || activeTab === "map" ? "overflow-hidden" : "overflow-auto p-6 max-w-7xl mx-auto w-full"}`}>
+      <main className={`flex-1 min-h-0 w-full relative ${activeTab === "network-map" || activeTab === "ksp-map" ? "overflow-hidden" : "overflow-auto p-6 max-w-7xl mx-auto w-full"}`}>
         {/* TAB 1: DASHBOARD */}
         {activeTab === "dashboard" && (
           <div className="space-y-6 scanlines relative">
@@ -2140,7 +2062,7 @@ function App() {
                             if (data && data.name) {
                               const name = data.name.replace(" District", "").replace(" City", "").trim();
                               setSelectedCityFilter(name);
-                              setActiveTab("map");
+                              setActiveTab("ksp-map");
                             }
                           }}
                           className="cursor-pointer"
@@ -2215,7 +2137,7 @@ function App() {
         )}
 
         {/* TAB 2: AI ASSISTANT CHAT */}
-        {activeTab === "chat" && (
+        {activeTab === "ai-assistant" && (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[72vh]">
             {/* Sidebar: Chat History */}
             <div className={`lg:col-span-1 flex flex-col border ${theme.border} ${theme.cardBg} rounded-2xl overflow-hidden h-full shadow-lg p-4 gap-4 ${theme.textMain}`}>
@@ -2648,7 +2570,7 @@ function App() {
         )}
 
         {/* TAB 3: RELATIONSHIP INTELLIGENCE (Google Maps / Figma Infinite Canvas Style) */}
-        {activeTab === "network" && (
+        {activeTab === "network-map" && (
           <div className={`absolute inset-0 w-full h-full overflow-hidden select-none ${theme.id === "dark" ? "bg-[#0B0F17]" : "bg-[#f8fafc]"}`}>
             {/* The Infinite Canvas Graph */}
             <svg
@@ -3020,7 +2942,7 @@ function App() {
                   <button
                     type="button"
                     onClick={() => {
-                      setActiveTab("map");
+                      setActiveTab("ksp-map");
                       setTimeout(() => {
                         if (mapControlRef.current) {
                           if (selectedNode.type === "incident") {
@@ -3168,7 +3090,7 @@ function App() {
                     <div
                       onClick={() => {
                         if (selectedCase.accused && selectedCase.accused.length > 0) {
-                          setActiveTab("network");
+                          setActiveTab("network-map");
                           loadCaseGraph(selectedCase);
                           setGraphSearchQuery(selectedCase.accused[0]);
                         }
@@ -3185,7 +3107,7 @@ function App() {
                     <div
                       onClick={() => {
                         if (selectedCase.phone_numbers && selectedCase.phone_numbers.length > 0) {
-                          setActiveTab("network");
+                          setActiveTab("network-map");
                           loadCaseGraph(selectedCase);
                           setGraphSearchQuery(selectedCase.phone_numbers[0]);
                         }
@@ -3202,7 +3124,7 @@ function App() {
                     <div
                       onClick={() => {
                         if (selectedCase.vehicles && selectedCase.vehicles.length > 0) {
-                          setActiveTab("network");
+                          setActiveTab("network-map");
                           loadCaseGraph(selectedCase);
                           setGraphSearchQuery(selectedCase.vehicles[0]);
                         }
@@ -3219,7 +3141,7 @@ function App() {
                     <div
                       onClick={() => {
                         if (selectedCase.bank_accounts && selectedCase.bank_accounts.length > 0) {
-                          setActiveTab("network");
+                          setActiveTab("network-map");
                           loadCaseGraph(selectedCase);
                           setGraphSearchQuery(selectedCase.bank_accounts[0]);
                         }
@@ -3294,7 +3216,7 @@ function App() {
                   <div className="border-t border-slate-500/10 pt-4 flex gap-3">
                     <button
                       onClick={() => {
-                        setActiveTab("chat");
+                        setActiveTab("ai-assistant");
                         submitChat(undefined, `Show me details and leads for ${selectedCase.fir_number}`);
                       }}
                       className={`bg-gradient-to-r ${theme.id === 'dark' ? 'from-[#E8F0FE] to-[#a9c6f5] hover:from-white hover:to-[#E8F0FE] text-[#090C10] shadow-[0_0_12px_rgba(232,240,254,0.4)] font-bold' : 'from-[#1A182F] to-[#2D2A4A] hover:from-black hover:to-[#1A182F] text-white'} flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-center flex items-center justify-center gap-2 cursor-pointer shadow-sm`}
@@ -3303,7 +3225,7 @@ function App() {
                     </button>
                     <button
                       onClick={() => {
-                        setActiveTab("network");
+                        setActiveTab("network-map");
                         loadCaseGraph(selectedCase);
                         setGraphSearchQuery(selectedCase.fir_number);
                       }}
@@ -3336,7 +3258,7 @@ function App() {
                     </button>
                     <button
                       onClick={() => {
-                        setActiveTab("map");
+                        setActiveTab("ksp-map");
                         setTimeout(() => {
                           if (mapControlRef.current) {
                             mapControlRef.current.focusCase(selectedCase.fir_number);
@@ -3361,7 +3283,7 @@ function App() {
         )}
 
         {/* TAB 5: CRIME INTELLIGENCE MAP */}
-        {activeTab === "map" && (
+        {activeTab === "ksp-map" && (
           <CrimeMap
             theme={theme}
             cases={cases}
@@ -3378,12 +3300,36 @@ function App() {
             mapControlRef={mapControlRef}
           />
         )}
-      </main>
+      
+        {activeTab === "alerts" && (
+          <AlertsIntelligence 
+            cases={cases} 
+            currentTheme={theme} 
+            onSelectCase={(c) => { 
+              setSelectedCase(c); 
+              setActiveTab("cases"); 
+            }}
+            onNavigateToNetwork={(firNum) => {
+              setGraphSearchQuery(firNum);
+              setActiveTab("network-map");
+            }}
+            onNavigateToMap={(firNum) => {
+              setActiveTab("ksp-map");
+              setTimeout(() => {
+                if (mapControlRef.current) {
+                  mapControlRef.current.focusCase(firNum);
+                }
+              }, 200);
+            }}
+          />
+        )}
+</main>
 
       {/* Footer */}
       <footer className={`border-t ${theme.border} py-4 px-6 text-center text-[10px] ${theme.textMuted} font-mono uppercase tracking-widest`}>
         Karnataka State Police • CrimeMind AI Intelligence Console • RESTRICTED
       </footer>
+      </div>{/* flex-1 wrapper */}
     </div>
   );
 }

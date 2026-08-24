@@ -1,5 +1,6 @@
 import React, { memo } from "react";
 import { Search, Globe, ChevronDown, Sun, Moon, Bell, Shield } from "lucide-react";
+import logoImg from "../assets/logo.png";
 import type { Theme } from "../types";
 
 interface HeaderProps {
@@ -35,8 +36,8 @@ export const Header: React.FC<HeaderProps> = memo(({
       <div className="flex items-center justify-between gap-4">
         {/* Left: Logo & KSP Identity */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <Shield className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-fuchsia-700 flex items-center justify-center shadow-lg shadow-purple-500/20">
+            <img src={logoImg} className="w-5 h-5 object-contain filter drop-shadow-md brightness-200" alt="Logo" />
           </div>
           <div>
             <h1 className={`font-bold text-lg leading-tight tracking-wide flex items-center gap-2 ${currentTheme.textMain}`}>
@@ -109,7 +110,7 @@ export const Header: React.FC<HeaderProps> = memo(({
               IG
             </div>
             <div className="hidden lg:block text-left">
-              <p className={`text-xs font-semibold leading-none ${currentTheme.textMain}`}>Inspector Gowda</p>
+              <p className={`text-xs font-semibold leading-none ${currentTheme.textMain}`}>Admin</p>
               <p className={`text-[10px] ${currentTheme.textMuted}`}>KSP-8932</p>
             </div>
           </div>
