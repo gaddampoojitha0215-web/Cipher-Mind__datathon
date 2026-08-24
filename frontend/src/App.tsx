@@ -268,7 +268,7 @@ function App() {
     return Math.min(1.0, score);
   };
 
-  const [activeTab, setActiveTab] = useState<"dashboard" | "chat" | "network" | "cases" | "map" | "settings" | "help">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "ai-assistant" | "cases" | "network-map" | "ksp-map" | "alerts" | "settings" | "help">("dashboard");
   const [language, setLanguage] = useState<"en" | "kn" | "hi" | "te" | "ta">("en");
   const [searchQuery, setSearchQuery] = useState("");
   const [cases, setCases] = useState<Case[]>([]);
@@ -1841,7 +1841,7 @@ function App() {
           currentTheme={theme}
           onToggleTheme={() => setTheme(theme.id === "dark" ? THEMES[1] : THEMES[0])}
           language={language}
-          onChangeLanguage={(l) => setLanguage(l)}
+          onChangeLanguage={(l) => setLanguage(l as any)}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onSearchSubmit={(e) => { 

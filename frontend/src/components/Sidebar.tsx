@@ -23,7 +23,8 @@ export type TabType =
   | "network-map" 
   | "ksp-map" 
   | "alerts"
-  | "settings";
+  | "settings"
+  | "help";
 
 interface SidebarProps {
   activeTab: TabType;

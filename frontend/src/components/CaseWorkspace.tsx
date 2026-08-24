@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Search, Filter, FileText, Phone, MapPin, Calendar, Briefcase, ChevronRight, X } from "lucide-react";
 
-export const CaseWorkspace = ({ cases, currentTheme, selectedCase, onSelectCase }: any) => {
+export const CaseWorkspace = ({ cases, currentTheme, selectedCase, onSelectCase, onNavigateToNetwork, onNavigateToMap }: any) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
