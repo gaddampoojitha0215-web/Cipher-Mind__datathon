@@ -22,7 +22,8 @@ export type TabType =
   | "cases" 
   | "network-map" 
   | "ksp-map" 
-  | "alerts";
+  | "alerts"
+  | "settings";
 
 interface SidebarProps {
   activeTab: TabType;
@@ -97,9 +98,8 @@ export const Sidebar: React.FC<SidebarProps> = memo(({ activeTab, onSelectTab, c
   ];
 
   const bottomNavigation = [
-    { id: "profile", label: "Officer Profile", icon: <User className="w-5 h-5" /> },
-    { id: "settings", label: "Settings", icon: <Settings className="w-5 h-5" /> },
-    { id: "help", label: "Help & Support", icon: <HelpCircle className="w-5 h-5" /> },
+    { id: "settings" as TabType, label: "Settings", icon: <Settings className="w-5 h-5" /> },
+    { id: "help" as TabType, label: "Help & Support", icon: <HelpCircle className="w-5 h-5" /> },
   ];
 
   const currentWidth = isCollapsed ? COLLAPSED_WIDTH : width;
@@ -114,8 +114,8 @@ export const Sidebar: React.FC<SidebarProps> = memo(({ activeTab, onSelectTab, c
         <div className={`flex items-center ${isCollapsed ? "justify-center" : "justify-between pl-4 pr-2"} pt-4 pb-6`}>
           {!isCollapsed && (
             <div className="flex items-center gap-3 overflow-hidden">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-600 to-fuchsia-700 flex items-center justify-center shadow-lg shadow-purple-500/20 flex-shrink-0">
-                <img src={logoImg} className="w-4 h-4 object-contain filter drop-shadow-md brightness-200" alt="Logo" />
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0">
+                <img src={logoImg} className="w-6 h-6 object-contain" alt="Logo" />
               </div>
               <div className="flex flex-col whitespace-nowrap">
                 <span className={`font-bold text-sm tracking-tight ${currentTheme.textMain}`}>CrimeMind AI</span>
@@ -174,7 +174,11 @@ export const Sidebar: React.FC<SidebarProps> = memo(({ activeTab, onSelectTab, c
             <button
               key={tab.id}
               title={isCollapsed ? tab.label : undefined}
-              onClick={() => alert(`The ${tab.label} module is coming soon in the next update!`)}
+              onClick={() => {
+                if (tab.id === "settings") onSelectTab("settings");
+                else if (tab.id === "help") onSelectTab("help");
+                else alert(`The ${tab.label} module is coming soon in the next update!`);
+              }}
               className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-sm font-semibold transition-colors ${currentTheme.textMuted} hover:${currentTheme.textMain} hover:bg-black/5 dark:hover:bg-white/5 ${isCollapsed ? "justify-center" : ""}`}
             >
               <div className="opacity-80">

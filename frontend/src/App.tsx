@@ -268,7 +268,7 @@ function App() {
     return Math.min(1.0, score);
   };
 
-  const [activeTab, setActiveTab] = useState<"dashboard" | "chat" | "network" | "cases" | "map">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "chat" | "network" | "cases" | "map" | "settings" | "help">("dashboard");
   const [language, setLanguage] = useState<"en" | "kn" | "hi" | "te" | "ta">("en");
   const [searchQuery, setSearchQuery] = useState("");
   const [cases, setCases] = useState<Case[]>([]);
@@ -3274,8 +3274,8 @@ function App() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center text-center py-20 text-slate-500">
-                  <div className="w-16 h-16 mb-4 rounded-2xl bg-gradient-to-br from-purple-600 to-fuchsia-700 flex items-center justify-center shadow-lg shadow-purple-500/20 flex-shrink-0 animate-pulse">
-                    <img src={logoImg} className="w-8 h-8 object-contain filter drop-shadow-md brightness-200" alt="CrimeMind Logo" />
+                  <div className="w-16 h-16 mb-4 rounded-2xl flex items-center justify-center flex-shrink-0 opacity-50">
+                    <img src={logoImg} className="w-12 h-12 object-contain" alt="CrimeMind Logo" />
                   </div>
                   <p className={`text-xs font-semibold ${theme.id === 'dark' ? 'text-zinc-400' : 'text-zinc-650'}`}>Select a case file from the registry to inspect records.</p>
                 </div>
@@ -3324,6 +3324,131 @@ function App() {
               }, 200);
             }}
           />
+        )}
+        {/* TAB: SETTINGS */}
+        {activeTab === "settings" && (
+          <div className="space-y-6 p-6">
+            <h2 className={`text-2xl font-bold font-mono uppercase tracking-wider ${theme.textMain}`}>System Settings</h2>
+            <div className={`p-6 rounded-xl border ${theme.border} ${theme.cardBg} space-y-8 max-w-3xl`}>
+              
+              <div>
+                <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${theme.textMuted}`}>Theme Preference</h3>
+                <div className="flex flex-wrap items-center gap-4">
+                  {THEMES.map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setTheme(t)}
+                      className={`flex items-center gap-2 px-5 py-3 rounded-xl border font-semibold transition-all ${
+                        theme.id === t.id 
+                          ? 'border-blue-500 bg-blue-500/10 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.2)]' 
+                          : `${theme.border} ${theme.textMain} hover:bg-black/10 dark:hover:bg-white/5`
+                      }`}
+                    >
+                      {t.id === "dark" ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                      {t.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${theme.textMuted}`}>Language Interface</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {languagesList.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => setLanguage(lang.code)}
+                      className={`flex flex-col items-start gap-1 px-5 py-3 rounded-xl border font-semibold transition-all ${
+                        language === lang.code 
+                          ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.2)]' 
+                          : `${theme.border} ${theme.textMain} hover:bg-black/10 dark:hover:bg-white/5`
+                      }`}
+                    >
+                      <span className="text-sm">{lang.label}</span>
+                      <span className="text-[10px] opacity-70 uppercase tracking-wider">{lang.native}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${theme.textMuted}`}>System Status & Intelligence</h3>
+                <div className={`p-4 rounded-xl border ${theme.border} bg-black/5 dark:bg-white/5 space-y-3 font-mono text-xs`}>
+                  <div className="flex justify-between border-b border-current/10 pb-2">
+                    <span className="opacity-70">Active Personnel Protocol</span>
+                    <span className="font-bold">KSP-8932 (Admin)</span>
+                  </div>
+                  <div className="flex justify-between border-b border-current/10 pb-2">
+                    <span className="opacity-70">Database Sync Module</span>
+                    <span className="text-emerald-500 font-bold flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> ONLINE
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-b border-current/10 pb-2">
+                    <span className="opacity-70">CrimeMind AI Engine Version</span>
+                    <span className="font-bold">v1.4.02-beta (Node X)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="opacity-70">Session Cache & Memory</span>
+                    <span className="text-blue-500 font-bold flex items-center gap-1 cursor-pointer hover:underline" onClick={() => alert("Cache cleared!")}>
+                      <Trash2 className="w-3 h-3" /> Clear Local Data
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* TAB: HELP & SUPPORT */}
+        {activeTab === "help" && (
+          <div className="space-y-6 p-6">
+            <h2 className={`text-2xl font-bold font-mono uppercase tracking-wider ${theme.textMain}`}>Help & Support</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl">
+              
+              {/* Documentation */}
+              <div className={`p-6 rounded-xl border ${theme.border} ${theme.cardBg} space-y-4`}>
+                <h3 className={`text-sm font-bold uppercase tracking-wider mb-2 ${theme.textMuted}`}>System Documentation</h3>
+                <div className="space-y-4 text-xs font-medium">
+                  <div className={`p-3 rounded-lg bg-black/5 dark:bg-white/5 border ${theme.border}`}>
+                    <h4 className={`font-bold mb-1 ${theme.textMain}`}>1. Dashboard</h4>
+                    <p className={theme.textMuted}>Get a high-level overview of live intelligence metrics, case statistics, and active threats monitored across all districts in real-time.</p>
+                  </div>
+                  <div className={`p-3 rounded-lg bg-black/5 dark:bg-white/5 border ${theme.border}`}>
+                    <h4 className={`font-bold mb-1 ${theme.textMain}`}>2. AI Assistant</h4>
+                    <p className={theme.textMuted}>Use natural language to query cases, suspects, or find cross-references in the KSP database. Example: "Show me cases in Jayanagar".</p>
+                  </div>
+                  <div className={`p-3 rounded-lg bg-black/5 dark:bg-white/5 border ${theme.border}`}>
+                    <h4 className={`font-bold mb-1 ${theme.textMain}`}>3. Link Analysis (Network Map)</h4>
+                    <p className={theme.textMuted}>Visually map connections between FIRs, suspects, locations, phones, and vehicles to discover organized patterns.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* FAQs & Contact */}
+              <div className="space-y-6">
+                <div className={`p-6 rounded-xl border ${theme.border} ${theme.cardBg} space-y-4`}>
+                  <h3 className={`text-sm font-bold uppercase tracking-wider mb-2 ${theme.textMuted}`}>Frequently Asked Questions</h3>
+                  <ul className={`list-disc list-inside space-y-2 text-xs font-medium ${theme.textMuted}`}>
+                    <li><strong>How is the data sourced?</strong> The data streams directly from the active KSP Intelligence database.</li>
+                    <li><strong>Is the Link Analysis automated?</strong> Yes, the system uses entity resolution to map nodes automatically.</li>
+                    <li><strong>Can I export AI chat logs?</strong> Yes, you can generate a PDF report from any active chat session.</li>
+                  </ul>
+                </div>
+
+                <div className={`p-6 rounded-xl border ${theme.border} ${theme.cardBg}`}>
+                  <h3 className={`text-sm font-bold uppercase tracking-wider mb-2 ${theme.textMuted}`}>Contact Technical Support</h3>
+                  <div className={`space-y-2 text-xs font-mono mt-4 ${theme.textMain}`}>
+                    <p><strong>Email:</strong> support@intel.ksp.gov.in</p>
+                    <p><strong>Phone:</strong> +91 080-2294-XXXX</p>
+                    <p><strong>Emergency:</strong> Contact Control Room (112)</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
         )}
 </main>
 

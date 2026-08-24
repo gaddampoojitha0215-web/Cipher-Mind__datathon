@@ -36,8 +36,8 @@ export const Header: React.FC<HeaderProps> = memo(({
       <div className="flex items-center justify-between gap-4">
         {/* Left: Logo & KSP Identity */}
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-600 to-fuchsia-700 flex items-center justify-center shadow-lg shadow-purple-500/20 flex-shrink-0">
-            <img src={logoImg} className="w-4 h-4 object-contain filter drop-shadow-md brightness-200" alt="Logo" />
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0">
+            <img src={logoImg} className="w-6 h-6 object-contain" alt="Logo" />
           </div>
           <div>
             <h1 className={`font-bold text-lg leading-tight tracking-wide flex items-center gap-2 ${currentTheme.textMain}`}>
@@ -106,8 +106,8 @@ export const Header: React.FC<HeaderProps> = memo(({
 
           {/* User Badge */}
           <div className={`flex items-center gap-2 pl-2 border-l ${currentTheme.border}`}>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-600 to-fuchsia-700 flex items-center justify-center shadow-lg shadow-purple-500/20 flex-shrink-0">
-              <img src={logoImg} className="w-4 h-4 object-contain filter drop-shadow-md brightness-200" alt="Admin Logo" />
+            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border border-slate-500/20 overflow-hidden bg-white/5">
+              <img src={logoImg} className="w-full h-full object-contain p-1" alt="Admin Logo" />
             </div>
             <div className="hidden lg:block text-left">
               <p className={`text-xs font-semibold leading-none ${currentTheme.textMain}`}>Admin</p>
