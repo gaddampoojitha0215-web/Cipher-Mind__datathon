@@ -1844,7 +1844,15 @@ function App() {
           onChangeLanguage={(l) => setLanguage(l)}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          onSearchSubmit={(e) => { e.preventDefault(); }}
+          onSearchSubmit={(e) => { 
+            e.preventDefault(); 
+            if (searchQuery.trim().length > 1) {
+              setActiveTab("cases");
+              const q = searchQuery.trim().toLowerCase();
+              const match = cases.find(c => c.fir_number.toLowerCase().includes(q) || c.accused.some(a => a.toLowerCase().includes(q)));
+              if (match) setSelectedCase(match);
+            }
+          }}
         />
 
 
