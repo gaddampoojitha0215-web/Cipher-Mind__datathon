@@ -1431,7 +1431,9 @@ export default function CrimeMap({
           </span>
         </div>
         <div className="flex items-center gap-2 border-l border-zinc-800 pl-4 h-full opacity-90">
-          <img src={logoImg} className="w-4 h-4 object-contain" alt="KSP Logo" />
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-600 to-fuchsia-700 flex items-center justify-center shadow-lg shadow-purple-500/20 flex-shrink-0">
+            <img src={logoImg} className="w-4 h-4 object-contain filter drop-shadow-md brightness-200" alt="KSP Logo" />
+          </div>
           <span className="text-[8px] font-bold tracking-wider">KARNATAKA STATE POLICE // SEVA - SURAKSHA - SAMARPANE</span>
         </div>
       </div>

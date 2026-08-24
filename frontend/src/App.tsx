@@ -3274,7 +3274,9 @@ function App() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center text-center py-20 text-slate-500">
-                  <img src={logoImg} className="w-12 h-12 mb-3.5 object-contain opacity-80 animate-pulse" alt="CrimeMind Logo" />
+                  <div className="w-16 h-16 mb-4 rounded-2xl bg-gradient-to-br from-purple-600 to-fuchsia-700 flex items-center justify-center shadow-lg shadow-purple-500/20 flex-shrink-0 animate-pulse">
+                    <img src={logoImg} className="w-8 h-8 object-contain filter drop-shadow-md brightness-200" alt="CrimeMind Logo" />
+                  </div>
                   <p className={`text-xs font-semibold ${theme.id === 'dark' ? 'text-zinc-400' : 'text-zinc-650'}`}>Select a case file from the registry to inspect records.</p>
                 </div>
               )}

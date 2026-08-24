@@ -114,8 +114,8 @@ export const Sidebar: React.FC<SidebarProps> = memo(({ activeTab, onSelectTab, c
         <div className={`flex items-center ${isCollapsed ? "justify-center" : "justify-between pl-4 pr-2"} pt-4 pb-6`}>
           {!isCollapsed && (
             <div className="flex items-center gap-3 overflow-hidden">
-              <div className={`w-8 h-8 rounded-xl bg-gradient-to-br ${currentTheme.id === "dark" ? "from-purple-500/20 to-fuchsia-500/30 border border-purple-500/40" : "from-purple-100 to-fuchsia-200 border border-purple-300"} flex items-center justify-center flex-shrink-0 shadow-lg`}>
-                <img src={logoImg} className="w-4 h-4 object-contain" alt="Logo" />
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-600 to-fuchsia-700 flex items-center justify-center shadow-lg shadow-purple-500/20 flex-shrink-0">
+                <img src={logoImg} className="w-4 h-4 object-contain filter drop-shadow-md brightness-200" alt="Logo" />
               </div>
               <div className="flex flex-col whitespace-nowrap">
                 <span className={`font-bold text-sm tracking-tight ${currentTheme.textMain}`}>CrimeMind AI</span>
