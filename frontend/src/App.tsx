@@ -17,6 +17,8 @@ import logoImg from "./assets/logo.png";
 import { Sidebar, type TabType } from "./components/Sidebar";
 import { Header } from "./components/Header";
 import { AlertsIntelligence } from "./components/AlertsIntelligence";
+import { VictimIntelligence } from "./components/VictimIntelligence";
+import { CriminalConnections } from "./components/CriminalConnections";
 
 
 // Interfaces
@@ -268,7 +270,7 @@ function App() {
     return Math.min(1.0, score);
   };
 
-  const [activeTab, setActiveTab] = useState<"dashboard" | "ai-assistant" | "cases" | "network-map" | "ksp-map" | "alerts" | "settings" | "help">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "ai-assistant" | "cases" | "network-map" | "ksp-map" | "alerts" | "victim-intelligence" | "settings" | "help">("dashboard");
   const [language, setLanguage] = useState<"en" | "kn" | "hi" | "te" | "ta">("en");
   const [searchQuery, setSearchQuery] = useState("");
   const [cases, setCases] = useState<Case[]>([]);
@@ -281,20 +283,20 @@ function App() {
     if (!q || cases.length === 0) return;
 
     // Priority 1: exact FIR number match
-    let best = cases.find(c => c.fir_number.toLowerCase() === q);
+    let best = cases.find(c => c.fir_number?.toLowerCase() === q);
     // Priority 2: FIR starts with query
-    if (!best) best = cases.find(c => c.fir_number.toLowerCase().startsWith(q));
+    if (!best) best = cases.find(c => c.fir_number?.toLowerCase().startsWith(q));
     // Priority 3: FIR contains query
-    if (!best) best = cases.find(c => c.fir_number.toLowerCase().includes(q));
+    if (!best) best = cases.find(c => c.fir_number?.toLowerCase().includes(q));
     // Priority 4: any other field
     if (!best) best = cases.find(c =>
-      c.crime_head.toLowerCase().includes(q) ||
-      c.location.toLowerCase().includes(q) ||
-      c.description.toLowerCase().includes(q) ||
-      c.accused.some(a => a.toLowerCase().includes(q)) ||
-      c.phone_numbers.some(p => p.toLowerCase().includes(q)) ||
-      c.vehicles.some(v => v.toLowerCase().includes(q)) ||
-      c.bank_accounts.some(b => b.toLowerCase().includes(q))
+      (c.crime_head?.toLowerCase() || "").includes(q) ||
+      (c.location?.toLowerCase() || "").includes(q) ||
+      (c.description?.toLowerCase() || "").includes(q) ||
+      (c.accused || []).some(a => a.toLowerCase().includes(q)) ||
+      (c.phone_numbers || []).some(p => p.toLowerCase().includes(q)) ||
+      (c.vehicles || []).some(v => v.toLowerCase().includes(q)) ||
+      (c.bank_accounts || []).some(b => b.toLowerCase().includes(q))
     );
 
     if (best) setSelectedCase(best);
@@ -1239,7 +1241,7 @@ function App() {
           vehicles: i % 3 === 1 ? [`KA-05-MJ-${1000 + i}`] : [],
           bank_accounts: i % 3 === 2 ? [`SBIN0001${2345 + i}`] : [],
           officer: [
-            "Officer Gowda", "Officer Patil", "Officer Rao", "Officer Reddy",
+            "Officer Menon", "Officer Patil", "Officer Rao", "Officer Reddy",
             "Officer Mishra", "Officer Sharma", "Officer Singh", "Officer Kumar",
             "Officer Nair", "Officer Joshi", "Officer Shetty", "Officer Naidu",
             "Officer Hegde", "Officer Bhat", "Officer Deshpande", "Officer Kulkarni"
@@ -1716,14 +1718,14 @@ function App() {
 
 
   const matchingSuggestions = graphSearchQuery.trim().length >= 2
-    ? cases.filter(c =>
-      c.fir_number.toLowerCase().includes(graphSearchQuery.toLowerCase()) ||
-      c.crime_head.toLowerCase().includes(graphSearchQuery.toLowerCase()) ||
-      c.accused.some(a => a.toLowerCase().includes(graphSearchQuery.toLowerCase())) ||
-      c.phone_numbers.some(p => p.toLowerCase().includes(graphSearchQuery.toLowerCase())) ||
-      c.vehicles.some(v => v.toLowerCase().includes(graphSearchQuery.toLowerCase())) ||
-      c.bank_accounts.some(b => b.toLowerCase().includes(graphSearchQuery.toLowerCase()))
-    )
+    ? cases.filter(c => 
+      (c.fir_number?.toLowerCase() || "").includes(graphSearchQuery.toLowerCase()) ||
+      (c.crime_head?.toLowerCase() || "").includes(graphSearchQuery.toLowerCase()) ||
+      (c.accused || []).some(a => a.toLowerCase().includes(graphSearchQuery.toLowerCase())) ||
+      (c.phone_numbers || []).some(p => p.toLowerCase().includes(graphSearchQuery.toLowerCase())) ||
+      (c.vehicles || []).some(v => v.toLowerCase().includes(graphSearchQuery.toLowerCase())) ||
+      (c.bank_accounts || []).some(b => b.toLowerCase().includes(graphSearchQuery.toLowerCase()))
+    ).slice(0, 8)
     : [];
 
   const openCaseDetails = (firNum: string) => {
@@ -1849,7 +1851,7 @@ function App() {
             if (searchQuery.trim().length > 1) {
               setActiveTab("cases");
               const q = searchQuery.trim().toLowerCase();
-              const match = cases.find(c => c.fir_number.toLowerCase().includes(q) || c.accused.some(a => a.toLowerCase().includes(q)));
+              const match = cases.find(c => (c.fir_number?.toLowerCase() || "").includes(q) || (c.accused || []).some(a => a.toLowerCase().includes(q)));
               if (match) setSelectedCase(match);
             }
           }}
@@ -3328,6 +3330,51 @@ function App() {
               setTimeout(() => {
                 if (mapControlRef.current) {
                   mapControlRef.current.focusCase(firNum);
+                }
+              }, 200);
+            }}
+          />
+        )}
+
+        {/* TAB: CRIMINAL CONNECTIONS */}
+        {activeTab === "criminal-connections" && (
+          <CriminalConnections
+            cases={cases}
+            currentTheme={theme}
+            onSelectCase={(c) => {
+              setSelectedCase(c);
+              setActiveTab("cases");
+            }}
+            onNavigateToNetwork={(entity) => {
+              setGraphSearchQuery(entity);
+              setActiveTab("network-map");
+            }}
+            onNavigateToMap={(location) => {
+              setKspSearchQuery(location);
+              setActiveTab("ksp-map");
+            }}
+          />
+        )}
+
+        {/* TAB: VICTIM INTELLIGENCE */}
+        {activeTab === "victim-intelligence" && (
+          <VictimIntelligence
+            cases={cases}
+            currentTheme={theme}
+            onSelectCase={(c) => {
+              setSelectedCase(c);
+              setActiveTab("cases");
+            }}
+            onNavigateToNetwork={(entity) => {
+              setGraphSearchQuery(entity);
+              setActiveTab("network-map");
+            }}
+            onNavigateToMap={(location) => {
+              setSelectedCityFilter(location);
+              setActiveTab("ksp-map");
+              setTimeout(() => {
+                if (mapControlRef.current) {
+                  mapControlRef.current.focusDistrict(location);
                 }
               }, 200);
             }}

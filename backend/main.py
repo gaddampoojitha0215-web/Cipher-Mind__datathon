@@ -54,11 +54,11 @@ def create_access_token(data: dict) -> str:
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    return OFFICERS_DB["inspector.gowda@ksp.gov.in"]
+    return OFFICERS_DB["inspector.menon@ksp.gov.in"]
 
 # Mock databases
 OFFICERS_DB = {
-    "inspector.gowda@ksp.gov.in": {
+    "inspector.menon@ksp.gov.in": {
         "id": "officer-1",
         "name": "admin",
         "badge": "KSP-8932",
@@ -107,7 +107,7 @@ KARNATAKA_DISTRICTS = [
 if not df_cases.empty:
     sample_df = df_cases.head(1000) # Load first 1000 cases for performance
     officers_pool = [
-        "Officer Gowda", "Officer Patil", "Officer Rao", "Officer Reddy",
+        "Officer Menon", "Officer Patil", "Officer Rao", "Officer Reddy",
         "Officer Mishra", "Officer Sharma", "Officer Singh", "Officer Kumar",
         "Officer Nair", "Officer Joshi", "Officer Shetty", "Officer Naidu",
         "Officer Hegde", "Officer Bhat", "Officer Deshpande", "Officer Kulkarni"
@@ -152,7 +152,7 @@ if not df_cases.empty:
 
         # Realistic Indian names pool of size 500
         first_names = ["Aarav", "Aditya", "Amit", "Arjun", "Deepak", "Ganesh", "Hari", "Ishaan", "Karan", "Kiran", "Manoj", "Nikhil", "Pranav", "Rahul", "Rajesh", "Rohan", "Sanjay", "Siddharth", "Suresh", "Vijay", "Vikram", "Yash", "Abhishek", "Ravi", "Sandeep"]
-        last_names = ["Patil", "Gowda", "Rao", "Reddy", "Sharma", "Singh", "Kumar", "Joshi", "Mehta", "Nair", "Das", "Choudhury", "Bose", "Gupta", "Mishra", "Sen", "Pillai", "Naidu", "Shetty", "Varma"]
+        last_names = ["Patil", "Menon", "Rao", "Reddy", "Sharma", "Singh", "Kumar", "Joshi", "Mehta", "Nair", "Das", "Choudhury", "Bose", "Gupta", "Mishra", "Sen", "Pillai", "Naidu", "Shetty", "Varma"]
         
         name_idx1 = idx % len(first_names)
         name_idx2 = (idx // len(first_names)) % len(last_names)
@@ -205,7 +205,7 @@ if not df_stats.empty:
     valid_rows = df_stats[df_stats["Number of cases from Jan to Aug(2025)"] > 0].head(100)
     cities = KARNATAKA_DISTRICTS
     officers_pool = [
-        "Officer Gowda", "Officer Patil", "Officer Rao", "Officer Reddy",
+        "Officer Menon", "Officer Patil", "Officer Rao", "Officer Reddy",
         "Officer Mishra", "Officer Sharma", "Officer Singh", "Officer Kumar",
         "Officer Nair", "Officer Joshi", "Officer Shetty", "Officer Naidu",
         "Officer Hegde", "Officer Bhat", "Officer Deshpande", "Officer Kulkarni"
@@ -279,7 +279,7 @@ else:
             "vehicles": [f"KA-05-MJ-{1000 + i}"] if i % 3 == 1 else [],
             "bank_accounts": [f"SBIN0001{2345 + i}"] if i % 3 == 2 else [],
             "officer": [
-                "Officer Gowda", "Officer Patil", "Officer Rao", "Officer Reddy",
+                "Officer Menon", "Officer Patil", "Officer Rao", "Officer Reddy",
                 "Officer Mishra", "Officer Sharma", "Officer Singh", "Officer Kumar",
                 "Officer Nair", "Officer Joshi", "Officer Shetty", "Officer Naidu",
                 "Officer Hegde", "Officer Bhat", "Officer Deshpande", "Officer Kulkarni"
@@ -467,7 +467,7 @@ demo_cases = [
         "vehicles": ["KA-01-AB-1234"],
         "bank_accounts": ["SBIN0009999"],
         "evidence": ["E-001 (Contraband Goods)", "E-002 (CCTV Footage)"],
-        "officer": "Inspector Gowda"
+        "officer": "Inspector Menon"
     },
     {
         "id": "case-demo-002",
@@ -505,7 +505,7 @@ demo_cases = [
         "vehicles": [],
         "bank_accounts": [],
         "evidence": ["E-004 (Abandoned Wallet)"],
-        "officer": "Inspector Gowda"
+        "officer": "Inspector Menon"
     },
     {
         "id": "case-demo-004",

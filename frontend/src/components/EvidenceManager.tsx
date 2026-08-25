@@ -55,7 +55,15 @@ export const EvidenceManager = ({ currentTheme }: any) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-500/10">
-            {demoScenario.evidence.map(ev => (
+            {demoScenario.evidence.filter(ev => {
+              if (!searchQuery.trim()) return true;
+              const q = searchQuery.toLowerCase();
+              return (ev.id?.toLowerCase() || "").includes(q) ||
+                     (ev.case_id?.toLowerCase() || "").includes(q) ||
+                     (ev.title?.toLowerCase() || "").includes(q) ||
+                     (ev.description?.toLowerCase() || "").includes(q) ||
+                     (ev.type?.toLowerCase() || "").includes(q);
+            }).map(ev => (
               <tr key={ev.id} className="hover:bg-slate-500/5 transition-colors cursor-pointer">
                 <td className="p-4 font-mono font-bold text-xs">{ev.id}</td>
                 <td className="p-4 font-mono text-xs text-purple-500 font-bold">{ev.case_id}</td>

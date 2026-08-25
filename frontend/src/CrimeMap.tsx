@@ -386,7 +386,7 @@ export default function CrimeMap({
     const matchedCities = MAP_LOCATION_FEATURES.filter(f => f.name.toLowerCase().includes(q))
       .map(f => ({ type: "location", name: `${f.name} (${f.type.toUpperCase()})`, target: f }));
 
-    const matchedCases = mappedCases.filter(c => c.fir_number.toLowerCase().includes(q) || c.accused.some(a => a.toLowerCase().includes(q)))
+    const matchedCases = mappedCases.filter(c => (c.fir_number?.toLowerCase() || "").includes(q) || (c.accused || []).some(a => a.toLowerCase().includes(q)))
       .map(c => ({ type: "case", name: `${c.fir_number} - ${c.crime_head}`, target: c }));
 
     return [...matchedDistricts, ...matchedCities, ...matchedCases].slice(0, 10);

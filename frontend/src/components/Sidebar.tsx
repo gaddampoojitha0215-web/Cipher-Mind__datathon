@@ -10,8 +10,10 @@ import {
   ChevronRight,
   Settings,
   User,
+  UserSearch,
   HelpCircle,
-  GripVertical
+  GripVertical,
+  Link
 } from "lucide-react";
 import type { Theme } from "../types";
 import logoImg from "../assets/logo.png";
@@ -23,6 +25,8 @@ export type TabType =
   | "network-map" 
   | "ksp-map" 
   | "alerts"
+  | "victim-intelligence"
+  | "criminal-connections"
   | "settings"
   | "help";
 
@@ -96,6 +100,8 @@ export const Sidebar: React.FC<SidebarProps> = memo(({ activeTab, onSelectTab, c
     { id: "network-map", label: "Network Map", icon: <Network className="w-5 h-5" /> },
     { id: "ksp-map", label: "KSP Intelligence Map", icon: <MapIcon className="w-5 h-5" /> },
     { id: "alerts", label: "Alerts & Intelligence", icon: <Bell className="w-5 h-5" /> },
+    { id: "victim-intelligence", label: "Victim Intelligence", icon: <UserSearch className="w-5 h-5" /> },
+    { id: "criminal-connections", label: "Criminal Connections", icon: <Link className="w-5 h-5" /> },
   ];
 
   const bottomNavigation = [

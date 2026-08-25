@@ -18,7 +18,7 @@ export const demoScenario = {
       phone_numbers: ["+91 9876543210", "+91 8765432109"],
       vehicles: ["KA-03-MR-1234"],
       bank_accounts: ["HDFC-00123984", "SBI-99382103"],
-      officer: "inspector.gowda@ksp.gov.in"
+      officer: "inspector.menon@ksp.gov.in"
     },
     {
       id: "case-002",
@@ -38,7 +38,7 @@ export const demoScenario = {
       phone_numbers: ["+91 8765432109", "+91 7654321098"],
       vehicles: ["KA-01-AB-9876", "KA-03-MR-1234"],
       bank_accounts: ["ICICI-44829102", "HDFC-00123984"],
-      officer: "inspector.gowda@ksp.gov.in"
+      officer: "inspector.menon@ksp.gov.in"
     }
   ],
   evidence: [

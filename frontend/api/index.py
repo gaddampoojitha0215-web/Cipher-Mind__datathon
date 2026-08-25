@@ -29,9 +29,9 @@ app.add_middleware(
 )
 
 OFFICERS_DB = {
-    "inspector.gowda@ksp.gov.in": {
+    "inspector.menon@ksp.gov.in": {
         "id": "officer-1",
-        "name": "Inspector Gowda",
+        "name": "Inspector Menon",
         "badge": "KSP-8932",
         "role": "investigator",
         "password_hash": "admin123"
@@ -60,13 +60,13 @@ if os.path.exists(CSV_CASES_PATH):
         with open(CSV_CASES_PATH, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             officers_pool = [
-                "Officer Gowda", "Officer Patil", "Officer Rao", "Officer Reddy",
+                "Officer Menon", "Officer Patil", "Officer Rao", "Officer Reddy",
                 "Officer Mishra", "Officer Sharma", "Officer Singh", "Officer Kumar",
                 "Officer Nair", "Officer Joshi", "Officer Shetty", "Officer Naidu",
                 "Officer Hegde", "Officer Bhat", "Officer Deshpande", "Officer Kulkarni"
             ]
             first_names = ["Aarav", "Aditya", "Amit", "Arjun", "Deepak", "Ganesh", "Hari", "Ishaan", "Karan", "Kiran", "Manoj", "Nikhil", "Pranav", "Rahul", "Rajesh", "Rohan", "Sanjay", "Siddharth", "Suresh", "Vijay", "Vikram", "Yash", "Abhishek", "Ravi", "Sandeep"]
-            last_names = ["Patil", "Gowda", "Rao", "Reddy", "Sharma", "Singh", "Kumar", "Joshi", "Mehta", "Nair", "Das", "Choudhury", "Bose", "Gupta", "Mishra", "Sen", "Pillai", "Naidu", "Shetty", "Varma"]
+            last_names = ["Patil", "Menon", "Rao", "Reddy", "Sharma", "Singh", "Kumar", "Joshi", "Mehta", "Nair", "Das", "Choudhury", "Bose", "Gupta", "Mishra", "Sen", "Pillai", "Naidu", "Shetty", "Varma"]
             
             for idx, row in enumerate(reader):
                 if idx >= 1000:
@@ -160,7 +160,7 @@ if os.path.exists(CSV_STATS_PATH):
             reader = csv.DictReader(f)
             cities = KARNATAKA_DISTRICTS
             officers_pool = [
-                "Officer Gowda", "Officer Patil", "Officer Rao", "Officer Reddy",
+                "Officer Menon", "Officer Patil", "Officer Rao", "Officer Reddy",
                 "Officer Mishra", "Officer Sharma", "Officer Singh", "Officer Kumar",
                 "Officer Nair", "Officer Joshi", "Officer Shetty", "Officer Naidu",
                 "Officer Hegde", "Officer Bhat", "Officer Deshpande", "Officer Kulkarni"
@@ -559,7 +559,7 @@ def chat_query(payload: ChatQuery):
         try:
             system_prompt = (
                 "You are CrimeMind AI, an advanced crime analysis virtual assistant for the Karnataka State Police. "
-                "You are talking to Inspector Gowda.\n\n"
+                "You are talking to Inspector Menon.\n\n"
                 "Here is the database of cases (in JSON format):\n"
                 f"{json.dumps(CASES_DB, indent=2)}\n\n"
                 "Your task is to answer the user's query professionally.\n"
@@ -779,7 +779,7 @@ def chat_query(payload: ChatQuery):
                         if matched_field == "suspects":
                             val = ", ".join(c["accused"])
                         elif matched_field == "officer":
-                            val = "Officer Gowda"  # mock default
+                            val = "Officer Menon"  # mock default
                         elif matched_field == "station":
                             val = c["police_station"]
                         elif matched_field == "district":

@@ -6,10 +6,11 @@ export const CaseWorkspace = ({ cases, currentTheme, selectedCase, onSelectCase,
   const [statusFilter, setStatusFilter] = useState("all");
 
   const filteredCases = cases.filter((c: any) => {
-    const matchesSearch = c.fir_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          c.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          c.crime_head.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || c.status.toLowerCase() === statusFilter.toLowerCase();
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = (c.fir_number?.toLowerCase() || "").includes(q) ||
+                          (c.description?.toLowerCase() || "").includes(q) ||
+                          (c.crime_head?.toLowerCase() || "").includes(q);
+    const matchesStatus = statusFilter === "all" || (c.status?.toLowerCase() || "") === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
   });
 

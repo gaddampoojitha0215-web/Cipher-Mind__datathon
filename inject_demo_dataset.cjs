@@ -28,7 +28,7 @@ demo_cases = [
         "vehicles": ["KA-01-AB-1234"],
         "bank_accounts": ["SBIN0009999"],
         "evidence": ["E-001 (Contraband Goods)", "E-002 (CCTV Footage)"],
-        "officer": "Inspector Gowda"
+        "officer": "Inspector Menon"
     },
     {
         "id": "case-demo-002",
@@ -66,7 +66,7 @@ demo_cases = [
         "vehicles": [],
         "bank_accounts": [],
         "evidence": ["E-004 (Abandoned Wallet)"],
-        "officer": "Inspector Gowda"
+        "officer": "Inspector Menon"
     },
     {
         "id": "case-demo-004",
