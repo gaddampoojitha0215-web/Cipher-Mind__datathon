@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Search, Filter, FileText, Phone, MapPin, Calendar, Briefcase, ChevronRight, X } from "lucide-react";
+import { MobileIntelligencePanel } from "./MobileIntelligencePanel";
 
 export const CaseWorkspace = ({ cases, currentTheme, selectedCase, onSelectCase, onNavigateToNetwork, onNavigateToMap }: any) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -152,6 +153,17 @@ export const CaseWorkspace = ({ cases, currentTheme, selectedCase, onSelectCase,
                 </div>
               )}
             </div>
+
+            {selectedCase.phone_numbers?.length > 0 && (
+              <MobileIntelligencePanel
+                phones={selectedCase.phone_numbers}
+                cases={cases}
+                currentTheme={currentTheme}
+                onNavigateToMap={onNavigateToMap}
+                onNavigateToNetwork={onNavigateToNetwork}
+                onSelectCase={onSelectCase}
+              />
+            )}
 
             <div className={`pt-6 mt-6 border-t space-y-2 ${currentTheme.border}`}>
               <p className={`text-xs ${currentTheme.textMuted} mb-2 uppercase tracking-wider`}>Actions</p>

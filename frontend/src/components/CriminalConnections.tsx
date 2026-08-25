@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import type { Theme, Case } from "../types";
 import * as d3 from "d3";
+import { MobileIntelligencePanel } from "./MobileIntelligencePanel";
 
 interface CriminalConnectionsProps {
   cases: Case[];
@@ -335,6 +336,15 @@ export const CriminalConnections: React.FC<CriminalConnectionsProps> = ({
                 ))}
               </div>
             </div>
+
+            <MobileIntelligencePanel
+              personName={selectedPerson.name}
+              cases={cases}
+              currentTheme={currentTheme}
+              onNavigateToMap={onNavigateToMap}
+              onNavigateToNetwork={onNavigateToNetwork}
+              onSelectCase={onSelectCase}
+            />
 
           </div>
         ) : (

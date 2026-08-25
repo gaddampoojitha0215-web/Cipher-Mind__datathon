@@ -3,6 +3,7 @@ import {
   Search, Shield, User, FileText, MapPin, Briefcase, Network, Users
 } from "lucide-react";
 import type { Theme } from "../types";
+import { MobileIntelligencePanel } from "./MobileIntelligencePanel";
 
 interface VictimIntelligenceProps {
   cases: any[];
@@ -170,6 +171,17 @@ export const VictimIntelligence: React.FC<VictimIntelligenceProps> = ({
                 </div>
               )}
             </div>
+
+            {selectedCase.phone_numbers?.length > 0 && (
+              <MobileIntelligencePanel
+                phones={selectedCase.phone_numbers}
+                cases={cases}
+                currentTheme={currentTheme}
+                onNavigateToMap={onNavigateToMap}
+                onNavigateToNetwork={onNavigateToNetwork}
+                onSelectCase={onSelectCase}
+              />
+            )}
 
             <div className="border-t border-slate-500/10 pt-6">
                <button
