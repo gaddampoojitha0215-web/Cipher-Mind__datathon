@@ -2315,10 +2315,10 @@ function App() {
                           </div>
                         </div>
                       ) : (
-                        <p className={`leading-relaxed whitespace-pre-wrap ${m.role === 'user' ? 'pr-20' : 'pr-14'}`}>{renderMessageText(m.text)}</p>
+                        <p className={`leading-relaxed whitespace-pre-wrap ${m.role === 'user' ? 'pr-36' : 'pr-14'}`}>{renderMessageText(m.text)}</p>
                       )}
 
-                      {m.role === "assistant" && (
+                      {m.role === "assistant" && (m.evidence_metadata || (m.sources && m.sources.length > 0)) && (
                         <div className="mt-3.5 pt-3 border-t border-zinc-800/10 dark:border-zinc-200/10 space-y-2.5 text-[10px]">
                           {/* KSP Intelligence Evidence Box */}
                           <div className={`p-2.5 rounded-xl border ${theme.id === "dark" ? "bg-cyan-950/20 border-cyan-500/25 text-cyan-200" : "bg-blue-50/80 border-blue-200 text-blue-900"} space-y-1.5 shadow-sm`}>
