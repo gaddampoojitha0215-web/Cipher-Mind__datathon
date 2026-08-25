@@ -108,10 +108,6 @@ export const VictimIntelligence: React.FC<VictimIntelligenceProps> = ({
                 <div>
                   <h2 className="text-2xl font-bold">Victim Profile</h2>
                   <p className={`text-sm ${currentTheme.textMuted} mt-1 flex flex-wrap items-center gap-2`}>
-                    <span>Gender: Not Recorded</span>
-                    <span>&bull;</span>
-                    <span>Age: Not Recorded</span>
-                    <span>&bull;</span>
                     <span className="truncate">{selectedCase.district || "Unknown"}, Karnataka</span>
                   </p>
                 </div>
@@ -156,22 +152,23 @@ export const VictimIntelligence: React.FC<VictimIntelligenceProps> = ({
                         <h3 className="text-xs font-bold uppercase tracking-wider">Demographics</h3>
                       </div>
                       <div className="space-y-3">
-                        <div>
-                          <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>Phone</p>
-                          <p className="text-sm font-medium">{selectedCase.phone_numbers && selectedCase.phone_numbers.length > 0 ? selectedCase.phone_numbers.join(", ") : "Not Recorded"}</p>
-                        </div>
-                        <div>
-                          <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>Address</p>
-                          <p className="text-sm font-medium">{selectedCase.location || "Not Recorded"}</p>
-                        </div>
-                        <div>
-                          <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>Occupation</p>
-                          <p className="text-sm font-medium text-slate-500 italic">Not Recorded in FIR</p>
-                        </div>
-                        <div>
-                          <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>ID Proof</p>
-                          <p className="text-sm font-medium text-slate-500 italic">Not Recorded in FIR</p>
-                        </div>
+                        {selectedCase.phone_numbers && selectedCase.phone_numbers.length > 0 && (
+                          <div>
+                            <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>Phone</p>
+                            <p className="text-sm font-medium">{selectedCase.phone_numbers.join(", ")}</p>
+                          </div>
+                        )}
+                        {selectedCase.location && (
+                          <div>
+                            <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>Address</p>
+                            <p className="text-sm font-medium">{selectedCase.location}</p>
+                          </div>
+                        )}
+                        {!selectedCase.phone_numbers?.length && !selectedCase.location && (
+                          <div className={`text-sm ${currentTheme.textMuted} italic`}>
+                            No demographic data available for this record.
+                          </div>
+                        )}
                       </div>
                     </div>
 

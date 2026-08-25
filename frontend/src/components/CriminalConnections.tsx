@@ -312,10 +312,6 @@ export const CriminalConnections: React.FC<CriminalConnectionsProps> = ({
                 <div>
                   <h2 className="text-2xl font-bold">{selectedPerson.name}</h2>
                   <p className={`text-sm ${currentTheme.textMuted} mt-1 flex flex-wrap items-center gap-2`}>
-                    <span>Gender: Not Recorded</span>
-                    <span>&bull;</span>
-                    <span>Age: Not Recorded</span>
-                    <span>&bull;</span>
                     <span className="truncate">Karnataka</span>
                   </p>
                 </div>
@@ -364,17 +360,8 @@ export const CriminalConnections: React.FC<CriminalConnectionsProps> = ({
                         <h3 className="text-xs font-bold uppercase tracking-wider">Demographics</h3>
                       </div>
                       <div className="space-y-3">
-                        <div>
-                          <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>Phone</p>
-                          <p className="text-sm font-medium">Not Recorded</p>
-                        </div>
-                        <div>
-                          <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>Address</p>
-                          <p className="text-sm font-medium">Not Recorded</p>
-                        </div>
-                        <div>
-                          <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>Occupation</p>
-                          <p className="text-sm font-medium text-slate-500 italic">Not Recorded in FIR</p>
+                        <div className={`text-sm ${currentTheme.textMuted} italic`}>
+                          No demographic data available for this record.
                         </div>
                       </div>
                     </div>
