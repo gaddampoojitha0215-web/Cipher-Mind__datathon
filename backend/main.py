@@ -202,7 +202,7 @@ if not df_cases.empty:
 
 # 2. Load cases from 2025 statistical df_stats
 if not df_stats.empty:
-    valid_rows = df_stats[df_stats["Number of cases from Jan to Aug(2025)"] > 0].head(100)
+    valid_rows = df_stats[df_stats["Number of cases from Jan to Aug(2025)"] > 0].head(500)
     cities = KARNATAKA_DISTRICTS
     officers_pool = [
         "Officer Menon", "Officer Patil", "Officer Rao", "Officer Reddy",
@@ -791,8 +791,18 @@ def retrieve_relevant_cases(query_text: str, cases_db: List[Dict[str, Any]], lim
         "vehicles", "bank", "account", "accounts", "is", "linked", "to", "and", "or", "what", "where", "who", "how",
         "regarding", "details", "police", "station", "district", "involved"
     }
-    
     query_words = [w.strip(".,;:!?()-\"'/") for w in query.split() if w.strip(".,;:!?()-\"'/") not in stopwords and len(w) > 1]
+    
+    # Normalize common misspellings or joined words in query
+    normalized_words = []
+    for w in query_words:
+        if "traffic" in w:
+            normalized_words.extend(["traffic", "trafficking"])
+        elif "kidnap" in w:
+            normalized_words.extend(["kidnap", "kidnapping"])
+        else:
+            normalized_words.append(w)
+    query_words = normalized_words
     
     scored_cases = []
     for case in cases_db:
