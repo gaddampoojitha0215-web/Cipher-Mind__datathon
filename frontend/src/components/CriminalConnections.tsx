@@ -102,7 +102,7 @@ export const CriminalConnections: React.FC<CriminalConnectionsProps> = ({
       .data(nodes)
       .join("g")
       .attr("class", "graph-node")
-      .call(d3.drag<SVGGElement, any>()
+      .call(d3.drag<any, any>()
         .on("start", dragstarted)
         .on("drag", dragged)
         .on("end", dragended));

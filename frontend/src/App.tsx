@@ -270,7 +270,7 @@ function App() {
     return Math.min(1.0, score);
   };
 
-  const [activeTab, setActiveTab] = useState<"dashboard" | "ai-assistant" | "cases" | "network-map" | "ksp-map" | "alerts" | "victim-intelligence" | "settings" | "help">("dashboard");
+  const [activeTab, setActiveTab] = useState<TabType>("dashboard");
   const [language, setLanguage] = useState<"en" | "kn" | "hi" | "te" | "ta">("en");
   const [searchQuery, setSearchQuery] = useState("");
   const [cases, setCases] = useState<Case[]>([]);
@@ -3350,7 +3350,6 @@ function App() {
               setActiveTab("network-map");
             }}
             onNavigateToMap={(location) => {
-              setKspSearchQuery(location);
               setActiveTab("ksp-map");
             }}
           />
