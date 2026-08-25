@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { 
-  Search, MapPin, Calendar, Shield, ExternalLink, Network, User, AlertTriangle, Link, FileText
+  Search, MapPin, Calendar, Shield, ExternalLink, Network, User, AlertTriangle, Link, FileText, Users, Briefcase, Database
 } from "lucide-react";
 import type { Theme, Case } from "../types";
 import * as d3 from "d3";
@@ -23,6 +23,7 @@ export const CriminalConnections: React.FC<CriminalConnectionsProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPerson, setSelectedPerson] = useState<any | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "cases" | "associates" | "addresses" | "vehicles">("overview");
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Compute people with multiple cases
@@ -51,171 +52,201 @@ export const CriminalConnections: React.FC<CriminalConnectionsProps> = ({
     ? multiCasePersons
     : multiCasePersons.filter((p: any) => p.name.toLowerCase().includes(rawQuery));
 
-  // D3 Network Graph
+  // D3 Network Graph for Associates tab
   useEffect(() => {
-    if (!selectedPerson || !svgRef.current) return;
+    if (activeTab !== "associates" || !selectedPerson || !svgRef.current) return;
 
     const width = svgRef.current.clientWidth;
     const height = 400; // Fixed height for visualization
 
-    const nodes: any[] = [{ id: selectedPerson.name, group: "person", label: selectedPerson.name }];
+    const svg = d3.select(svgRef.current);
+    svg.selectAll("*").remove(); // Clear previous graph
+
+    // Prepare graph data
+    const nodes: any[] = [];
     const links: any[] = [];
 
-    // Add unique cases and locations
-    const caseNodes = new Set<string>();
-    const locationNodes = new Set<string>();
+    // Add central suspect
+    nodes.push({
+      id: selectedPerson.name,
+      label: selectedPerson.name,
+      type: "suspect",
+      group: 0
+    });
 
-    selectedPerson.cases.forEach((c: Case) => {
-      if (!caseNodes.has(c.fir_number)) {
-        caseNodes.add(c.fir_number);
-        nodes.push({ id: c.fir_number, group: "case", label: c.fir_number });
-        links.push({ source: selectedPerson.name, target: c.fir_number, type: "involved_in" });
-      }
+    // Add cases and locations
+    selectedPerson.cases.forEach((c: any) => {
+      const caseId = `case-${c.id}`;
+      nodes.push({
+        id: caseId,
+        label: c.fir_number,
+        type: "case",
+        group: 1
+      });
+      links.push({
+        source: selectedPerson.name,
+        target: caseId,
+        type: "involved_in"
+      });
 
-      if (c.location && !locationNodes.has(c.location)) {
-        locationNodes.add(c.location);
-        nodes.push({ id: c.location, group: "location", label: c.location });
-        links.push({ source: c.fir_number, target: c.location, type: "occurred_at" });
+      if (c.location) {
+        const locId = `loc-${c.location}`;
+        if (!nodes.find(n => n.id === locId)) {
+          nodes.push({
+            id: locId,
+            label: c.location,
+            type: "location",
+            group: 2
+          });
+        }
+        links.push({
+          source: caseId,
+          target: locId,
+          type: "occurred_at"
+        });
       }
     });
 
-    const svg = d3.select(svgRef.current);
-    svg.selectAll("*").remove();
-
+    // Simulation setup
     const simulation = d3.forceSimulation(nodes)
       .force("link", d3.forceLink(links).id((d: any) => d.id).distance(100))
       .force("charge", d3.forceManyBody().strength(-300))
       .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("collide", d3.forceCollide().radius(50));
+      .force("collision", d3.forceCollide().radius(50));
 
-    // Links
+    // Draw links
     const link = svg.append("g")
-      .attr("stroke", currentTheme.id === 'dark' ? "#334155" : "#e2e8f0")
-      .attr("stroke-opacity", 0.6)
       .selectAll("line")
       .data(links)
-      .join("line")
-      .attr("stroke-width", 2);
+      .enter()
+      .append("line")
+      .attr("stroke", currentTheme.id === "dark" ? "#475569" : "#cbd5e1")
+      .attr("stroke-width", 1.5)
+      .attr("stroke-opacity", 0.6);
 
-    // Nodes
+    // Draw nodes
     const node = svg.append("g")
       .selectAll("g")
       .data(nodes)
-      .join("g")
-      .attr("class", "graph-node")
+      .enter()
+      .append("g")
       .call(d3.drag<any, any>()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended));
+        .on("start", (event, d) => {
+          if (!event.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x;
+          d.fy = d.y;
+        })
+        .on("drag", (event, d) => {
+          d.fx = event.x;
+          d.fy = event.y;
+        })
+        .on("end", (event, d) => {
+          if (!event.active) simulation.alphaTarget(0);
+          d.fx = null;
+          d.fy = null;
+        })
+      );
 
-    // Helper for colors
-    const getNodeColor = (group: string) => {
-      if (group === "person") return "#ef4444"; // red
-      if (group === "case") return "#3b82f6"; // blue
-      return "#10b981"; // green
-    };
-
-    // Card background
+    // Node rectangles
     node.append("rect")
-      .attr("class", "node-bg")
-      .attr("x", -50).attr("y", -18)
-      .attr("width", 100).attr("height", 36)
-      .attr("rx", 6).attr("ry", 6)
-      .attr("fill", currentTheme.id === "dark" ? "#0f172a" : "#ffffff")
-      .attr("stroke", (d: any) => getNodeColor(d.group))
-      .attr("stroke-width", 1.2)
-      .style("filter", "drop-shadow(0 4px 8px rgba(0,0,0,0.25))");
-
-    // Sidebar accent bar
+      .attr("width", 140)
+      .attr("height", 40)
+      .attr("x", -70)
+      .attr("y", -20)
+      .attr("rx", 6)
+      .attr("fill", currentTheme.id === "dark" ? "#1e293b" : "#f8fafc")
+      .attr("stroke", (d: any) => {
+        if (d.type === "suspect") return "#ef4444"; // red
+        if (d.type === "case") return "#3b82f6"; // blue
+        return "#10b981"; // green
+      })
+      .attr("stroke-width", 1.5);
+    
+    // Node left border accent
     node.append("rect")
-      .attr("x", -50).attr("y", -18)
-      .attr("width", 4).attr("height", 36)
-      .attr("rx", 1)
-      .attr("fill", (d: any) => getNodeColor(d.group));
-
-    // Risk dot
-    node.append("circle")
-      .attr("cx", 42).attr("cy", -10).attr("r", 3.5)
-      .attr("fill", (d: any) => getNodeColor(d.group));
-
-    // Category icon
-    node.append("text")
-      .attr("x", -34).attr("y", 4)
-      .attr("text-anchor", "middle").attr("font-size", "12px")
-      .text((d: any) => {
-        if (d.group === "person") return "👤";
-        if (d.group === "case") return "📂";
-        return "📍";
+      .attr("width", 4)
+      .attr("height", 40)
+      .attr("x", -70)
+      .attr("y", -20)
+      .attr("rx", 2)
+      .attr("fill", (d: any) => {
+        if (d.type === "suspect") return "#ef4444";
+        if (d.type === "case") return "#3b82f6";
+        return "#10b981";
       });
 
-    // Node label
+    // Icons
     node.append("text")
-      .attr("x", -22).attr("y", -2)
-      .attr("text-anchor", "start")
-      .attr("font-size", "8.5px").attr("font-weight", "bold")
-      .attr("fill", currentTheme.id === "dark" ? "#f1f5f9" : "#1e293b")
+      .attr("x", -55)
+      .attr("y", 5)
+      .attr("font-family", "FontAwesome")
+      .attr("font-size", "12px")
+      .attr("fill", (d: any) => {
+        if (d.type === "suspect") return "#ef4444";
+        if (d.type === "case") return "#3b82f6";
+        return "#10b981";
+      })
       .text((d: any) => {
-        const lbl = d.label;
-        return lbl.length > 12 ? lbl.slice(0, 10) + ".." : lbl;
+        if (d.type === "suspect") return "\uf007"; // fa-user
+        if (d.type === "case") return "\uf07b"; // fa-folder
+        return "\uf041"; // fa-map-marker
       });
 
-    // Node type label
+    // Labels
     node.append("text")
-      .attr("x", -22).attr("y", 9)
-      .attr("text-anchor", "start")
-      .attr("font-size", "7px").attr("font-weight", "500")
-      .attr("fill", currentTheme.id === "dark" ? "#94a3b8" : "#475569")
+      .attr("x", -35)
+      .attr("y", -2)
+      .attr("font-size", "10px")
+      .attr("font-weight", "bold")
+      .attr("fill", currentTheme.id === "dark" ? "#f8fafc" : "#0f172a")
+      .text((d: any) => d.label.length > 15 ? d.label.substring(0, 15) + "..." : d.label);
+    
+    // Sub-labels
+    node.append("text")
+      .attr("x", -35)
+      .attr("y", 10)
+      .attr("font-size", "8px")
+      .attr("fill", currentTheme.id === "dark" ? "#94a3b8" : "#64748b")
       .text((d: any) => {
-        if (d.group === "person") return "Suspect";
-        if (d.group === "case") return "Case File";
+        if (d.type === "suspect") return "Suspect";
+        if (d.type === "case") return "Case File";
         return "Location";
       });
 
-    node.append("title").text((d: any) => `${d.group.toUpperCase()}: ${d.label}`);
+    // Connection indicator
+    node.append("circle")
+      .attr("cx", 60)
+      .attr("cy", -10)
+      .attr("r", 3)
+      .attr("fill", (d: any) => {
+        if (d.type === "suspect") return "#ef4444";
+        if (d.type === "case") return "#3b82f6";
+        return "#10b981";
+      });
 
     simulation.on("tick", () => {
       link
-        .attr("x1", (d: any) => Math.max(50, Math.min(width - 50, d.source.x)))
-        .attr("y1", (d: any) => Math.max(20, Math.min(height - 20, d.source.y)))
-        .attr("x2", (d: any) => Math.max(50, Math.min(width - 50, d.target.x)))
-        .attr("y2", (d: any) => Math.max(20, Math.min(height - 20, d.target.y)));
+        .attr("x1", (d: any) => d.source.x)
+        .attr("y1", (d: any) => d.source.y)
+        .attr("x2", (d: any) => d.target.x)
+        .attr("y2", (d: any) => d.target.y);
 
-      node.attr("transform", (d: any) => {
-        d.x = Math.max(50, Math.min(width - 50, d.x));
-        d.y = Math.max(20, Math.min(height - 20, d.y));
-        return `translate(${d.x},${d.y})`;
-      });
+      node
+        .attr("transform", (d: any) => `translate(${d.x},${d.y})`);
     });
-
-    function dragstarted(event: any) {
-      if (!event.active) simulation.alphaTarget(0.3).restart();
-      event.subject.fx = event.subject.x;
-      event.subject.fy = event.subject.y;
-    }
-    
-    function dragged(event: any) {
-      event.subject.fx = event.x;
-      event.subject.fy = event.y;
-    }
-    
-    function dragended(event: any) {
-      if (!event.active) simulation.alphaTarget(0);
-      event.subject.fx = null;
-      event.subject.fy = null;
-    }
 
     return () => {
       simulation.stop();
     };
-  }, [selectedPerson, currentTheme]);
+  }, [selectedPerson, currentTheme, activeTab]);
 
   return (
     <div className="flex flex-col lg:flex-row h-full gap-6 w-full">
-      {/* Search Panel */}
+      {/* Suspect Search Panel */}
       <div className={`lg:w-1/3 flex flex-col h-full border ${currentTheme.border} ${currentTheme.cardBg} rounded-2xl overflow-hidden shadow-lg`}>
         <div className="p-6 border-b border-slate-500/10">
           <div className="flex items-center gap-2 mb-4">
-            <Link className={`w-6 h-6 ${currentTheme.textMain}`} />
+            <Users className={`w-6 h-6 ${currentTheme.textMain}`} />
             <h2 className={`text-xl font-bold ${currentTheme.textMain}`}>Criminal Connections</h2>
           </div>
           <p className={`text-xs ${currentTheme.textMuted} mb-4`}>
@@ -233,9 +264,9 @@ export const CriminalConnections: React.FC<CriminalConnectionsProps> = ({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto divide-y divide-slate-500/15 custom-scrollbar p-2">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-2">
           {filteredPersons.length === 0 ? (
-            <div className="p-6 text-center text-xs text-slate-500 font-mono">
+            <div className={`p-8 text-center text-sm ${currentTheme.textMuted}`}>
               No multi-case individuals found
             </div>
           ) : (
@@ -267,90 +298,188 @@ export const CriminalConnections: React.FC<CriminalConnectionsProps> = ({
         </div>
       </div>
 
-      {/* Details Panel */}
-      <div className={`lg:flex-1 border ${currentTheme.border} ${currentTheme.cardBg} rounded-2xl p-6 flex flex-col overflow-y-auto shadow-lg ${currentTheme.textMain} custom-scrollbar`}>
+      {/* Profile Details Panel */}
+      <div className={`lg:flex-1 border ${currentTheme.border} ${currentTheme.cardBg} rounded-2xl flex flex-col overflow-hidden shadow-lg ${currentTheme.textMain}`}>
         {selectedPerson ? (
-          <div className="space-y-6">
-            <div className="border-b border-slate-500/10 pb-6 flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className={`p-2 rounded bg-slate-500/10 text-slate-500`}>
-                    <User className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold">{selectedPerson.name}</h2>
-                    <p className={`text-xs ${currentTheme.textMuted} mt-1`}>
-                      Suspect Profile
-                    </p>
-                  </div>
+          <div className="flex flex-col h-full">
+            
+            {/* Profile Header */}
+            <div className="p-6 border-b border-slate-500/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className={`w-16 h-16 rounded-full bg-slate-500/10 border ${currentTheme.border} flex items-center justify-center flex-shrink-0`}>
+                  <User className="w-8 h-8 text-slate-500" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold">{selectedPerson.name}</h2>
+                  <p className={`text-sm ${currentTheme.textMuted} mt-1 flex flex-wrap items-center gap-2`}>
+                    <span>Gender: Not Recorded</span>
+                    <span>&bull;</span>
+                    <span>Age: Not Recorded</span>
+                    <span>&bull;</span>
+                    <span className="truncate">Karnataka</span>
+                  </p>
                 </div>
               </div>
-              <button 
-                onClick={() => onNavigateToNetwork(selectedPerson.name)}
-                className={`px-3 py-1.5 rounded text-xs font-bold border ${currentTheme.border} hover:bg-slate-500/10 transition-colors flex items-center gap-2 ${currentTheme.textMain}`}
-              >
-                <Network className="w-4 h-4" /> View in Network Map
-              </button>
-            </div>
-
-            {/* D3 Visualization */}
-            <div className={`rounded-xl border ${currentTheme.border} overflow-hidden bg-slate-900/50`}>
-              <div className="p-3 border-b border-slate-500/10 flex items-center gap-2">
-                <Network className="w-4 h-4 text-slate-500" />
-                <h3 className="text-xs font-bold tracking-wider text-slate-500 uppercase">Multi-Case Relationship Network</h3>
+              <div className="flex gap-6">
+                <div className="text-center">
+                  <div className={`text-[10px] ${currentTheme.textMuted} uppercase tracking-wider font-bold mb-1`}>Total Cases</div>
+                  <div className="text-xl font-bold">{selectedPerson.cases.length}</div>
+                </div>
+                <div className="text-center">
+                  <div className={`text-[10px] ${currentTheme.textMuted} uppercase tracking-wider font-bold mb-1`}>Arrests</div>
+                  <div className="text-xl font-bold">{selectedPerson.cases.filter((c: any) => c.status === "Closed" || c.status === "Chargesheeted").length}</div>
+                </div>
+                <div className="text-center">
+                  <div className={`text-[10px] ${currentTheme.textMuted} uppercase tracking-wider font-bold mb-1`}>Known Associates</div>
+                  <div className="text-xl font-bold">Multiple</div>
+                </div>
               </div>
-              <svg ref={svgRef} className="w-full h-[400px]" />
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
-              <h3 className={`text-sm font-bold uppercase tracking-wider ${currentTheme.textMuted} mt-4`}>Associated Cases ({selectedPerson.cases.length})</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {selectedPerson.cases.map((c: Case) => (
-                  <div key={c.id} className={`p-4 rounded-xl border ${currentTheme.border} bg-slate-500/5 hover:bg-slate-500/10 transition-colors`}>
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="font-mono font-bold text-blue-500 text-sm">{c.fir_number}</span>
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
-                        c.status === "Closed" ? "border-emerald-500/30 text-emerald-500" : "border-amber-500/30 text-amber-500"
-                      }`}>{c.status}</span>
+            {/* Profile Tabs */}
+            <div className={`flex items-center gap-6 px-6 border-b border-slate-500/10 ${currentTheme.textMuted} text-sm font-bold bg-black/10 overflow-x-auto custom-scrollbar`}>
+              {["overview", "cases", "associates", "addresses", "vehicles"].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab as any)}
+                  className={`pb-3 pt-4 uppercase tracking-wider transition-colors border-b-2 whitespace-nowrap flex-shrink-0 ${
+                    activeTab === tab ? "border-blue-500 text-blue-500" : "border-transparent hover:text-slate-400"
+                  }`}
+                >
+                  {tab === "cases" ? `Linked Cases (${selectedPerson.cases.length})` : tab}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab Content */}
+            <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
+              
+              {activeTab === "overview" && (
+                <div className="space-y-6">
+                  {/* Demographics Overview */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className={`p-4 rounded-xl border ${currentTheme.border} bg-slate-500/5`}>
+                      <div className="flex items-center gap-2 mb-4 text-slate-500">
+                        <User className="w-4 h-4" />
+                        <h3 className="text-xs font-bold uppercase tracking-wider">Demographics</h3>
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>Phone</p>
+                          <p className="text-sm font-medium">Not Recorded</p>
+                        </div>
+                        <div>
+                          <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>Address</p>
+                          <p className="text-sm font-medium">Not Recorded</p>
+                        </div>
+                        <div>
+                          <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>Occupation</p>
+                          <p className="text-sm font-medium text-slate-500 italic">Not Recorded in FIR</p>
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-xs font-semibold mb-2 line-clamp-1">{c.crime_head}</p>
-                    <div className="flex flex-col gap-1 text-[11px] text-slate-500">
-                      <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {c.location || c.police_station}</span>
-                      <span className="flex items-center gap-1"><FileText className="w-3 h-3" /> {c.date_of_registration}</span>
-                    </div>
-                    <div className="mt-4 flex gap-2">
-                      <button 
-                        onClick={() => onSelectCase(c)}
-                        className={`flex-1 py-1.5 rounded-lg text-xs font-bold border ${currentTheme.border} hover:bg-blue-500/10 transition-colors text-center`}
-                      >
-                        View Case
-                      </button>
-                      <button 
-                        onClick={() => (c.location || c.district) && onNavigateToMap(c.location || c.district)}
-                        className={`flex-1 py-1.5 rounded-lg text-xs font-bold border ${currentTheme.border} hover:bg-emerald-500/10 transition-colors text-center`}
-                      >
-                        Map
-                      </button>
+
+                    <div className={`p-4 rounded-xl border ${currentTheme.border} bg-slate-500/5`}>
+                      <div className="flex items-center justify-between mb-4 text-slate-500">
+                        <div className="flex items-center gap-2">
+                          <Briefcase className="w-4 h-4" />
+                          <h3 className="text-xs font-bold uppercase tracking-wider">Top Cases</h3>
+                        </div>
+                        <button 
+                          onClick={() => setActiveTab("cases")}
+                          className="text-[10px] font-bold text-blue-500 uppercase hover:underline"
+                        >
+                          View All
+                        </button>
+                      </div>
+                      <div className="space-y-3">
+                        {selectedPerson.cases.slice(0, 3).map((c: any, i: number) => (
+                          <div key={i} className="flex justify-between items-center border-b border-slate-500/10 pb-2 last:border-0 last:pb-0">
+                            <span className={`text-xs ${currentTheme.textMuted}`}>{c.fir_number}</span>
+                            <span className="text-xs font-bold">{c.crime_head}</span>
+                            <span className="text-xs">{c.date_of_registration}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
+
+                  {/* Mobile Intelligence Panel */}
+                  <MobileIntelligencePanel 
+                    personName={selectedPerson.name}
+                    cases={selectedPerson.cases} 
+                    currentTheme={currentTheme} 
+                    onNavigateToMap={onNavigateToMap}
+                    onNavigateToNetwork={onNavigateToNetwork}
+                    onSelectCase={onSelectCase}
+                  />
+                </div>
+              )}
+
+              {activeTab === "cases" && (
+                <div className={`rounded-xl border ${currentTheme.border} overflow-hidden`}>
+                  <table className="w-full text-left text-sm">
+                    <thead className={`bg-slate-500/10 ${currentTheme.textMuted} text-xs uppercase tracking-wider`}>
+                      <tr>
+                        <th className="px-4 py-3 font-bold">FIR No.</th>
+                        <th className="px-4 py-3 font-bold">Category</th>
+                        <th className="px-4 py-3 font-bold">Police Station</th>
+                        <th className="px-4 py-3 font-bold">Status</th>
+                        <th className="px-4 py-3 font-bold">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-500/10">
+                      {selectedPerson.cases.map((c: any, i: number) => (
+                        <tr key={i} className="hover:bg-slate-500/5 transition-colors">
+                          <td className="px-4 py-3 font-bold text-blue-400">{c.fir_number}</td>
+                          <td className="px-4 py-3">{c.crime_head}</td>
+                          <td className="px-4 py-3">{c.police_station}</td>
+                          <td className="px-4 py-3">
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                              c.status === "Closed" ? "border-emerald-500/30 text-emerald-500" : "border-amber-500/30 text-amber-500"
+                            }`}>{c.status}</span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-400">{c.date_of_registration}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {activeTab === "associates" && (
+                <div className={`rounded-xl border ${currentTheme.border} overflow-hidden bg-slate-900/50 flex flex-col h-full min-h-[450px]`}>
+                  <div className="p-3 border-b border-slate-500/10 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Network className="w-4 h-4 text-slate-500" />
+                      <h3 className="text-xs font-bold tracking-wider text-slate-500 uppercase">Multi-Case Relationship Network</h3>
+                    </div>
+                    <button 
+                      onClick={() => onNavigateToNetwork(selectedPerson.name)}
+                      className={`px-3 py-1.5 rounded text-[10px] font-bold border ${currentTheme.border} hover:bg-slate-500/10 transition-colors flex items-center gap-2 uppercase tracking-wider`}
+                    >
+                      <ExternalLink className="w-3 h-3" /> Full Screen
+                    </button>
+                  </div>
+                  <div className="flex-1 relative w-full h-[400px]">
+                    <svg ref={svgRef} className="w-full h-full absolute inset-0" />
+                  </div>
+                </div>
+              )}
+
+              {(activeTab === "addresses" || activeTab === "vehicles") && (
+                <div className="h-48 flex flex-col items-center justify-center text-slate-500 space-y-4">
+                  <Database className="w-12 h-12 opacity-20" />
+                  <p className="text-sm font-medium">No {activeTab} currently recorded in system.</p>
+                </div>
+              )}
+
             </div>
-
-            <MobileIntelligencePanel
-              personName={selectedPerson.name}
-              cases={cases}
-              currentTheme={currentTheme}
-              onNavigateToMap={onNavigateToMap}
-              onNavigateToNetwork={onNavigateToNetwork}
-              onSelectCase={onSelectCase}
-            />
-
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-500 space-y-4">
-            <Link className="w-16 h-16 opacity-20" />
-            <p className="text-sm font-medium">Select a suspect to view their multi-case connections</p>
+          <div className="flex flex-col items-center justify-center h-full text-slate-500 space-y-4">
+            <Users className="w-16 h-16 opacity-20" />
+            <p className="text-lg font-medium">Select a suspect record to view details</p>
           </div>
         )}
       </div>

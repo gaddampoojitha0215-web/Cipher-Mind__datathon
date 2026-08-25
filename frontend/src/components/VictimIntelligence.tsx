@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { 
-  Search, Shield, User, FileText, MapPin, Briefcase, Network, Users
+  Search, Shield, User, FileText, MapPin, Briefcase, Network, Users, Phone, Navigation, Database
 } from "lucide-react";
 import type { Theme } from "../types";
 import { MobileIntelligencePanel } from "./MobileIntelligencePanel";
@@ -22,6 +22,7 @@ export const VictimIntelligence: React.FC<VictimIntelligenceProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCase, setSelectedCase] = useState<any | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "cases" | "statements" | "documents">("overview");
 
   const rawQuery = searchQuery.trim().toLowerCase();
   
@@ -59,14 +60,14 @@ export const VictimIntelligence: React.FC<VictimIntelligenceProps> = ({
 
         <div className="flex-1 overflow-y-auto divide-y divide-slate-500/15 custom-scrollbar p-2">
           {filteredCases.length === 0 ? (
-            <div className="p-6 text-center text-xs text-slate-500 font-mono">
-              No matching victim records found
+            <div className={`p-8 text-center text-sm ${currentTheme.textMuted}`}>
+              No victim records found
             </div>
           ) : (
             filteredCases.slice(0, 50).map((c) => (
               <button
                 key={c.id}
-                onClick={() => { setSelectedCase(c); onSelectCase(c); }}
+                onClick={() => setSelectedCase(c)}
                 className={`w-full p-4 rounded-xl border cursor-pointer transition-all flex flex-col gap-1.5 ${
                   selectedCase?.id === c.id
                     ? "border-blue-500 bg-blue-500/10"
@@ -94,117 +95,155 @@ export const VictimIntelligence: React.FC<VictimIntelligenceProps> = ({
       </div>
 
       {/* Victim Profile Details */}
-      <div className={`lg:flex-1 border ${currentTheme.border} ${currentTheme.cardBg} rounded-2xl p-6 flex flex-col overflow-y-auto shadow-lg ${currentTheme.textMain} custom-scrollbar`}>
+      <div className={`lg:flex-1 border ${currentTheme.border} ${currentTheme.cardBg} rounded-2xl flex flex-col overflow-hidden shadow-lg ${currentTheme.textMain}`}>
         {selectedCase ? (
-          <div className="space-y-6">
-            <div className="border-b border-slate-500/10 pb-6">
-              <div className="flex items-center gap-3 mb-2">
-                <div className={`p-2 rounded bg-slate-500/10 text-slate-500`}>
-                  <User className="w-6 h-6" />
+          <div className="flex flex-col h-full">
+            
+            {/* Profile Header */}
+            <div className="p-6 border-b border-slate-500/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className={`w-16 h-16 rounded-full bg-slate-500/10 border ${currentTheme.border} flex items-center justify-center flex-shrink-0`}>
+                  <User className="w-8 h-8 text-slate-500" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">Victim Information</h2>
-                  <p className={`text-xs ${currentTheme.textMuted} mt-1`}>Related Case: {selectedCase.fir_number}</p>
+                  <h2 className="text-2xl font-bold">Victim Profile</h2>
+                  <p className={`text-sm ${currentTheme.textMuted} mt-1 flex flex-wrap items-center gap-2`}>
+                    <span>Gender: Not Recorded</span>
+                    <span>&bull;</span>
+                    <span>Age: Not Recorded</span>
+                    <span>&bull;</span>
+                    <span className="truncate">{selectedCase.district || "Unknown"}, Karnataka</span>
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-6">
+                <div className="text-center">
+                  <div className={`text-[10px] ${currentTheme.textMuted} uppercase tracking-wider font-bold mb-1`}>Total Cases</div>
+                  <div className="text-xl font-bold">1</div>
+                </div>
+                <div className="text-center">
+                  <div className={`text-[10px] ${currentTheme.textMuted} uppercase tracking-wider font-bold mb-1`}>Last Case</div>
+                  <div className="text-sm font-bold mt-1 whitespace-nowrap">{selectedCase.date_of_registration}</div>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className={`p-4 bg-slate-500/5 rounded-xl border ${currentTheme.border}`}>
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <FileText className="w-4 h-4" /> Incident Info
-                </h3>
-                <div className="space-y-2">
-                  <p className="text-sm"><strong>Crime Category:</strong> {selectedCase.crime_head}</p>
-                  <p className="text-sm"><strong>Date Registered:</strong> {selectedCase.date_of_registration}</p>
-                  <p className="text-sm"><strong>Status:</strong> {selectedCase.status}</p>
-                </div>
-              </div>
-
-              <div className={`p-4 bg-slate-500/5 rounded-xl border ${currentTheme.border}`}>
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <MapPin className="w-4 h-4" /> Location Connection
-                </h3>
-                <div className="space-y-2">
-                  <p className="text-sm"><strong>Location:</strong> {selectedCase.location}</p>
-                  <p className="text-sm"><strong>Police Station:</strong> {selectedCase.police_station}</p>
-                  <p className="text-sm"><strong>District:</strong> {selectedCase.district}</p>
-                  <button 
-                    onClick={() => onNavigateToMap(selectedCase.district)}
-                    className="mt-3 text-xs font-bold text-blue-400 hover:text-blue-300 transition-colors uppercase flex items-center gap-1"
-                  >
-                    View on Map &rarr;
-                  </button>
-                </div>
-              </div>
+            {/* Profile Tabs */}
+            <div className={`flex items-center gap-6 px-6 border-b border-slate-500/10 ${currentTheme.textMuted} text-sm font-bold bg-black/10`}>
+              {["overview", "cases", "statements", "documents"].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab as any)}
+                  className={`pb-3 pt-4 uppercase tracking-wider transition-colors border-b-2 ${
+                    activeTab === tab ? "border-blue-500 text-blue-500" : "border-transparent hover:text-slate-400"
+                  }`}
+                >
+                  {tab === "cases" ? "Cases (1)" : tab}
+                </button>
+              ))}
             </div>
 
-            <div className={`p-4 bg-slate-500/5 rounded-xl border ${currentTheme.border}`}>
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Investigation Details</h3>
-              <p className={`text-sm ${currentTheme.textMuted} leading-relaxed font-mono`}>{selectedCase.description}</p>
-              <div className="mt-4 text-sm">
-                <strong>Investigating Officer:</strong> {selectedCase.officer}
-              </div>
-            </div>
-
-            <div className="border-t border-slate-500/10 pt-6">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Network className="w-4 h-4" /> Related People & Suspects
-              </h3>
+            {/* Tab Content */}
+            <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
               
-              {selectedCase.accused && selectedCase.accused.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {selectedCase.accused.map((suspect: string, idx: number) => (
-                    <button 
-                      key={idx}
-                      onClick={() => onNavigateToNetwork(suspect)}
-                      className={`p-3 text-left bg-slate-500/5 hover:bg-slate-500/10 transition-colors border ${currentTheme.border} rounded-xl flex items-center gap-3 cursor-pointer`}
-                    >
-                      <User className={`w-4 h-4 ${currentTheme.id === 'dark' ? 'text-red-400' : 'text-red-600'}`} />
-                      <div>
-                        <div className="text-sm font-semibold">{suspect}</div>
-                        <div className="text-[10px] text-slate-500 uppercase">Suspect</div>
+              {activeTab === "overview" && (
+                <div className="space-y-6">
+                  {/* Demographics Overview */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className={`p-4 rounded-xl border ${currentTheme.border} bg-slate-500/5`}>
+                      <div className="flex items-center gap-2 mb-4 text-slate-500">
+                        <User className="w-4 h-4" />
+                        <h3 className="text-xs font-bold uppercase tracking-wider">Demographics</h3>
                       </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className={`p-4 rounded-xl border border-dashed ${currentTheme.border} text-center text-sm ${currentTheme.textMuted}`}>
-                  No suspects currently recorded for this victim's case.
+                      <div className="space-y-3">
+                        <div>
+                          <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>Phone</p>
+                          <p className="text-sm font-medium">{selectedCase.phone_numbers && selectedCase.phone_numbers.length > 0 ? selectedCase.phone_numbers.join(", ") : "Not Recorded"}</p>
+                        </div>
+                        <div>
+                          <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>Address</p>
+                          <p className="text-sm font-medium">{selectedCase.location || "Not Recorded"}</p>
+                        </div>
+                        <div>
+                          <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>Occupation</p>
+                          <p className="text-sm font-medium text-slate-500 italic">Not Recorded in FIR</p>
+                        </div>
+                        <div>
+                          <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>ID Proof</p>
+                          <p className="text-sm font-medium text-slate-500 italic">Not Recorded in FIR</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={`p-4 rounded-xl border ${currentTheme.border} bg-slate-500/5`}>
+                      <div className="flex items-center gap-2 mb-4 text-slate-500">
+                        <Briefcase className="w-4 h-4" />
+                        <h3 className="text-xs font-bold uppercase tracking-wider">Recent Case Summary</h3>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center border-b border-slate-500/10 pb-2">
+                          <span className={`text-xs ${currentTheme.textMuted}`}>{selectedCase.fir_number}</span>
+                          <span className="text-xs font-bold">{selectedCase.crime_head}</span>
+                          <span className="text-xs">{selectedCase.date_of_registration}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mobile Intelligence Panel */}
+                  <MobileIntelligencePanel 
+                    personName={`Victim in ${selectedCase.fir_number}`}
+                    cases={[selectedCase]} 
+                    currentTheme={currentTheme} 
+                    onNavigateToMap={onNavigateToMap}
+                    onNavigateToNetwork={onNavigateToNetwork}
+                    onSelectCase={onSelectCase}
+                  />
                 </div>
               )}
+
+              {activeTab === "cases" && (
+                <div className={`rounded-xl border ${currentTheme.border} overflow-hidden`}>
+                  <table className="w-full text-left text-sm">
+                    <thead className={`bg-slate-500/10 ${currentTheme.textMuted} text-xs uppercase tracking-wider`}>
+                      <tr>
+                        <th className="px-4 py-3 font-bold">FIR No.</th>
+                        <th className="px-4 py-3 font-bold">Category</th>
+                        <th className="px-4 py-3 font-bold">Police Station</th>
+                        <th className="px-4 py-3 font-bold">Status</th>
+                        <th className="px-4 py-3 font-bold">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-500/10">
+                      <tr className="hover:bg-slate-500/5 transition-colors">
+                        <td className="px-4 py-3 font-bold text-blue-400">{selectedCase.fir_number}</td>
+                        <td className="px-4 py-3">{selectedCase.crime_head}</td>
+                        <td className="px-4 py-3">{selectedCase.police_station}</td>
+                        <td className="px-4 py-3">
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                            selectedCase.status === "Closed" ? "border-emerald-500/30 text-emerald-500" : "border-amber-500/30 text-amber-500"
+                          }`}>{selectedCase.status}</span>
+                        </td>
+                        <td className="px-4 py-3 text-slate-400">{selectedCase.date_of_registration}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {(activeTab === "statements" || activeTab === "documents") && (
+                <div className="h-48 flex flex-col items-center justify-center text-slate-500 space-y-4">
+                  <Database className="w-12 h-12 opacity-20" />
+                  <p className="text-sm font-medium">No {activeTab} currently recorded in system.</p>
+                </div>
+              )}
+
             </div>
-
-            {selectedCase.phone_numbers?.length > 0 && (
-              <MobileIntelligencePanel
-                phones={selectedCase.phone_numbers}
-                cases={cases}
-                currentTheme={currentTheme}
-                onNavigateToMap={onNavigateToMap}
-                onNavigateToNetwork={onNavigateToNetwork}
-                onSelectCase={onSelectCase}
-              />
-            )}
-
-            <div className="border-t border-slate-500/10 pt-6">
-                <button
-                  onClick={() => onSelectCase(selectedCase)}
-                  className={`px-3 py-1.5 rounded text-xs font-bold border ${currentTheme.border} hover:bg-slate-500/10 transition-colors flex items-center justify-center gap-2 ${currentTheme.textMain}`}
-                >
-                  <Briefcase className="w-4 h-4" />
-                  View Full Case File
-                </button>
-            </div>
-
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center text-center py-20 text-slate-500 h-full">
-            <div className="w-16 h-16 mb-4 rounded-2xl flex items-center justify-center flex-shrink-0 opacity-50 bg-slate-500/10">
-              <Users className="w-8 h-8" />
-            </div>
-            <p className={`text-sm font-semibold ${currentTheme.id === 'dark' ? 'text-zinc-400' : 'text-zinc-650'}`}>
-              Select a victim record to inspect related intelligence.
-            </p>
+          <div className="flex flex-col items-center justify-center h-full text-slate-500 space-y-4">
+            <Users className="w-16 h-16 opacity-20" />
+            <p className="text-lg font-medium">Select a victim record to view details</p>
           </div>
         )}
       </div>
