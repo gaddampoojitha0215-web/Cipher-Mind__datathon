@@ -66,15 +66,18 @@ export const VictimIntelligence: React.FC<VictimIntelligenceProps> = ({
             filteredCases.slice(0, 50).map((c) => (
               <button
                 key={c.id}
-                onClick={() => setSelectedCase(c)}
-                className={`w-full text-left p-4 rounded-xl mb-1 hover:bg-slate-500/5 transition-all flex flex-col gap-1.5 cursor-pointer ${currentTheme.textMain} ${
+                onClick={() => { setSelectedCase(c); onSelectCase(c); }}
+                className={`w-full p-4 rounded-xl border cursor-pointer transition-all flex flex-col gap-1.5 ${
                   selectedCase?.id === c.id
-                    ? (currentTheme.id === "dark" ? "bg-slate-800/60 border border-fuchsia-500/50" : "bg-purple-50 border border-purple-600/50")
-                    : "border border-transparent"
+                    ? "border-blue-500 bg-blue-500/10"
+                    : `${currentTheme.cardBg} ${currentTheme.border} hover:border-blue-500/50`
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-blue-400">Victim ID: {c.fir_number.split('/')[0] || "Unknown"}</span>
+                  <span className={`text-sm font-bold flex items-center gap-2 ${currentTheme.textMain}`}>
+                    <User className="w-4 h-4" />
+                    {c.fir_number}
+                  </span>
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
                     c.status === "Closed" ? "border-emerald-500/30 text-emerald-500" : "border-amber-500/30 text-amber-500"
                   }`}>{c.status}</span>
@@ -96,12 +99,12 @@ export const VictimIntelligence: React.FC<VictimIntelligenceProps> = ({
           <div className="space-y-6">
             <div className="border-b border-slate-500/10 pb-6">
               <div className="flex items-center gap-3 mb-2">
-                <div className={`p-3 rounded-xl ${currentTheme.id === 'dark' ? 'bg-fuchsia-500/20 text-fuchsia-400' : 'bg-purple-100 text-purple-700'}`}>
-                  <User className="w-8 h-8" />
+                <div className={`p-2 rounded bg-slate-500/10 text-slate-500`}>
+                  <User className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold">Victim Information</h2>
-                  <p className={`text-sm ${currentTheme.textMuted} font-mono mt-1`}>Related Case: {selectedCase.fir_number}</p>
+                  <h2 className="text-xl font-bold">Victim Information</h2>
+                  <p className={`text-xs ${currentTheme.textMuted} mt-1`}>Related Case: {selectedCase.fir_number}</p>
                 </div>
               </div>
             </div>
@@ -184,9 +187,9 @@ export const VictimIntelligence: React.FC<VictimIntelligenceProps> = ({
             )}
 
             <div className="border-t border-slate-500/10 pt-6">
-               <button
+                <button
                   onClick={() => onSelectCase(selectedCase)}
-                  className={`w-full py-3 rounded-xl border ${currentTheme.border} ${currentTheme.id === 'dark' ? 'bg-[#E8F0FE] text-[#090C10]' : 'bg-[#1A182F] text-white'} font-bold uppercase tracking-wider text-xs transition-all hover:opacity-90 flex items-center justify-center gap-2 shadow-md`}
+                  className={`px-3 py-1.5 rounded text-xs font-bold border ${currentTheme.border} hover:bg-slate-500/10 transition-colors flex items-center justify-center gap-2 ${currentTheme.textMain}`}
                 >
                   <Briefcase className="w-4 h-4" />
                   View Full Case File

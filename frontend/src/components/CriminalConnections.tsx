@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { 
-  Search, Link, FileText, MapPin, Network, Shield, AlertTriangle
+  Search, MapPin, Calendar, Shield, ExternalLink, Network, User, AlertTriangle, Link, FileText
 } from "lucide-react";
 import type { Theme, Case } from "../types";
 import * as d3 from "d3";
@@ -36,20 +36,20 @@ export const CriminalConnections: React.FC<CriminalConnectionsProps> = ({
     });
     
     return Array.from(personMap.entries())
-      .filter(([name, personCases]) => personCases.length > 1)
-      .map(([name, personCases]) => ({
+      .filter(([name, personCases]: any) => personCases.length > 1)
+      .map(([name, personCases]: any) => ({
         id: name,
         name,
         cases: personCases
       }))
-      .sort((a, b) => b.cases.length - a.cases.length);
+      .sort((a: any, b: any) => b.cases.length - a.cases.length);
   }, [cases]);
 
   const rawQuery = searchQuery.trim().toLowerCase();
   
   const filteredPersons = !rawQuery
     ? multiCasePersons
-    : multiCasePersons.filter(p => p.name.toLowerCase().includes(rawQuery));
+    : multiCasePersons.filter((p: any) => p.name.toLowerCase().includes(rawQuery));
 
   // D3 Network Graph
   useEffect(() => {
@@ -239,19 +239,19 @@ export const CriminalConnections: React.FC<CriminalConnectionsProps> = ({
               No multi-case individuals found
             </div>
           ) : (
-            filteredPersons.map((p) => (
+            filteredPersons.map((p: any) => (
               <button
                 key={p.id}
                 onClick={() => setSelectedPerson(p)}
-                className={`w-full text-left p-4 rounded-xl mb-1 hover:bg-slate-500/5 transition-all flex flex-col gap-1.5 cursor-pointer ${currentTheme.textMain} ${
+                className={`p-4 rounded-xl border cursor-pointer transition-all flex flex-col gap-1.5 ${
                   selectedPerson?.id === p.id
-                    ? (currentTheme.id === "dark" ? "bg-slate-800/60 border border-blue-500/50" : "bg-blue-50 border border-blue-600/50")
-                    : "border border-transparent"
+                    ? "border-blue-500 bg-blue-500/10"
+                    : `${currentTheme.cardBg} ${currentTheme.border} hover:border-blue-500/50`
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-red-500 flex items-center gap-1">
-                    <AlertTriangle className="w-4 h-4" />
+                  <span className={`text-sm font-bold flex items-center gap-2 ${currentTheme.textMain}`}>
+                    <User className="w-4 h-4" />
                     {p.name}
                   </span>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded border border-blue-500/30 text-blue-500 bg-blue-500/10`}>
@@ -274,20 +274,20 @@ export const CriminalConnections: React.FC<CriminalConnectionsProps> = ({
             <div className="border-b border-slate-500/10 pb-6 flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  <div className={`p-3 rounded-xl bg-red-500/20 text-red-500`}>
-                    <Shield className="w-8 h-8" />
+                  <div className={`p-2 rounded bg-slate-500/10 text-slate-500`}>
+                    <User className="w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold">{selectedPerson.name}</h2>
-                    <p className={`text-sm ${currentTheme.textMuted} font-mono mt-1`}>
-                      Multiple Case Suspect (MCS) Profile
+                    <h2 className="text-xl font-bold">{selectedPerson.name}</h2>
+                    <p className={`text-xs ${currentTheme.textMuted} mt-1`}>
+                      Suspect Profile
                     </p>
                   </div>
                 </div>
               </div>
               <button 
                 onClick={() => onNavigateToNetwork(selectedPerson.name)}
-                className={`px-4 py-2 rounded-lg text-xs font-bold ${currentTheme.accentBg} transition-colors flex items-center gap-2`}
+                className={`px-3 py-1.5 rounded text-xs font-bold border ${currentTheme.border} hover:bg-slate-500/10 transition-colors flex items-center gap-2 ${currentTheme.textMain}`}
               >
                 <Network className="w-4 h-4" /> View in Network Map
               </button>
