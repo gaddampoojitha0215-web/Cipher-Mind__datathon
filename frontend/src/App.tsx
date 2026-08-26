@@ -3223,15 +3223,15 @@ function App() {
                     </div>
                   </div>
 
-                  <div className="border-t border-slate-500/10 pt-4 flex gap-3">
+                  <div className="border-t border-slate-500/10 pt-4 flex flex-wrap gap-3">
                     <button
                       onClick={() => {
                         setActiveTab("ai-assistant");
                         submitChat(undefined, `Show me details and leads for ${selectedCase.fir_number}`);
                       }}
-                      className={`bg-gradient-to-r ${theme.id === 'dark' ? 'from-[#E8F0FE] to-[#a9c6f5] hover:from-white hover:to-[#E8F0FE] text-[#090C10] shadow-[0_0_12px_rgba(232,240,254,0.4)] font-bold' : 'from-[#1A182F] to-[#2D2A4A] hover:from-black hover:to-[#1A182F] text-white'} flex-1 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-center flex items-center justify-center gap-2 cursor-pointer shadow-sm`}
+                      className={`bg-gradient-to-r ${theme.id === 'dark' ? 'from-[#E8F0FE] to-[#a9c6f5] hover:from-white hover:to-[#E8F0FE] text-[#090C10] shadow-[0_0_12px_rgba(232,240,254,0.4)] font-bold' : 'from-[#1A182F] to-[#2D2A4A] hover:from-black hover:to-[#1A182F] text-white'} flex-1 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all text-center flex items-center justify-center gap-2 cursor-pointer shadow-sm whitespace-nowrap min-w-max`}
                     >
-                      <MessageSquare className="w-3.5 h-3.5" /> AI Inquiry
+                      <MessageSquare className="w-3.5 h-3.5 flex-shrink-0" /> AI Inquiry
                     </button>
                     <button
                       onClick={() => {
@@ -3239,9 +3239,9 @@ function App() {
                         loadCaseGraph(selectedCase);
                         setGraphSearchQuery(selectedCase.fir_number);
                       }}
-                      className={`border ${theme.border} bg-transparent hover:bg-slate-500/10 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${theme.textMain}`}
+                      className={`border ${theme.border} bg-transparent hover:bg-slate-500/10 flex-1 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${theme.textMain} whitespace-nowrap min-w-max`}
                     >
-                      <Share2 className="w-3.5 h-3.5" /> View Network Links
+                      <Share2 className="w-3.5 h-3.5 flex-shrink-0" /> View Network Links
                     </button>
                     <button
                       onClick={async () => {
@@ -3261,10 +3261,10 @@ function App() {
                           alert("Failed to export case report PDF: " + err);
                         }
                       }}
-                      className={`border ${theme.border} bg-transparent hover:bg-slate-500/10 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${theme.textMain}`}
+                      className={`border ${theme.border} bg-transparent hover:bg-slate-500/10 flex-1 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${theme.textMain} whitespace-nowrap min-w-max`}
                       title="Download PDF Report"
                     >
-                      Export PDF
+                      <FileText className="w-3.5 h-3.5 flex-shrink-0" /> Export PDF
                     </button>
                     <button
                       onClick={() => {
@@ -3275,10 +3275,10 @@ function App() {
                           }
                         }, 200);
                       }}
-                      className="bg-purple-600 hover:bg-purple-700 text-[#090C10] px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer shadow-lg hover:shadow-[0_0_15px_rgba(232,240,254,0.55)]"
+                      className="bg-purple-600 hover:bg-purple-700 text-[#090C10] flex-1 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-[0_0_15px_rgba(232,240,254,0.55)] whitespace-nowrap min-w-max"
                       title="Locate Case Scene on Intelligence Map"
                     >
-                      <MapPin className="w-4 h-4" /> View on Map
+                      <MapPin className="w-3.5 h-3.5 flex-shrink-0" /> View on Map
                     </button>
                   </div>
                 </div>

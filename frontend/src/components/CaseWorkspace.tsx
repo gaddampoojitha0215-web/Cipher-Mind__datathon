@@ -1,10 +1,134 @@
-import React, { useState } from "react";
-import { Search, Filter, FileText, Phone, MapPin, Calendar, Briefcase, ChevronRight, X } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { Search, Filter, FileText, Phone, MapPin, Calendar, Briefcase, ChevronRight, X, Network, ExternalLink } from "lucide-react";
+import * as d3 from "d3";
 import { MobileIntelligencePanel } from "./MobileIntelligencePanel";
 
 export const CaseWorkspace = ({ cases, currentTheme, selectedCase, onSelectCase, onNavigateToNetwork, onNavigateToMap }: any) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    if (!selectedCase || !svgRef.current) return;
+
+    const width = svgRef.current.clientWidth || 300;
+    const height = 300;
+
+    const svg = d3.select(svgRef.current);
+    svg.selectAll("*").remove();
+
+    const container = svg.append("g");
+
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.1, 4])
+      .on("zoom", (event) => {
+        container.attr("transform", event.transform);
+      });
+
+    svg.call(zoom as any);
+
+    const nodes: any[] = [];
+    const links: any[] = [];
+
+    // Central case node
+    nodes.push({ id: selectedCase.id, label: selectedCase.fir_number, type: "case" });
+
+    // Entities
+    (selectedCase.accused || []).forEach((a: string) => {
+      if (!nodes.find(n => n.id === a)) {
+        nodes.push({ id: a, label: a, type: "suspect" });
+      }
+      links.push({ source: selectedCase.id, target: a });
+    });
+
+    (selectedCase.phone_numbers || []).forEach((p: string) => {
+      if (!nodes.find(n => n.id === p)) {
+        nodes.push({ id: p, label: p, type: "phone" });
+      }
+      links.push({ source: selectedCase.id, target: p });
+    });
+
+    (selectedCase.vehicles || []).forEach((v: string) => {
+      if (!nodes.find(n => n.id === v)) {
+        nodes.push({ id: v, label: v, type: "vehicle" });
+      }
+      links.push({ source: selectedCase.id, target: v });
+    });
+
+    const simulation = d3.forceSimulation(nodes)
+      .force("link", d3.forceLink(links).id((d: any) => d.id).distance(80))
+      .force("charge", d3.forceManyBody().strength(-200))
+      .force("center", d3.forceCenter(width / 2, height / 2))
+      .force("collision", d3.forceCollide().radius(40));
+
+    const link = container.append("g")
+      .selectAll("line")
+      .data(links)
+      .enter()
+      .append("line")
+      .attr("stroke", currentTheme.id === "dark" ? "#475569" : "#cbd5e1")
+      .attr("stroke-width", 1.5)
+      .attr("stroke-opacity", 0.6);
+
+    const node = container.append("g")
+      .selectAll("g")
+      .data(nodes)
+      .enter()
+      .append("g")
+      .call(d3.drag<any, any>()
+        .on("start", (event, d) => {
+          if (!event.active) simulation.alphaTarget(0.3).restart();
+          d.fx = d.x;
+          d.fy = d.y;
+        })
+        .on("drag", (event, d) => {
+          d.fx = event.x;
+          d.fy = event.y;
+        })
+        .on("end", (event, d) => {
+          if (!event.active) simulation.alphaTarget(0);
+          d.fx = null;
+          d.fy = null;
+        })
+      );
+
+    node.append("rect")
+      .attr("width", 120)
+      .attr("height", 30)
+      .attr("x", -60)
+      .attr("y", -15)
+      .attr("rx", 4)
+      .attr("fill", currentTheme.id === "dark" ? "#1e293b" : "#f8fafc")
+      .attr("stroke", (d: any) => {
+        if (d.type === "case") return "#3b82f6";
+        if (d.type === "suspect") return "#ef4444";
+        return "#10b981";
+      })
+      .attr("stroke-width", 1.5);
+
+    node.append("text")
+      .attr("x", -50)
+      .attr("y", 4)
+      .attr("font-size", "9px")
+      .attr("font-weight", "bold")
+      .attr("fill", currentTheme.id === "dark" ? "#f8fafc" : "#0f172a")
+      .text((d: any) => d.label.length > 15 ? d.label.substring(0, 15) + "..." : d.label);
+
+    simulation.on("tick", () => {
+      link
+        .attr("x1", (d: any) => d.source.x)
+        .attr("y1", (d: any) => d.source.y)
+        .attr("x2", (d: any) => d.target.x)
+        .attr("y2", (d: any) => d.target.y);
+
+      node
+        .attr("transform", (d: any) => `translate(${d.x},${d.y})`);
+    });
+
+    return () => {
+      simulation.stop();
+    };
+  }, [selectedCase, currentTheme]);
 
   const filteredCases = cases.filter((c: any) => {
     const q = searchQuery.toLowerCase();
@@ -164,6 +288,24 @@ export const CaseWorkspace = ({ cases, currentTheme, selectedCase, onSelectCase,
                 onSelectCase={onSelectCase}
               />
             )}
+
+            <div className={`mt-6 rounded-xl border ${currentTheme.border} overflow-hidden bg-slate-900/50 flex flex-col min-h-[300px]`}>
+              <div className="p-3 border-b border-slate-500/10 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Network className="w-4 h-4 text-slate-500" />
+                  <h3 className="text-xs font-bold tracking-wider text-slate-500 uppercase">Case Link Analysis</h3>
+                </div>
+                <button 
+                  onClick={() => onNavigateToNetwork && onNavigateToNetwork(selectedCase.fir_number)}
+                  className={`px-3 py-1.5 rounded text-[10px] font-bold border ${currentTheme.border} hover:bg-slate-500/10 transition-colors flex items-center gap-2 uppercase tracking-wider`}
+                >
+                  <ExternalLink className="w-3 h-3" /> Full Screen
+                </button>
+              </div>
+              <div className="flex-1 relative w-full h-[300px]">
+                <svg ref={svgRef} className="w-full h-full absolute inset-0" />
+              </div>
+            </div>
 
             <div className={`pt-6 mt-6 border-t space-y-2 ${currentTheme.border}`}>
               <p className={`text-xs ${currentTheme.textMuted} mb-2 uppercase tracking-wider`}>Actions</p>

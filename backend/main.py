@@ -171,9 +171,12 @@ if not df_cases.empty:
         if "FRAUD" in crime_desc.upper() or "CYBER" in crime_desc.upper() or "THEFT" in crime_desc.upper():
             bank_accounts = [f"SBIN0001{2345 + (idx % 1000)}"]
 
+        victim_age = str(row.get('Victim Age', 'N/A'))
+        victim_gender = str(row.get('Victim Gender', 'N/A'))
+
         description = (
             f"{crime_desc} reported in {city}. "
-            f"Victim Age: {row.get('Victim Age', 'N/A')}, Gender: {row.get('Victim Gender', 'N/A')}. "
+            f"Victim Age: {victim_age}, Gender: {victim_gender}. "
             f"Weapon used: {row.get('Weapon Used', 'None')}. "
             f"Police deployed: {row.get('Police Deployed', 0)}."
         )
@@ -196,7 +199,9 @@ if not df_cases.empty:
             "phone_numbers": phone_numbers,
             "vehicles": vehicles,
             "bank_accounts": bank_accounts,
-            "officer": officer_name
+            "officer": officer_name,
+            "victim_age": victim_age,
+            "victim_gender": victim_gender
         })
 
 

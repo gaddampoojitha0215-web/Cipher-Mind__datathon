@@ -106,7 +106,7 @@ export const VictimIntelligence: React.FC<VictimIntelligenceProps> = ({
                   <User className="w-8 h-8 text-slate-500" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold">Victim Profile</h2>
+                  <h2 className="text-2xl font-bold">{selectedCase.victims?.[0] || "Victim Profile"}</h2>
                   <p className={`text-sm ${currentTheme.textMuted} mt-1 flex flex-wrap items-center gap-2`}>
                     <span className="truncate">{selectedCase.district || "Unknown"}, Karnataka</span>
                   </p>
@@ -152,6 +152,22 @@ export const VictimIntelligence: React.FC<VictimIntelligenceProps> = ({
                         <h3 className="text-xs font-bold uppercase tracking-wider">Demographics</h3>
                       </div>
                       <div className="space-y-3">
+                        {(selectedCase.victim_age || selectedCase.victim_gender) && (
+                          <div className="flex flex-wrap gap-4 mb-2">
+                            {selectedCase.victim_age && (
+                              <div className={`px-4 py-2 rounded-lg border ${currentTheme.border} bg-blue-500/10`}>
+                                <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>Age</p>
+                                <p className="text-lg font-bold text-blue-400">{selectedCase.victim_age}</p>
+                              </div>
+                            )}
+                            {selectedCase.victim_gender && (
+                              <div className={`px-4 py-2 rounded-lg border ${currentTheme.border} bg-purple-500/10`}>
+                                <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>Gender</p>
+                                <p className="text-lg font-bold text-purple-400">{selectedCase.victim_gender}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
                         {selectedCase.phone_numbers && selectedCase.phone_numbers.length > 0 && (
                           <div>
                             <p className={`text-[10px] uppercase tracking-wider ${currentTheme.textMuted}`}>Phone</p>
@@ -164,7 +180,7 @@ export const VictimIntelligence: React.FC<VictimIntelligenceProps> = ({
                             <p className="text-sm font-medium">{selectedCase.location}</p>
                           </div>
                         )}
-                        {!selectedCase.phone_numbers?.length && !selectedCase.location && (
+                        {!selectedCase.victim_age && !selectedCase.victim_gender && !selectedCase.phone_numbers?.length && !selectedCase.location && (
                           <div className={`text-sm ${currentTheme.textMuted} italic`}>
                             No demographic data available for this record.
                           </div>
