@@ -12,7 +12,8 @@ import {
   User,
   Users,
   HelpCircle,
-  GripVertical
+  GripVertical,
+  MessageCircle
 } from "lucide-react";
 import type { Theme } from "../types";
 import logoImg from "../assets/logo.png";
@@ -27,7 +28,8 @@ export type TabType =
   | "victim-intelligence"
   | "criminal-connections"
   | "settings"
-  | "help";
+  | "help"
+  | "feedback";
 
 interface SidebarProps {
   activeTab: TabType;
@@ -106,6 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = memo(({ activeTab, onSelectTab, c
   const bottomNavigation = [
     { id: "settings" as TabType, label: "Settings", icon: <Settings className="w-5 h-5" /> },
     { id: "help" as TabType, label: "Help & Support", icon: <HelpCircle className="w-5 h-5" /> },
+    { id: "feedback" as TabType, label: "Feedback", icon: <MessageCircle className="w-5 h-5" /> },
   ];
 
   const currentWidth = isCollapsed ? COLLAPSED_WIDTH : width;
@@ -183,6 +186,7 @@ export const Sidebar: React.FC<SidebarProps> = memo(({ activeTab, onSelectTab, c
               onClick={() => {
                 if (tab.id === "settings") onSelectTab("settings");
                 else if (tab.id === "help") onSelectTab("help");
+                else if (tab.id === "feedback") onSelectTab("feedback");
                 else alert(`The ${tab.label} module is coming soon in the next update!`);
               }}
               className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-sm font-semibold transition-colors ${currentTheme.textMuted} hover:${currentTheme.textMain} hover:bg-black/5 dark:hover:bg-white/5 ${isCollapsed ? "justify-center" : ""}`}

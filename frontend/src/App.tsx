@@ -19,6 +19,7 @@ import { Header } from "./components/Header";
 import { AlertsIntelligence } from "./components/AlertsIntelligence";
 import { VictimIntelligence } from "./components/VictimIntelligence";
 import { CriminalConnections } from "./components/CriminalConnections";
+import { Feedback } from "./components/Feedback";
 
 
 // Interfaces
@@ -3503,6 +3504,11 @@ function App() {
 
             </div>
           </div>
+        )}
+
+        {/* TAB: FEEDBACK */}
+        {activeTab === "feedback" && (
+          <Feedback currentTheme={theme} />
         )}
 </main>
 

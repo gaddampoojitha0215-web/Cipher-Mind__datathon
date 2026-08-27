@@ -658,6 +658,14 @@ class ChatHistoryStore:
 
 chat_histories = ChatHistoryStore()
 
+class FeedbackRequest(BaseModel):
+    category: str
+    text: str
+    user_email: Optional[str] = None
+
+FEEDBACK_DB = []
+
+
 @app.post("/api/v1/auth/login")
 def login(payload: LoginRequest):
     user = OFFICERS_DB.get(payload.email)
@@ -666,6 +674,19 @@ def login(payload: LoginRequest):
     
     access_token = create_access_token(data={"sub": payload.email})
     return {"token": access_token, "user": {"name": user["name"], "role": user["role"], "badge": user["badge"]}}
+
+@app.post("/api/v1/feedback")
+def submit_feedback(payload: FeedbackRequest):
+    feedback_entry = {
+        "id": str(uuid.uuid4()),
+        "category": payload.category,
+        "text": payload.text,
+        "user_email": payload.user_email,
+        "timestamp": datetime.datetime.now().isoformat()
+    }
+    FEEDBACK_DB.append(feedback_entry)
+    print(f"New Feedback Received: {feedback_entry}")
+    return {"status": "success", "message": "Feedback submitted successfully"}
 
 def retrieve_relevant_cases(query_text: str, cases_db: List[Dict[str, Any]], limit: int = 12) -> Tuple[List[Dict[str, Any]], str]:
     """

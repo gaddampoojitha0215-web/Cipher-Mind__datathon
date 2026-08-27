@@ -12,7 +12,9 @@ interface HeaderProps {
   onSearchChange: (query: string) => void;
   onSearchSubmit: (e: React.FormEvent) => void;
   onSelectLanguageDropdown?: () => void;
+  onOpenFeedback: () => void;
 }
+
 
 export const Header: React.FC<HeaderProps> = memo(({
   currentTheme,
@@ -22,6 +24,7 @@ export const Header: React.FC<HeaderProps> = memo(({
   searchQuery,
   onSearchChange,
   onSearchSubmit,
+  onOpenFeedback,
 }) => {
   const languageNames: Record<string, string> = {
     en: "English",
@@ -95,6 +98,15 @@ export const Header: React.FC<HeaderProps> = memo(({
             title="Toggle Theme"
           >
             {currentTheme.id === "dark" ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+          </button>
+
+          {/* Feedback Button */}
+          <button
+            onClick={onOpenFeedback}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-medium bg-black/20 hover:bg-black/30 transition-colors ${currentTheme.border} ${currentTheme.textMain}`}
+            title="Provide Feedback"
+          >
+            Feedback
           </button>
 
           {/* Notification Alert Bell */}
