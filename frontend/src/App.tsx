@@ -1847,6 +1847,7 @@ function App() {
           onChangeLanguage={(l) => setLanguage(l as any)}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          onOpenFeedback={() => setActiveTab("feedback")}
           onSearchSubmit={(e) => { 
             e.preventDefault(); 
             if (searchQuery.trim().length > 1) {
