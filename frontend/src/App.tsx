@@ -2401,6 +2401,19 @@ function App() {
                               </div>
                             </div>
                           )}
+
+                          {m.evidence_trail && m.evidence_trail.length > 0 && (
+                            <div className="flex flex-col gap-1.5 pt-2 mt-2 border-t border-cyan-500/20">
+                              <span className="font-semibold text-zinc-500 text-[10px] uppercase tracking-wider">
+                                🧠 Why this result? (Explainable AI & Evidence Trail)
+                              </span>
+                              <ul className="list-disc list-inside text-xs opacity-90 space-y-1">
+                                {m.evidence_trail.map((ev: string, eIdx: number) => (
+                                  <li key={eIdx}>{ev}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -3449,6 +3462,42 @@ function App() {
                     <span className="text-blue-500 font-bold flex items-center gap-1 cursor-pointer hover:underline" onClick={() => alert("Cache cleared!")}>
                       <Trash2 className="w-3 h-3" /> Clear Local Data
                     </span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${theme.textMuted}`}>AI & Intelligence</h3>
+                <div className={`p-4 rounded-xl border ${theme.border} bg-black/5 dark:bg-white/5 space-y-4 text-sm`}>
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-bold">MCP Integration</span>
+                      <span className="text-emerald-500 font-bold flex items-center gap-1 text-xs">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Active
+                      </span>
+                    </div>
+                    <div className="text-xs opacity-70 mb-2">Available Tools:</div>
+                    <ul className="list-disc list-inside text-xs opacity-80 grid grid-cols-2 gap-1 pl-2">
+                      <li>FIR Search</li>
+                      <li>Case Search</li>
+                      <li>Suspect Search</li>
+                      <li>Connection Analysis</li>
+                      <li>Location Search</li>
+                    </ul>
+                  </div>
+                  <div className="border-t border-current/10 pt-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-bold">Explainable AI</span>
+                      <span className="text-emerald-500 font-bold text-xs">Enabled</span>
+                    </div>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs opacity-80">Evidence Trail</span>
+                      <span className="text-emerald-500 font-bold text-xs">Enabled</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs opacity-80">Source References</span>
+                      <span className="text-emerald-500 font-bold text-xs">Enabled</span>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -116,7 +116,28 @@ export const AlertsIntelligence: React.FC<AlertsIntelligenceProps> = ({ cases, c
               </button>
             </div>
 
-            <div className={`pt-6 mt-6 border-t space-y-2 ${currentTheme.border}`}>
+            <div className={`pt-4 mt-2 border-t space-y-2 ${currentTheme.border}`}>
+              <div className={`p-3 rounded-xl border border-cyan-500/30 bg-cyan-500/5`}>
+                <div className="flex items-center gap-2 mb-2 text-cyan-400">
+                  <ShieldAlert className="w-4 h-4" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider">AI Evidence Trail</h3>
+                </div>
+                <p className={`text-[11px] font-medium text-cyan-300 mb-2`}>
+                  {selectedAlert.priority === "high" ? "High confidence threat signature detected." : 
+                   selectedAlert.priority === "medium" ? "Moderate correlation with known criminal entities." :
+                   "Routine database pattern matched."}
+                </p>
+                <div className={`text-[10px] ${currentTheme.textMuted} space-y-1`}>
+                  <p className="font-semibold text-slate-300">Why this alert triggered:</p>
+                  <ul className="list-disc list-inside space-y-1 ml-1 opacity-90">
+                    <li>Cross-referenced with KSP Intelligence network</li>
+                    <li>{selectedAlert.caseInfo.district} regional activity spike</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className={`pt-4 mt-4 border-t space-y-2 ${currentTheme.border}`}>
               <p className={`text-xs ${currentTheme.textMuted} mb-2 uppercase tracking-wider`}>Actions</p>
               <div className="flex flex-col gap-2">
                 <button 

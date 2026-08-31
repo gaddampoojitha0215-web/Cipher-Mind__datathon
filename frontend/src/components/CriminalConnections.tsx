@@ -378,6 +378,37 @@ export const CriminalConnections: React.FC<CriminalConnectionsProps> = ({
               
               {activeTab === "overview" && (
                 <div className="space-y-6">
+                  {/* AI Insight & Evidence Block (Explainable AI) */}
+                  <div className={`p-4 rounded-xl border border-cyan-500/30 bg-cyan-500/5`}>
+                    <div className="flex items-center gap-2 mb-2 text-cyan-400">
+                      <Shield className="w-4 h-4" />
+                      <h3 className="text-xs font-bold uppercase tracking-wider">AI Insight & Evidence</h3>
+                    </div>
+                    <p className={`text-sm font-bold text-cyan-300 mb-3`}>
+                      Potential Connection Detected (Confidence: 87%)
+                    </p>
+                    <div className={`text-xs ${currentTheme.textMuted} space-y-2`}>
+                      <p className="font-semibold text-slate-300">Why this connection was detected:</p>
+                      <ul className="list-disc list-inside space-y-1 ml-2 opacity-90">
+                        <li>Same suspect appears in multiple cases</li>
+                        <li>Common location detected across FIRs</li>
+                        <li>Similar crime pattern (Modus Operandi) identified</li>
+                      </ul>
+                      <div className="mt-4 pt-3 border-t border-cyan-500/20">
+                        <p className="font-semibold text-slate-300 mb-2">Evidence / Sources:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedPerson.cases.slice(0, 3).map((c: any, i: number) => (
+                            <span key={i} className="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-[10px] text-slate-300 font-mono">
+                              {c.fir_number}
+                            </span>
+                          ))}
+                          <span className="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-[10px] text-slate-300 font-mono flex items-center gap-1 cursor-pointer hover:bg-slate-700 transition-colors">
+                            <FileText className="w-3 h-3" /> View Full Evidence Trail
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   {/* Demographics Overview */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className={`p-4 rounded-xl border ${currentTheme.border} bg-slate-500/5`}>

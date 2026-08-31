@@ -19,6 +19,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from fastapi.responses import Response
 from dotenv import load_dotenv
 import pandas as pd
+from mcp_tools import MCPTools
 
 load_dotenv()
 
@@ -1252,9 +1253,38 @@ def chat_query(payload: ChatQuery, current_user: dict = Depends(get_current_user
     evidence = []
     sources = []
 
+    # --- MCP Tool Integration Layer ---
+    mcp_layer = MCPTools(CASES_DB)
+    mcp_tool_used = None
+    mcp_evidence = []
+    
+    if "suspect" in query_lower:
+        # Naive extraction for demo
+        parts = query_lower.split("suspect")
+        if len(parts) > 1:
+            possible_name = parts[1].strip().split()[0].strip(".,?\"'")
+            if possible_name:
+                mcp_res = mcp_layer.execute_tool("get_suspect_details", suspect_name=possible_name)
+                mcp_tool_used = mcp_res
+                mcp_evidence = mcp_res.get("evidence", [])
+                
+    elif "cases in" in query_lower:
+        parts = query_lower.split("cases in")
+        if len(parts) > 1:
+            possible_loc = parts[1].strip().split()[0].strip(".,?\"'")
+            if possible_loc:
+                mcp_res = mcp_layer.execute_tool("get_location_data", location=possible_loc)
+                mcp_tool_used = mcp_res
+                mcp_evidence = mcp_res.get("evidence", [])
+                
+    elif "fir" in query_lower:
+        mcp_res = mcp_layer.execute_tool("search_fir", query=query_lower)
+        if mcp_res and mcp_res.get("results"):
+            mcp_tool_used = mcp_res
+            mcp_evidence = mcp_res.get("evidence", [])
+
     # 1. Grounding Phase: Retrieve relevant cases
     # Check for exact or partial FIR number matches in the query to avoid showing unrelated cases
-    query_lower = payload.message.lower()
     exact_matches = []
     
     # Match patterns like: "fir-10008/2020", "10008/2020", "fir-10008", or "fir 10008"
@@ -1316,6 +1346,14 @@ def chat_query(payload: ChatQuery, current_user: dict = Depends(get_current_user
                 f"{stats_summary_txt}\n"
                 "Your task is to answer the user's query professionally, identifying matching Modus Operandi (MO), "
                 "and finding links between suspects, phone numbers, vehicles, and bank accounts.\n"
+            )
+            if mcp_tool_used:
+                system_prompt += (
+                    f"\n[MCP SYSTEM] Tool executed: {mcp_tool_used.get('tool')}\n"
+                    f"Tool output: {json.dumps(mcp_tool_used)}\n"
+                    "Use this tool output as primary evidence. Explicitly mention that this is a 'Potential connection' or 'Investigation lead' and do NOT state guilt.\n"
+                )
+            system_prompt += (
                 "Your responses MUST be based strictly on these retrieved case records. Do NOT invent, hallucinate, or assume any facts, FIR numbers, suspect names, phone numbers, or vehicle plates that are not explicitly present in the retrieved cases.\n"
                 "If the retrieved cases do not contain information to answer the query, state that you cannot find any matching records in the KSP database.\n\n"
                 "If the user asks a specific question (such as asking for suspects, date, status, location, officer, etc.), answer ONLY that specific question directly and concisely. Do NOT include the structured list of all metadata fields unless the user explicitly requests 'details', 'full details', 'case card', or the complete case file/record. When they do ask for full details/case card, you MUST provide the metadata in this list format:\n"
@@ -1696,6 +1734,14 @@ def chat_query(payload: ChatQuery, current_user: dict = Depends(get_current_user
             })
 
     matched_by_label = matched_by_type if 'matched_by_type' in locals() and matched_by_type else ("Database Query" if retrieved_cases else "No Database Match")
+    
+    if mcp_tool_used:
+        matched_by_label += " + MCP Tool"
+        if mcp_evidence:
+            evidence.extend(mcp_evidence)
+            if mcp_tool_used.get("tool") == "get_suspect_details":
+                evidence.append(f"MCP Tool '{mcp_tool_used.get('tool')}' detected connection patterns.")
+
     is_exact = "Exact" in matched_by_label or confidence >= 0.98
     
     evidence_metadata = {
