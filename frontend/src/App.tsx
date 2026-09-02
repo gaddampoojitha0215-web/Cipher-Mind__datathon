@@ -513,6 +513,15 @@ function App() {
 
   const [chatInput, setChatInput] = useState("");
   const [sessions, setSessions] = useState<ChatSession[]>(() => {
+    const saved = localStorage.getItem("crime-ai-sessions");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.error("Failed to parse saved sessions", e);
+      }
+    }
     const initialSessionId = uuidv4();
     return [{
       id: initialSessionId,
@@ -527,8 +536,22 @@ function App() {
       ]
     }];
   });
-  const [currentSessionId, setCurrentSessionId] = useState<string>(() => sessions[0].id);
 
+  const [currentSessionId, setCurrentSessionId] = useState<string>(() => {
+    const savedId = localStorage.getItem("crime-ai-current-session");
+    if (savedId) return savedId;
+    return sessions[0].id;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("crime-ai-sessions", JSON.stringify(sessions));
+  }, [sessions]);
+
+  useEffect(() => {
+    localStorage.setItem("crime-ai-current-session", currentSessionId);
+  }, [currentSessionId]);
+
+  // Ensure currentSessionId always points to a valid session
   const currentSession = sessions.find(s => s.id === currentSessionId) || sessions[0];
   const messages = currentSession.messages;
   const chatSessionId = currentSession.id;
@@ -3442,7 +3465,7 @@ function App() {
 
               <div>
                 <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${theme.textMuted}`}>System Status & Intelligence</h3>
-                <div className={`p-4 rounded-xl border ${theme.border} bg-black/5 dark:bg-white/5 space-y-3 font-mono text-xs`}>
+                <div className={`p-4 rounded-xl border ${theme.border} bg-black/5 dark:bg-white/5 space-y-3 font-mono text-xs ${theme.textMain}`}>
                   <div className="flex justify-between border-b border-current/10 pb-2">
                     <span className="opacity-70">Active Personnel Protocol</span>
                     <span className="font-bold">KSP-8932 (Admin)</span>
@@ -3468,7 +3491,7 @@ function App() {
 
               <div>
                 <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${theme.textMuted}`}>AI & Intelligence</h3>
-                <div className={`p-4 rounded-xl border ${theme.border} bg-black/5 dark:bg-white/5 space-y-4 text-sm`}>
+                <div className={`p-4 rounded-xl border ${theme.border} bg-black/5 dark:bg-white/5 space-y-4 text-sm ${theme.textMain}`}>
                   <div>
                     <div className="flex justify-between items-center mb-2">
                       <span className="font-bold">MCP Integration</span>

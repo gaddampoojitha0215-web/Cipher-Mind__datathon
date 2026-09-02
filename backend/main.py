@@ -1199,7 +1199,7 @@ def chat_query(payload: ChatQuery, current_user: dict = Depends(get_current_user
         "thanks", "thank you", "awesome", "great"
     ]
     words = [w.strip(".,;:!?()-\"'/") for w in clean_msg.split()]
-    is_greeting = any(g in clean_msg for g in ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "namaste", "namaskara", "how are you", "who are you", "thanks", "thank you"]) or (len(words) >= 1 and all(w in greetings_pool for w in words))
+    is_greeting = clean_msg in ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "namaste", "namaskara", "how are you", "who are you", "thanks", "thank you"] or (len(words) >= 1 and all(w in greetings_pool for w in words))
     
     if is_greeting:
         greeting_reply = (
